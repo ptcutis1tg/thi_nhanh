@@ -54,7 +54,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
               _buildNavItem(context, 'Home', '/home', isActive: ModalRoute.of(context)?.settings.name == '/home'),
               _buildNavItem(context, 'Tìm kiếm', '/search'),
               _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: ModalRoute.of(context)?.settings.name == '/create_exam'),
-              _buildNavItem(context, 'Tạo phòng thi', '/create_room'),
+              _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: ModalRoute.of(context)?.settings.name == '/create_room'),
             ],
           ),
           

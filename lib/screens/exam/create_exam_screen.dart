@@ -10,8 +10,17 @@ class CreateExamScreen extends StatefulWidget {
 }
 
 class _CreateExamScreenState extends State<CreateExamScreen> {
+  final TextEditingController _examNameController = TextEditingController();
+  String? _selectedSubject;
+  
   int _activeQuestionIndex = 0;
   final List<String> _questions = ['Câu hỏi số 1', 'Câu hỏi số 2', 'Câu hỏi số 3'];
+
+  @override
+  void dispose() {
+    _examNameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +182,59 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
+                      // General Settings (NEW)
+                      const Text(
+                        'Thông tin chung',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: TextField(
+                              controller: _examNameController,
+                              decoration: InputDecoration(
+                                hintText: 'Nhập tên đề thi (vd: Đề thi thử Toán 12...)',
+                                labelText: 'Tên Đề Thi *',
+                                fillColor: AppTheme.background,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppTheme.border),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            flex: 1,
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                labelText: 'Môn học',
+                                fillColor: AppTheme.background,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppTheme.border),
+                                ),
+                              ),
+                              hint: const Text('Chọn môn'),
+                              value: _selectedSubject,
+                              items: const [
+                                DropdownMenuItem(value: 'Toán', child: Text('Toán')),
+                                DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
+                                DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
+                                DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
+                              ],
+                              onChanged: (val) {
+                                setState(() => _selectedSubject = val);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 64, color: AppTheme.border, thickness: 2),
+
+                      // Header for Question
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
