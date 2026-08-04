@@ -32,6 +32,14 @@ class StudentWaitingRoomScreen extends StatelessWidget {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.pushNamed(context, '/taking_exam');
+        },
+        backgroundColor: AppTheme.success,
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Mô phỏng: Bắt đầu thi'),
+      ),
     );
   }
 

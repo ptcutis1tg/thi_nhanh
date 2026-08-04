@@ -38,10 +38,7 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
   ];
 
   void _startExam() {
-    // Navigate to Live Dashboard
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Bắt đầu phát đề cho học sinh!')),
-    );
+    Navigator.pushNamed(context, '/live_dashboard');
   }
 
   @override

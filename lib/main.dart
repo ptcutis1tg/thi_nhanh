@@ -10,6 +10,8 @@ import 'screens/exam/create_exam_screen.dart';
 import 'screens/room/create_room_screen.dart';
 import 'screens/room/teacher_waiting_room_screen.dart';
 import 'screens/room/student_waiting_room_screen.dart';
+import 'screens/exam/taking_exam_screen.dart';
+import 'screens/exam/live_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +57,8 @@ class ThiNhanhApp extends StatelessWidget {
         '/create_room': (context) => const CreateRoomScreen(),
         '/teacher_waiting_room': (context) => const TeacherWaitingRoomScreen(),
         '/student_waiting_room': (context) => const StudentWaitingRoomScreen(),
+        '/taking_exam': (context) => const TakingExamScreen(),
+        '/live_dashboard': (context) => const LiveDashboardScreen(),
       },
     );
   }
