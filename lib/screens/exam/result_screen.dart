@@ -139,7 +139,11 @@ class ResultScreen extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Tính năng xem lại bài làm đang được phát triển.')),
+            );
+          },
           icon: const Icon(Icons.remove_red_eye),
           label: const Text('Xem lại bài làm'),
           style: OutlinedButton.styleFrom(

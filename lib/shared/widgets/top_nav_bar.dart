@@ -65,6 +65,11 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                 width: 180,
                 height: 40,
                 child: TextField(
+                  onSubmitted: (value) {
+                    if (value.isNotEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đang tìm kiếm...')));
+                    }
+                  },
                   decoration: InputDecoration(
                     hintText: 'Nhập mã PT... hoặc DT...',
                     hintStyle: const TextStyle(fontSize: 14),
@@ -98,6 +103,10 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     return InkWell(
       onTap: () {
         if (!isActive) {
+          if (route == '/search') {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tính năng tìm kiếm đang phát triển')));
+            return;
+          }
           Navigator.pushReplacementNamed(context, route);
         }
       },

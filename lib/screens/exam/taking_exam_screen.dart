@@ -199,20 +199,34 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: _currentQuestionIndex > 0
+                    ? () {
+                        setState(() {
+                          _currentQuestionIndex--;
+                          _selectedOption = null;
+                        });
+                      }
+                    : null,
                 icon: const Icon(Icons.chevron_left),
                 label: const Text('Câu trước'),
               ),
               _buildPagination(),
               ElevatedButton.icon(
-                onPressed: () {
-                  // Giả lập nộp bài
-                  Navigator.pushReplacementNamed(context, '/result');
-                },
-                icon: const Icon(Icons.send),
-                label: const Text('Nộp bài'),
+                onPressed: _currentQuestionIndex < 19
+                    ? () {
+                        setState(() {
+                          _currentQuestionIndex++;
+                          _selectedOption = null;
+                        });
+                      }
+                    : () {
+                        // Giả lập nộp bài nếu đang ở câu cuối cùng
+                        Navigator.pushReplacementNamed(context, '/result');
+                      },
+                icon: Icon(_currentQuestionIndex < 19 ? Icons.chevron_right : Icons.send),
+                label: Text(_currentQuestionIndex < 19 ? 'Câu sau' : 'Nộp bài'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.success,
+                  backgroundColor: _currentQuestionIndex < 19 ? null : AppTheme.success,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
@@ -268,12 +282,14 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   Widget _buildPagination() {
     return Row(
       children: [
-        _buildPageNumber('1', isAnswered: true),
-        _buildPageNumber('2', isAnswered: true),
-        _buildPageNumber('3', isAnswered: true),
-        _buildPageNumber('4', isAnswered: true),
-        _buildPageNumber('5', isCurrent: true),
-        _buildPageNumber('6'),
+        _buildPageNumber('1', isAnswered: true, isCurrent: _currentQuestionIndex == 0),
+        _buildPageNumber('2', isAnswered: true, isCurrent: _currentQuestionIndex == 1),
+        _buildPageNumber('3', isAnswered: true, isCurrent: _currentQuestionIndex == 2),
+        _buildPageNumber('4', isAnswered: true, isCurrent: _currentQuestionIndex == 3),
+        if (_currentQuestionIndex > 3 && _currentQuestionIndex < 19)
+          _buildPageNumber('${_currentQuestionIndex + 1}', isCurrent: true),
+        if (_currentQuestionIndex <= 3) _buildPageNumber('5', isCurrent: _currentQuestionIndex == 4),
+        if (_currentQuestionIndex <= 4) _buildPageNumber('6'),
         const SizedBox(width: 8),
         const Text('...'),
       ],

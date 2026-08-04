@@ -92,7 +92,27 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
           ),
           OutlinedButton.icon(
             onPressed: () {
-              Navigator.of(context).pop();
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Xác nhận đóng phòng'),
+                  content: const Text('Sau khi đóng, học sinh sẽ không thể tiếp tục làm bài hoặc nộp bài. Bạn có chắc chắn?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Hủy', style: TextStyle(color: AppTheme.textSecondary)),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pushReplacementNamed('/home');
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+                      child: const Text('Đóng phòng'),
+                    ),
+                  ],
+                ),
+              );
             },
             icon: const Icon(Icons.cancel, color: AppTheme.error),
             label: const Text('Đóng phòng thi', style: TextStyle(color: AppTheme.error)),

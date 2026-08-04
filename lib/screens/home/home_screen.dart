@@ -4,8 +4,21 @@ import '../../shared/widgets/top_nav_bar.dart';
 import '../../shared/widgets/exam_card.dart';
 import '../../shared/widgets/topic_chip.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _joinRoomController = TextEditingController();
+
+  @override
+  void dispose() {
+    _joinRoomController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,9 +140,17 @@ class HomeScreen extends StatelessWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: TextField(
-                                decoration: InputDecoration(
+                                controller: _joinRoomController,
+                                onSubmitted: (value) {
+                                  if (value.isNotEmpty) {
+                                    Navigator.pushNamed(context, '/student_waiting_room');
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập mã phòng')));
+                                  }
+                                },
+                                decoration: const InputDecoration(
                                   hintText: 'Nhập mã phòng (PT...)',
                                   border: OutlineInputBorder(),
                                 ),
@@ -138,7 +159,11 @@ class HomeScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             ElevatedButton(
                               onPressed: () {
-                                Navigator.pushNamed(context, '/student_waiting_room');
+                                if (_joinRoomController.text.isNotEmpty) {
+                                  Navigator.pushNamed(context, '/student_waiting_room');
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập mã phòng')));
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
