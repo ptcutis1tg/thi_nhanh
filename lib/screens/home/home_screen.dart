@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/top_nav_bar.dart';
 import '../../shared/widgets/exam_card.dart';
 import '../../shared/widgets/topic_chip.dart';
 
@@ -23,7 +23,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TopNavBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 32),
         child: Center(
@@ -145,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 controller: _joinRoomController,
                                 onSubmitted: (value) {
                                   if (value.isNotEmpty) {
-                                    Navigator.pushNamed(context, '/student_waiting_room');
+                                    context.go('/student_waiting_room');
                                   } else {
                                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập mã phòng')));
                                   }
@@ -160,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ElevatedButton(
                               onPressed: () {
                                 if (_joinRoomController.text.isNotEmpty) {
-                                  Navigator.pushNamed(context, '/student_waiting_room');
+                                  context.go('/student_waiting_room');
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập mã phòng')));
                                 }

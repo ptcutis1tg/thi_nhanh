@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 
 class TakingExamScreen extends StatefulWidget {
@@ -20,11 +21,11 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
         content: const Text('Bạn có chắc muốn thoát? Kết quả bài thi sẽ không được lưu.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => context.pop(false),
             child: const Text('Ở lại', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => context.pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
             child: const Text('Thoát'),
           ),
@@ -42,7 +43,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
         if (didPop) return;
         final bool shouldPop = await _onWillPop();
         if (shouldPop && context.mounted) {
-          Navigator.of(context).pop();
+          context.pop();
         }
       },
       child: Scaffold(
@@ -109,7 +110,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           onPressed: () async {
             final shouldPop = await _onWillPop();
             if (shouldPop && mounted) {
-              Navigator.of(context).pop();
+              context.pop();
             }
           },
           icon: const Icon(Icons.logout, color: AppTheme.textSecondary),
@@ -221,7 +222,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                       }
                     : () {
                         // Giả lập nộp bài nếu đang ở câu cuối cùng
-                        Navigator.pushReplacementNamed(context, '/result');
+                        context.go('/result');
                       },
                 icon: Icon(_currentQuestionIndex < 19 ? Icons.chevron_right : Icons.send),
                 label: Text(_currentQuestionIndex < 19 ? 'Câu sau' : 'Nộp bài'),

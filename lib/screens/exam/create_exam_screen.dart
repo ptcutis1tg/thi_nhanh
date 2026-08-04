@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/top_nav_bar.dart';
 
 class CreateExamScreen extends StatefulWidget {
   const CreateExamScreen({super.key});
@@ -25,7 +24,6 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TopNavBar(),
       body: Row(
         children: [
           _buildSidebar(),

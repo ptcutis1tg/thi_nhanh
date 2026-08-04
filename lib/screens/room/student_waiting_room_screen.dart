@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
@@ -34,7 +35,7 @@ class StudentWaitingRoomScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.pushNamed(context, '/taking_exam');
+          context.go('/taking_exam');
         },
         backgroundColor: AppTheme.success,
         icon: const Icon(Icons.play_arrow),

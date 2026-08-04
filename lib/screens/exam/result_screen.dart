@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
@@ -154,7 +155,7 @@ class ResultScreen extends StatelessWidget {
         const SizedBox(width: 16),
         ElevatedButton.icon(
           onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+            context.go('/home');
           },
           icon: const Icon(Icons.home),
           label: const Text('Về trang chủ'),

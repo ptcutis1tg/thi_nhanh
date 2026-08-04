@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 
 class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
@@ -51,10 +52,10 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
           // Center Navigation
           Row(
             children: [
-              _buildNavItem(context, 'Home', '/home', isActive: ModalRoute.of(context)?.settings.name == '/home'),
-              _buildNavItem(context, 'Tìm kiếm', '/search'),
-              _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: ModalRoute.of(context)?.settings.name == '/create_exam'),
-              _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: ModalRoute.of(context)?.settings.name == '/create_room'),
+              _buildNavItem(context, 'Home', '/home', isActive: GoRouterState.of(context).matchedLocation == '/home'),
+              _buildNavItem(context, 'Tìm kiếm', '/search', isActive: GoRouterState.of(context).matchedLocation == '/search'),
+              _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
+              _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
             ],
           ),
           
@@ -103,11 +104,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     return InkWell(
       onTap: () {
         if (!isActive) {
-          if (route == '/search') {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tính năng tìm kiếm đang phát triển')));
-            return;
-          }
-          Navigator.pushReplacementNamed(context, route);
+          context.go(route);
         }
       },
       child: Container(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
@@ -38,7 +39,7 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
   ];
 
   void _startExam() {
-    Navigator.pushNamed(context, '/live_dashboard');
+    context.go('/live_dashboard');
   }
 
   @override

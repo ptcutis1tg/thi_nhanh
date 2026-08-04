@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/top_nav_bar.dart';
 import '../../shared/widgets/exam_card.dart';
 
 class CreateRoomScreen extends StatefulWidget {
@@ -44,7 +44,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
   void _createRoom() {
     // Điều hướng sang màn hình Waiting Room (Giáo viên)
-    Navigator.pushReplacementNamed(context, '/teacher_waiting_room');
+    context.go('/teacher_waiting_room');
   }
 
   @override
@@ -58,7 +58,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TopNavBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
         child: Center(

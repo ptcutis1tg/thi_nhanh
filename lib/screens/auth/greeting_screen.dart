@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -34,7 +35,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
             _passwordController.text,
           );
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        context.go('/home');
       }
     } catch (e) {
       _showError('Đăng nhập thất bại: ${e.toString()}');
@@ -221,7 +222,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
               
               TextButton.icon(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/home');
+                  context.go('/home');
                 },
                 icon: const Icon(Icons.login, size: 20),
                 label: const Text('Thi ngay với mã phòng (Guest)'),

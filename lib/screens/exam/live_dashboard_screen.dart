@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
@@ -99,13 +100,13 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                   content: const Text('Sau khi đóng, học sinh sẽ không thể tiếp tục làm bài hoặc nộp bài. Bạn có chắc chắn?'),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () => context.pop(),
                       child: const Text('Hủy', style: TextStyle(color: AppTheme.textSecondary)),
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.of(context).pop();
-                        Navigator.of(context).pushReplacementNamed('/home');
+                        context.pop();
+                        context.go('/home');
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
                       child: const Text('Đóng phòng'),
