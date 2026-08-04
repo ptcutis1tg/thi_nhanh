@@ -10,11 +10,18 @@ import 'screens/home/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // TODO: Replace with real Supabase credentials
-  await Supabase.initialize(
-    url: 'https://YOUR_SUPABASE_URL.supabase.co',
-    anonKey: 'YOUR_SUPABASE_ANON_KEY',
-  );
+  // Đọc biến môi trường từ tham số build --dart-define
+  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  const supabaseKey = String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
+
+  if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseKey,
+    );
+  } else {
+    debugPrint('CẢNH BÁO: Chưa cấu hình SUPABASE_URL hoặc SUPABASE_KEY');
+  }
 
   runApp(
     MultiProvider(

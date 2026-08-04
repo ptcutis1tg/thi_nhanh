@@ -1,8 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 
-class GreetingScreen extends StatelessWidget {
+class GreetingScreen extends StatefulWidget {
   const GreetingScreen({super.key});
+
+  @override
+  State<GreetingScreen> createState() => _GreetingScreenState();
+}
+
+class _GreetingScreenState extends State<GreetingScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: AppTheme.error),
+    );
+  }
+
+  Future<void> _handleEmailLogin() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      _showError('Vui lòng nhập Email và Mật khẩu');
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await context.read<AuthProvider>().signInWithEmail(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } catch (e) {
+      _showError('Đăng nhập thất bại: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    setState(() => _isLoading = true);
+    try {
+      await context.read<AuthProvider>().signInWithGoogle();
+      // Wait for auth state change to route automatically, or redirect
+    } catch (e) {
+      _showError('Đăng nhập Google thất bại: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,9 +163,7 @@ class GreetingScreen extends StatelessWidget {
               const SizedBox(height: 32),
               
               OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/home');
-                },
+                onPressed: _isLoading ? null : _handleGoogleLogin,
                 icon: const Icon(Icons.g_mobiledata, size: 24), // Placeholder for Google icon
                 label: const Text('Tiếp tục với Google'),
                 style: OutlinedButton.styleFrom(
@@ -130,16 +186,20 @@ class GreetingScreen extends StatelessWidget {
                 ),
               ),
               
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: _emailController,
+                enabled: !_isLoading,
+                decoration: const InputDecoration(
                   hintText: 'Email của bạn',
                   prefixIcon: Icon(Icons.email_outlined),
                 ),
               ),
               const SizedBox(height: 16),
-              const TextField(
+              TextField(
+                controller: _passwordController,
+                enabled: !_isLoading,
                 obscureText: true,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Mật khẩu',
                   prefixIcon: Icon(Icons.lock_outline),
                 ),
@@ -147,14 +207,14 @@ class GreetingScreen extends StatelessWidget {
               const SizedBox(height: 24),
               
               ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/home');
-                },
+                onPressed: _isLoading ? null : _handleEmailLogin,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
                 ),
-                child: const Text('Đăng nhập'),
+                child: _isLoading 
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Đăng nhập'),
               ),
               
               const SizedBox(height: 16),
