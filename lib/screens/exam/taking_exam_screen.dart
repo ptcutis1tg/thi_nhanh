@@ -205,10 +205,14 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
               ),
               _buildPagination(),
               ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.chevron_right),
-                label: const Text('Câu sau'),
+                onPressed: () {
+                  // Giả lập nộp bài
+                  Navigator.pushReplacementNamed(context, '/result');
+                },
+                icon: const Icon(Icons.send),
+                label: const Text('Nộp bài'),
                 style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.success,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
