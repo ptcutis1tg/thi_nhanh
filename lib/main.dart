@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'screens/auth/greeting_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/exam/create_exam_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,7 @@ class ThiNhanhApp extends StatelessWidget {
       routes: {
         '/greeting': (context) => const GreetingScreen(),
         '/home': (context) => const HomeScreen(),
+        '/create_exam': (context) => const CreateExamScreen(),
       },
     );
   }

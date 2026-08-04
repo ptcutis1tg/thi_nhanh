@@ -51,10 +51,10 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
           // Center Navigation
           Row(
             children: [
-              _buildNavItem('Home', isActive: true),
-              _buildNavItem('Tìm kiếm'),
-              _buildNavItem('Tạo đề thi'),
-              _buildNavItem('Tạo phòng thi'),
+              _buildNavItem(context, 'Home', '/home', isActive: ModalRoute.of(context)?.settings.name == '/home'),
+              _buildNavItem(context, 'Tìm kiếm', '/search'),
+              _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: ModalRoute.of(context)?.settings.name == '/create_exam'),
+              _buildNavItem(context, 'Tạo phòng thi', '/create_room'),
             ],
           ),
           
@@ -94,19 +94,26 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildNavItem(String title, {bool isActive = false}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        border: isActive ? const Border(bottom: BorderSide(color: AppTheme.primary, width: 2)) : null,
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-          color: isActive ? AppTheme.primary : AppTheme.textSecondary,
+  Widget _buildNavItem(BuildContext context, String title, String route, {bool isActive = false}) {
+    return InkWell(
+      onTap: () {
+        if (!isActive) {
+          Navigator.pushReplacementNamed(context, route);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          border: isActive ? const Border(bottom: BorderSide(color: AppTheme.primary, width: 2)) : null,
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+            color: isActive ? AppTheme.primary : AppTheme.textSecondary,
+          ),
         ),
       ),
     );
