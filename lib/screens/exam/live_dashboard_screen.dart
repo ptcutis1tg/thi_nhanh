@@ -218,7 +218,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.monitoring, color: AppTheme.primary),
+                    Icon(Icons.bar_chart, color: AppTheme.primary),
                     SizedBox(width: 8),
                     Text('Tiến độ làm bài (Live)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ],
