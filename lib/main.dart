@@ -12,7 +12,7 @@ void main() async {
   
   // Đọc biến môi trường từ tham số build --dart-define
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  const supabaseKey = String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
+  const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: '');
 
   if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
     await Supabase.initialize(
@@ -20,7 +20,7 @@ void main() async {
       anonKey: supabaseKey,
     );
   } else {
-    debugPrint('CẢNH BÁO: Chưa cấu hình SUPABASE_URL hoặc SUPABASE_KEY');
+    debugPrint('CẢNH BÁO: Chưa cấu hình SUPABASE_URL hoặc SUPABASE_PUBLISHABLE_KEY');
   }
 
   runApp(

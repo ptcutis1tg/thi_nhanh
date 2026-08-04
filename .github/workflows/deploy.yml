@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Web App
         run: |
-          flutter build web --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_KEY=${{ secrets.SUPABASE_KEY }} --base-href="/thi_nhanh/"
+          flutter build web --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }} --base-href="/thi_nhanh/"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
