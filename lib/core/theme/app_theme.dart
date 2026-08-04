@@ -16,7 +16,8 @@ class AppTheme {
   static const Color border = Color(0xFFE7E6EF); // Line
   
   static const Color success = Color(0xFF27885E);
-  static const Color error = Color(0xFFC87909);
+  static const Color warning = Color(0xFFC87909);
+  static const Color error = Color(0xFFBA1A1A);
 
   static ThemeData get lightTheme {
     return ThemeData(

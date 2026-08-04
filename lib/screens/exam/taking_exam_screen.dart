@@ -330,19 +330,19 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.local_fire_department, color: Colors.orange),
-              SizedBox(width: 8),
-              Text('Bảng xếp hạng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Spacer(),
+              const Icon(Icons.local_fire_department, color: Colors.orange),
+              const SizedBox(width: 8),
+              const Text('Bảng xếp hạng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: AppTheme.error.withOpacity(0.1),
-                  borderRadius: BorderRadius.all(Radius.circular(4)),
+                  borderRadius: const BorderRadius.all(Radius.circular(4)),
                 ),
-                child: Text('LIVE', style: TextStyle(color: AppTheme.error, fontSize: 10, fontWeight: FontWeight.bold)),
+                child: const Text('LIVE', style: TextStyle(color: AppTheme.error, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
