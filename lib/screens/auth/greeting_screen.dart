@@ -12,8 +12,12 @@ class GreetingScreen extends StatefulWidget {
 }
 
 class _GreetingScreenState extends State<GreetingScreen> {
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final PageController _pageController = PageController(initialPage: 0);
+  int _currentPage = 0;
   bool _isLoading = false;
 
   void _showError(String message) {
@@ -44,6 +48,35 @@ class _GreetingScreenState extends State<GreetingScreen> {
     }
   }
 
+  Future<void> _handleEmailRegister() async {
+    if (_nameController.text.isEmpty || _emailController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
+      _showError('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+    if (_passwordController.text != _confirmPasswordController.text) {
+      _showError('Mật khẩu xác nhận không khớp');
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await context.read<AuthProvider>().signUpWithEmail(
+            _emailController.text.trim(),
+            _passwordController.text,
+            _nameController.text.trim(),
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đăng ký thành công! Vui lòng đăng nhập.'), backgroundColor: Colors.green),
+        );
+        _pageController.animateToPage(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      }
+    } catch (e) {
+      _showError('Đăng ký thất bại: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _handleGoogleLogin() async {
     setState(() => _isLoading = true);
     try {
@@ -58,8 +91,11 @@ class _GreetingScreenState extends State<GreetingScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -150,89 +186,177 @@ class _GreetingScreenState extends State<GreetingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Đăng nhập',
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontSize: 32,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Chào mừng bạn quay lại với Thi Nhanh',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
+              // Custom Tab Bar
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _pageController.animateToPage(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Đăng nhập',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: _currentPage == 0 ? AppTheme.primary : AppTheme.textSecondary,
+                              fontWeight: _currentPage == 0 ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(height: 2, color: _currentPage == 0 ? AppTheme.primary : Colors.transparent),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _pageController.animateToPage(1, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+                      child: Column(
+                        children: [
+                          Text(
+                            'Đăng ký',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: _currentPage == 1 ? AppTheme.primary : AppTheme.textSecondary,
+                              fontWeight: _currentPage == 1 ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(height: 2, color: _currentPage == 1 ? AppTheme.primary : Colors.transparent),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
               
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _handleGoogleLogin,
-                icon: const Icon(Icons.g_mobiledata, size: 24), // Placeholder for Google icon
-                label: const Text('Tiếp tục với Google'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                ),
-              ),
-              
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Row(
+              // Forms PageView
+              SizedBox(
+                height: 480, // Fixed height to prevent unbounded errors
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() => _currentPage = index);
+                  },
                   children: [
-                    Expanded(child: Divider(color: AppTheme.border)),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('hoặc', style: TextStyle(color: AppTheme.textSecondary)),
-                    ),
-                    Expanded(child: Divider(color: AppTheme.border)),
+                    _buildLoginForm(),
+                    _buildRegisterForm(),
                   ],
                 ),
               ),
               
-              TextField(
-                controller: _emailController,
-                enabled: !_isLoading,
-                decoration: const InputDecoration(
-                  hintText: 'Email của bạn',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
               const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                enabled: !_isLoading,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  hintText: 'Mật khẩu',
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleEmailLogin,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                ),
-                child: _isLoading 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('Đăng nhập'),
-              ),
-              
-              const SizedBox(height: 16),
-              
               TextButton.icon(
-                onPressed: () {
-                  context.go('/home');
-                },
+                onPressed: () => context.go('/home'),
                 icon: const Icon(Icons.login, size: 20),
                 label: const Text('Thi ngay với mã phòng (Guest)'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                ),
+                style: TextButton.styleFrom(foregroundColor: AppTheme.textSecondary),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoginForm() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: _isLoading ? null : _handleGoogleLogin,
+            icon: const Icon(Icons.g_mobiledata, size: 24),
+            label: const Text('Tiếp tục với Google'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Row(
+              children: [
+                Expanded(child: Divider(color: AppTheme.border)),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('hoặc', style: TextStyle(color: AppTheme.textSecondary)),
+                ),
+                Expanded(child: Divider(color: AppTheme.border)),
+              ],
+            ),
+          ),
+          TextField(
+            controller: _emailController,
+            enabled: !_isLoading,
+            decoration: const InputDecoration(hintText: 'Email của bạn', prefixIcon: Icon(Icons.email_outlined)),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            enabled: !_isLoading,
+            obscureText: true,
+            decoration: const InputDecoration(hintText: 'Mật khẩu', prefixIcon: Icon(Icons.lock_outline)),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _handleEmailLogin,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+            ),
+            child: _isLoading 
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('Đăng nhập'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRegisterForm() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: _nameController,
+            enabled: !_isLoading,
+            decoration: const InputDecoration(hintText: 'Họ tên', prefixIcon: Icon(Icons.person_outline)),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _emailController,
+            enabled: !_isLoading,
+            decoration: const InputDecoration(hintText: 'Email của bạn', prefixIcon: Icon(Icons.email_outlined)),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            enabled: !_isLoading,
+            obscureText: true,
+            decoration: const InputDecoration(hintText: 'Mật khẩu', prefixIcon: Icon(Icons.lock_outline)),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _confirmPasswordController,
+            enabled: !_isLoading,
+            obscureText: true,
+            decoration: const InputDecoration(hintText: 'Xác nhận mật khẩu', prefixIcon: Icon(Icons.lock_outline)),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _isLoading ? null : _handleEmailRegister,
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+            ),
+            child: _isLoading 
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Text('Đăng ký'),
+          ),
+        ],
       ),
     );
   }
