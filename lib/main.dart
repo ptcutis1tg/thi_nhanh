@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'screens/auth/greeting_screen.dart';
@@ -20,9 +22,16 @@ import 'screens/main_layout_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Đọc biến môi trường từ tham số build --dart-define
-  const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: '');
+  // Tải biến môi trường từ file .env nếu có
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Không tìm thấy file .env, sử dụng biến môi trường mặc định.');
+  }
+
+  // Ưu tiên lấy từ .env, nếu không có thì lấy từ tham số build --dart-define
+  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  final supabaseKey = dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ?? const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: '');
 
   if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
     await Supabase.initialize(
