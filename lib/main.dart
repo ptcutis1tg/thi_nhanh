@@ -30,8 +30,9 @@ void main() async {
   }
 
   // Ưu tiên lấy từ .env, nếu không có thì lấy từ tham số build --dart-define
-  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  final supabaseKey = dotenv.env['SUPABASE_PUBLISHABLE_KEY'] ?? const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: '');
+  final isEnvInitialized = dotenv.isInitialized;
+  final supabaseUrl = (isEnvInitialized ? dotenv.env['SUPABASE_URL'] : null) ?? const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  final supabaseKey = (isEnvInitialized ? dotenv.env['SUPABASE_PUBLISHABLE_KEY'] : null) ?? const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: '');
 
   if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
     await Supabase.initialize(
