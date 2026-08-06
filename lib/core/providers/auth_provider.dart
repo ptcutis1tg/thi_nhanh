@@ -38,6 +38,19 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> signUpWithEmail(String email, String password, String fullName) async {
+    try {
+      await _supabaseClient.auth.signUp(
+        email: email,
+        password: password,
+        data: {'full_name': fullName},
+      );
+    } catch (e) {
+      debugPrint('Lỗi đăng ký Email: $e');
+      rethrow;
+    }
+  }
+
   Future<void> signOut() async {
     await _supabaseClient.auth.signOut();
   }
