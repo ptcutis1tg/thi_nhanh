@@ -17,7 +17,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
         color: AppTheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             offset: const Offset(0, 2),
             blurRadius: 10,
           ),
@@ -88,10 +88,16 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const CircleAvatar(
-                radius: 21,
-                backgroundColor: AppTheme.border,
-                child: Icon(Icons.person, color: AppTheme.textSecondary),
+              InkWell(
+                onTap: () {
+                  context.go('/profile');
+                },
+                borderRadius: BorderRadius.circular(100),
+                child: const CircleAvatar(
+                  radius: 21,
+                  backgroundColor: AppTheme.border,
+                  child: Icon(Icons.person, color: AppTheme.textSecondary),
+                ),
               ),
             ],
           ),
