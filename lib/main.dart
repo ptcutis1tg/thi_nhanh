@@ -52,10 +52,13 @@ void main() async {
     debugPrint('CẢNH BÁO: Chưa cấu hình SUPABASE_URL hoặc SUPABASE_PUBLISHABLE_KEY hợp lệ.');
   }
 
+  final authProvider = AuthProvider(isSupabaseInitialized: isSupabaseInitialized);
+  await authProvider.init();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(isSupabaseInitialized: isSupabaseInitialized)),
+        ChangeNotifierProvider.value(value: authProvider),
         if (isSupabaseInitialized)
           Provider.value(value: Supabase.instance.client),
       ],

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -97,14 +98,32 @@ class _ProfileDialogState extends State<ProfileDialog> {
             child: const Text('Hủy', style: TextStyle(color: AppTheme.textSecondary)),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Đổi mật khẩu thành công!'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
+            onPressed: () async {
+              try {
+                await context.read<AuthProvider>().changePassword(
+                      oldPasswordController.text,
+                      newPasswordController.text,
+                    );
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đổi mật khẩu thành công!'),
+                      backgroundColor: AppTheme.success,
+                    ),
+                  );
+                }
+              } catch (e) {
+                final msg = e.toString().replaceAll('Exception: ', '');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(msg),
+                      backgroundColor: AppTheme.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text('Cập nhật'),
           ),
@@ -116,11 +135,9 @@ class _ProfileDialogState extends State<ProfileDialog> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.user;
 
-    final displayName = user?.userMetadata?['full_name'] as String? ??
-        (user?.email != null ? user!.email!.split('@').first : 'Minh Anh');
-    final displayEmail = user?.email ?? 'minhanh@gmail.com';
+    final displayName = authProvider.userName;
+    final displayEmail = authProvider.userEmail;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -156,15 +173,30 @@ class _ProfileDialogState extends State<ProfileDialog> {
               const SizedBox(height: 20),
 
               // Avatar & Profile Header
-              CircleAvatar(
-                radius: 38,
-                backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.2),
-                child: const Icon(
-                  Icons.person,
-                  size: 44,
-                  color: AppTheme.primary,
-                ),
-              ),
+              () {
+                final avatarUrl = authProvider.userAvatarUrl;
+                ImageProvider? avatarImg;
+                if (avatarUrl != null && avatarUrl.isNotEmpty) {
+                  try {
+                    final base64Str = avatarUrl.contains(',') ? avatarUrl.split(',').last : avatarUrl;
+                    avatarImg = MemoryImage(base64Decode(base64Str));
+                  } catch (e) {
+                    debugPrint('Lỗi giải mã avatar ProfileDialog: $e');
+                  }
+                }
+                return CircleAvatar(
+                  radius: 38,
+                  backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.2),
+                  backgroundImage: avatarImg,
+                  child: avatarImg == null
+                      ? const Icon(
+                          Icons.person,
+                          size: 44,
+                          color: AppTheme.primary,
+                        )
+                      : null,
+                );
+              }(),
               const SizedBox(height: 12),
               Text(
                 displayName,

@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -28,14 +30,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     final authProvider = context.read<AuthProvider>();
-    final user = authProvider.user;
 
-    final initialName = user?.userMetadata?['full_name'] as String? ??
-        (user?.email != null ? user!.email!.split('@').first : 'Minh Anh');
-    final initialEmail = user?.email ?? 'minhanh@gmail.com';
-
-    _nameController = TextEditingController(text: initialName);
-    _emailController = TextEditingController(text: initialEmail);
+    _nameController = TextEditingController(text: authProvider.userName);
+    _emailController = TextEditingController(text: authProvider.userEmail);
   }
 
   @override
@@ -48,21 +45,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  void _handleSaveProfile() {
-    if (_nameController.text.trim().isEmpty) {
+  Future<void> _handleSaveProfile() async {
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
       _showSnackBar('Vui lòng nhập họ và tên', isError: true);
       return;
     }
     setState(() => _isSavingInfo = true);
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() => _isSavingInfo = false);
-        _showSnackBar('Cập nhật thông tin cá nhân thành công!');
-      }
-    });
+    await context.read<AuthProvider>().updateProfile(newName);
+    if (mounted) {
+      setState(() => _isSavingInfo = false);
+      _showSnackBar('Cập nhật thông tin cá nhân thành công!');
+    }
   }
 
-  void _handleChangePassword() {
+  Future<void> _handleChangePassword() async {
     if (_currentPasswordController.text.isEmpty ||
         _newPasswordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
@@ -74,15 +71,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
     setState(() => _isSavingPassword = true);
-    Future.delayed(const Duration(milliseconds: 600), () {
+    try {
+      await context.read<AuthProvider>().changePassword(
+            _currentPasswordController.text,
+            _newPasswordController.text,
+          );
       if (mounted) {
-        setState(() => _isSavingPassword = false);
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
         _showSnackBar('Đổi mật khẩu thành công!');
       }
-    });
+    } catch (e) {
+      final msg = e.toString().replaceAll('Exception: ', '');
+      _showSnackBar(msg, isError: true);
+    } finally {
+      if (mounted) setState(() => _isSavingPassword = false);
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final base64String = base64Encode(bytes);
+        final dataUrl = 'data:image/png;base64,$base64String';
+        if (mounted) {
+          await context.read<AuthProvider>().updateAvatar(dataUrl);
+          _showSnackBar('Cập nhật ảnh đại diện thành công!');
+        }
+      }
+    } catch (e) {
+      _showSnackBar('Lỗi chọn ảnh: ${e.toString()}', isError: true);
+    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -96,9 +124,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildAvatarWidget(String? avatarUrl) {
+    if (avatarUrl != null && avatarUrl.isNotEmpty) {
+      try {
+        final base64Str = avatarUrl.contains(',') ? avatarUrl.split(',').last : avatarUrl;
+        final bytes = base64Decode(base64Str);
+        return CircleAvatar(
+          radius: 42,
+          backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.2),
+          backgroundImage: MemoryImage(bytes),
+        );
+      } catch (e) {
+        debugPrint('Lỗi giải mã avatar base64: $e');
+      }
+    }
+    return CircleAvatar(
+      radius: 42,
+      backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.2),
+      child: const Icon(
+        Icons.person,
+        size: 48,
+        color: AppTheme.primary,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+
+    // Sync input fields with AuthProvider if text hasn't been edited
+    if (_nameController.text.isEmpty || !_isSavingInfo) {
+      if (_nameController.text != authProvider.userName && !FocusScope.of(context).hasFocus) {
+        _nameController.text = authProvider.userName;
+      }
+    }
+    if (_emailController.text != authProvider.userEmail) {
+      _emailController.text = authProvider.userEmail;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -126,34 +189,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Row(
                     children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 42,
-                            backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.2),
-                            child: const Icon(
-                              Icons.person,
-                              size: 48,
-                              color: AppTheme.primary,
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: const BoxDecoration(
-                                color: AppTheme.primary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt,
-                                size: 14,
-                                color: Colors.white,
+                      InkWell(
+                        onTap: _pickAndUploadAvatar,
+                        borderRadius: BorderRadius.circular(100),
+                        child: Stack(
+                          children: [
+                            _buildAvatarWidget(authProvider.userAvatarUrl),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 24),
                       Expanded(
@@ -161,9 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _nameController.text.isNotEmpty
-                                  ? _nameController.text
-                                  : 'Minh Anh',
+                              authProvider.userName,
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
@@ -172,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _emailController.text,
+                              authProvider.userEmail,
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppTheme.textSecondary,

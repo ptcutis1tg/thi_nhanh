@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../shared/widgets/exam_card.dart';
 import '../../shared/widgets/topic_chip.dart';
 
@@ -22,6 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 32),
@@ -49,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Chào mừng quay lại, Minh Anh',
+                        'Chào mừng quay lại, ${authProvider.userName}',
                         style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -59,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         'Hôm nay bạn muốn ôn tập chủ đề gì?',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -120,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(color: AppTheme.border),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
                     ],
                   ),
                   child: Row(

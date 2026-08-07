@@ -87,10 +87,8 @@ class _GreetingScreenState extends State<GreetingScreen> {
             _nameController.text.trim(),
           );
       if (mounted) {
-        _showSuccess('Đăng ký thành công! Vui lòng đăng nhập.');
-        setState(() {
-          _isRegisterMode = false;
-        });
+        _showSuccess('Đăng ký thành công! Chào mừng bạn.');
+        context.go('/home');
       }
     } catch (e) {
       _showError('Đăng ký thất bại: ${e.toString()}');
@@ -581,73 +579,16 @@ class _GreetingScreenState extends State<GreetingScreen> {
   }
 
   Widget _buildGoogleIcon() {
-    return SizedBox(
-      width: 18,
-      height: 18,
-      child: CustomPainterWidget(
-        painter: GoogleLogoPainter(),
+    return Image.asset(
+      'assets/images/google_logo.png',
+      width: 20,
+      height: 20,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) => const Icon(
+        Icons.g_mobiledata_rounded,
+        size: 22,
+        color: Color(0xFF4285F4),
       ),
     );
   }
-}
-
-class CustomPainterWidget extends StatelessWidget {
-  final CustomPainter painter;
-  const CustomPainterWidget({super.key, required this.painter});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: painter);
-  }
-}
-
-class GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final Offset center = Offset(w / 2, h / 2);
-    final double radius = w / 2;
-
-    final Paint redPaint = Paint()..color = const Color(0xFFEA4335);
-    final Paint yellowPaint = Paint()..color = const Color(0xFFFBBC05);
-    final Paint greenPaint = Paint()..color = const Color(0xFF34A853);
-    final Paint bluePaint = Paint()..color = const Color(0xFF4285F4);
-
-    final Rect rect = Rect.fromCircle(center: center, radius: radius);
-
-    // Red arc (top)
-    canvas.drawArc(rect, -0.7, 1.8, true, redPaint);
-    // Yellow arc (left bottom)
-    canvas.drawArc(rect, 1.1, 1.3, true, yellowPaint);
-    // Green arc (bottom right)
-    canvas.drawArc(rect, 2.4, 1.2, true, greenPaint);
-    // Blue arc & arm (right center)
-    canvas.drawArc(rect, -0.7, -1.0, true, bluePaint);
-
-    // Inner white circle to cut out center
-    final Paint innerWhite = Paint()..color = Colors.white;
-    canvas.drawCircle(center, radius * 0.58, innerWhite);
-
-    // Blue horizontal arm
-    final Path blueArm = Path()
-      ..moveTo(center.dx, center.dy - radius * 0.22)
-      ..lineTo(center.dx + radius * 0.95, center.dy - radius * 0.22)
-      ..lineTo(center.dx + radius * 0.95, center.dy + radius * 0.22)
-      ..lineTo(center.dx, center.dy + radius * 0.22)
-      ..close();
-    canvas.drawPath(blueArm, bluePaint);
-
-    // Cut out inner right white gap
-    final Path whiteCutout = Path()
-      ..moveTo(center.dx, center.dy - radius * 0.22)
-      ..lineTo(center.dx + radius * 0.55, center.dy - radius * 0.22)
-      ..lineTo(center.dx + radius * 0.55, center.dy + radius * 0.22)
-      ..lineTo(center.dx, center.dy + radius * 0.22)
-      ..close();
-    canvas.drawPath(whiteCutout, innerWhite);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
