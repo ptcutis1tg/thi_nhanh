@@ -149,36 +149,74 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  static final RegExp _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  bool isValidEmail(String email) => _emailRegex.hasMatch(email.trim());
+
   Future<void> signUpWithEmail(
     String email,
     String password,
     String fullName,
   ) async {
-    final key = email.trim().toLowerCase();
-    
+    final cleanEmail = email.trim();
+    if (!isValidEmail(cleanEmail)) {
+      throw Exception('Địa chỉ Email không hợp lệ.');
+    }
+    if (password.length < 6) {
+      throw Exception('Mật khẩu phải có ít nhất 6 ký tự.');
+    }
+
+    final key = cleanEmail.toLowerCase();
     _registeredUsers[key] = {
       'name': fullName,
       'password': password,
     };
-    _userEmail = email;
-    _userName = fullName;
-    _userAvatarUrl = null;
 
     if (_supabaseClient != null) {
       try {
-        await _supabaseClient!.auth.signUp(
-          email: email,
+        final response = await _supabaseClient!.auth.signUp(
+          email: cleanEmail,
           password: password,
           data: {'full_name': fullName},
         );
+        if (response.user != null) {
+          _user = response.user;
+        }
       } catch (e) {
         debugPrint('Lỗi đăng ký Supabase Email: $e');
         rethrow;
       }
+    } else {
+      _userEmail = cleanEmail;
+      _userName = fullName;
+      _userAvatarUrl = null;
     }
 
     await _saveState();
     notifyListeners();
+  }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    final cleanEmail = email.trim();
+    if (!isValidEmail(cleanEmail)) {
+      throw Exception('Địa chỉ Email không hợp lệ.');
+    }
+
+    if (_supabaseClient != null) {
+      try {
+        await _supabaseClient!.auth.resetPasswordForEmail(cleanEmail);
+      } catch (e) {
+        debugPrint('Lỗi gửi email reset mật khẩu Supabase: $e');
+        rethrow;
+      }
+    } else {
+      final key = cleanEmail.toLowerCase();
+      if (!_registeredUsers.containsKey(key)) {
+        throw Exception('Email này chưa được đăng ký trong hệ thống.');
+      }
+    }
   }
 
   Future<void> updateProfile(String newName) async {
