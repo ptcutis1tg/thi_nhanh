@@ -67,6 +67,20 @@ class _GreetingScreenState extends State<GreetingScreen> {
     }
   }
 
+  String _friendlyAuthErrorMessage(dynamic e) {
+    final str = e.toString();
+    if (str.contains('over_email_send_rate_limit') || str.contains('rate limit exceeded')) {
+      return 'Bạn đã thực hiện gửi quá nhiều yêu cầu xác thực email trong thời gian ngắn. Vui lòng chờ 1 - 2 phút rồi thử lại nhé!';
+    }
+    if (str.contains('User already registered') || str.contains('already exists')) {
+      return 'Email này đã được đăng ký tài khoản trước đó. Vui lòng dùng chức năng Đăng nhập.';
+    }
+    if (str.contains('Invalid login credentials')) {
+      return 'Email hoặc mật khẩu không chính xác.';
+    }
+    return str.replaceAll('Exception: ', '');
+  }
+
   Future<void> _handleEmailRegister() async {
     final email = _emailController.text.trim();
     final name = _nameController.text.trim();
@@ -118,8 +132,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
         );
       }
     } catch (e) {
-      final msg = e.toString().replaceAll('Exception: ', '');
-      _showError('Đăng ký thất bại: $msg');
+      _showError('Đăng ký thất bại: ${_friendlyAuthErrorMessage(e)}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
