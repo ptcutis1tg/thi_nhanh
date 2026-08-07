@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/email_verifier.dart';
 
 class AuthProvider extends ChangeNotifier {
   SupabaseClient? _supabaseClient;
@@ -161,12 +162,12 @@ class AuthProvider extends ChangeNotifier {
     String fullName,
   ) async {
     final cleanEmail = email.trim();
-    if (!isValidEmail(cleanEmail)) {
-      throw Exception('Địa chỉ Email không hợp lệ.');
-    }
     if (password.length < 6) {
       throw Exception('Mật khẩu phải có ít nhất 6 ký tự.');
     }
+
+    // Kiểm tra thực tế xem Email có tồn tại và nhận thư được không
+    await EmailVerifier.verifyEmail(cleanEmail);
 
     final key = cleanEmail.toLowerCase();
     _registeredUsers[key] = {
@@ -200,9 +201,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> sendPasswordResetEmail(String email) async {
     final cleanEmail = email.trim();
-    if (!isValidEmail(cleanEmail)) {
-      throw Exception('Địa chỉ Email không hợp lệ.');
-    }
+    await EmailVerifier.verifyEmail(cleanEmail);
 
     if (_supabaseClient != null) {
       try {
