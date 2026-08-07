@@ -68,30 +68,58 @@ class _GreetingScreenState extends State<GreetingScreen> {
   }
 
   Future<void> _handleEmailRegister() async {
-    if (_nameController.text.trim().isEmpty ||
-        _emailController.text.trim().isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
+    final email = _emailController.text.trim();
+    final name = _nameController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       _showError('Vui lòng điền đầy đủ thông tin');
       return;
     }
-    if (_passwordController.text != _confirmPasswordController.text) {
+    if (password != confirmPassword) {
       _showError('Mật khẩu xác nhận không khớp');
       return;
     }
+
     setState(() => _isLoading = true);
     try {
       await context.read<AuthProvider>().signUpWithEmail(
-            _emailController.text.trim(),
-            _passwordController.text,
-            _nameController.text.trim(),
+            email,
+            password,
+            name,
           );
       if (mounted) {
-        _showSuccess('Đăng ký thành công! Chào mừng bạn.');
-        context.go('/home');
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.mark_email_read_outlined, color: AppTheme.primary),
+                SizedBox(width: 8),
+                Text('Xác thực Email'),
+              ],
+            ),
+            content: Text(
+              'Email xác thực đã được gửi tới $email.\nVui lòng kiểm tra hộp thư và mở liên kết xác nhận để kích hoạt tài khoản.',
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  setState(() => _isRegisterMode = false);
+                },
+                child: const Text('Đã hiểu, quay lại Đăng nhập'),
+              ),
+            ],
+          ),
+        );
       }
     } catch (e) {
-      _showError('Đăng ký thất bại: ${e.toString()}');
+      final msg = e.toString().replaceAll('Exception: ', '');
+      _showError('Đăng ký thất bại: $msg');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -109,44 +137,74 @@ class _GreetingScreenState extends State<GreetingScreen> {
   }
 
   void _handleForgotPassword() {
+    final resetEmailController = TextEditingController(text: _emailController.text.trim());
     showDialog(
       context: context,
       builder: (dialogContext) {
-        final resetEmailController = TextEditingController(text: _emailController.text);
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Quên mật khẩu?'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu.',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+        bool isSending = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Quên mật khẩu?'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Nhập địa chỉ email của bạn để nhận liên kết đặt lại mật khẩu.',
+                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: resetEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      hintText: 'Nhập email...',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: resetEmailController,
-                decoration: const InputDecoration(
-                  hintText: 'Nhập email...',
-                  prefixIcon: Icon(Icons.email_outlined),
+              actions: [
+                TextButton(
+                  onPressed: isSending ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Hủy', style: TextStyle(color: AppTheme.textSecondary)),
                 ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Hủy', style: TextStyle(color: AppTheme.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _showSuccess('Yêu cầu đã gửi! Vui lòng kiểm tra hộp thư email.');
-              },
-              child: const Text('Gửi yêu cầu'),
-            ),
-          ],
+                ElevatedButton(
+                  onPressed: isSending
+                      ? null
+                      : () async {
+                          final targetEmail = resetEmailController.text.trim();
+                          if (targetEmail.isEmpty) {
+                            _showError('Vui lòng nhập email');
+                            return;
+                          }
+                          setDialogState(() => isSending = true);
+                          try {
+                            await context.read<AuthProvider>().sendPasswordResetEmail(targetEmail);
+                            if (mounted) {
+                              Navigator.pop(dialogContext);
+                              _showSuccess('Yêu cầu đã gửi! Vui lòng kiểm tra hộp thư email $targetEmail.');
+                            }
+                          } catch (e) {
+                            final msg = e.toString().replaceAll('Exception: ', '');
+                            _showError('Không thể gửi yêu cầu: $msg');
+                          } finally {
+                            if (mounted) setDialogState(() => isSending = false);
+                          }
+                        },
+                  child: isSending
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Gửi yêu cầu'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
