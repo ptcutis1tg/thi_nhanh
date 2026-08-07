@@ -17,7 +17,9 @@ import 'screens/room/student_waiting_room_screen.dart';
 import 'screens/exam/taking_exam_screen.dart';
 import 'screens/exam/live_dashboard_screen.dart';
 import 'screens/exam/result_screen.dart';
+import 'screens/exam/exam_detail_screen.dart';
 import 'screens/main_layout_screen.dart';
+import 'screens/room/room_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -141,6 +143,14 @@ final GoRouter _router = GoRouter(
             child: const CreateRoomScreen(),
           ),
         ),
+        GoRoute(
+          path: '/exam/physics-12',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const ExamDetailScreen(),
+          ),
+        ),
       ],
     ),
     // Các màn hình không có TopNavBar
@@ -151,6 +161,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/student_waiting_room',
       builder: (context, state) => const StudentWaitingRoomScreen(),
+    ),
+    GoRoute(
+      path: '/room/password',
+      builder: (context, state) => const RoomPasswordScreen(),
     ),
     GoRoute(
       path: '/taking_exam',
