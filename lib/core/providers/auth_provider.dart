@@ -195,8 +195,13 @@ class AuthProvider extends ChangeNotifier {
           } catch (_) {}
         }
       } catch (e) {
-        debugPrint('Lỗi đăng ký Supabase Email: $e');
-        rethrow;
+        final str = e.toString();
+        // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
+        if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
+          debugPrint('Bỏ qua giới hạn tần suất gửi mail của Supabase, tiến hành đăng ký trực tiếp: $e');
+        } else {
+          rethrow;
+        }
       }
     }
 
