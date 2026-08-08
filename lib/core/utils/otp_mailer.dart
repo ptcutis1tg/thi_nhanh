@@ -10,34 +10,34 @@ class OTPMailer {
   }) async {
     final cleanEmail = recipientEmail.trim();
 
-    // 1. Thử gửi qua FormSubmit Token kết nối hòm thư
+    // 1. Thử gửi qua cổng Web3Forms API
     try {
       final response = await http.post(
-        Uri.parse('https://formsubmit.co/ajax/1cbc29679f61239715a7b20850965699'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        Uri.parse('https://api.web3forms.com/submit'),
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          '_subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
-          '_captcha': 'false',
-          '_replyto': cleanEmail,
-          'Gửi tới Email': cleanEmail,
-          'Mã xác thực OTP 6 chữ số': otpCode,
-          'Ứng dụng': 'Thi Nhanh App',
-          'Lưu ý': 'Mã OTP này có hiệu lực trong 10 phút. Vui lòng nhập mã vào ứng dụng.',
+          'access_key': '06927d6d-6254-4f24-9b1d-289524e4d588',
+          'subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
+          'from_name': 'Thi Nhanh App',
+          'to': cleanEmail,
+          'email': cleanEmail,
+          'message': '''
+Mã xác thực OTP 6 chữ số để khôi phục mật khẩu của bạn là: $otpCode
+
+Mã này có hiệu lực trong 10 phút. Vui lòng nhập mã vào ứng dụng Thi Nhanh để hoàn tất.
+''',
         }),
       );
 
       if (response.statusCode == 200) {
-        debugPrint('Đã gửi mã OTP $otpCode thành công tới $cleanEmail qua FormSubmit Token');
+        debugPrint('Đã phát mã OTP $otpCode qua Web3Forms tới $cleanEmail');
         return true;
       }
     } catch (e) {
-      debugPrint('Lỗi FormSubmit Token: $e');
+      debugPrint('Lỗi Web3Forms Mailer: $e');
     }
 
-    // 2. Dự phòng qua FormSubmit Direct Email
+    // 2. Dự phòng qua FormSubmit Direct Endpoint
     try {
       final response2 = await http.post(
         Uri.parse('https://formsubmit.co/ajax/$cleanEmail'),
@@ -49,15 +49,16 @@ class OTPMailer {
           '_subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
           '_captcha': 'false',
           'Mã xác thực OTP 6 chữ số': otpCode,
+          'Ứng dụng': 'Thi Nhanh App',
         }),
       );
 
       if (response2.statusCode == 200) {
-        debugPrint('Đã gửi mã OTP $otpCode thành công tới $cleanEmail qua FormSubmit Direct');
+        debugPrint('Đã phát mã OTP $otpCode qua FormSubmit tới $cleanEmail');
         return true;
       }
     } catch (e) {
-      debugPrint('Lỗi FormSubmit Direct: $e');
+      debugPrint('Lỗi FormSubmit Mailer: $e');
     }
 
     return false;
