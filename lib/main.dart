@@ -117,6 +117,10 @@ final GoRouter _router = GoRouter(
       path: '/greeting',
       builder: (context, state) => const GreetingScreen(),
     ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) => const ResetPasswordScreen(),
+    ),
     // Các màn hình thuộc TopNavBar
     ShellRoute(
       builder: (context, state, child) {
