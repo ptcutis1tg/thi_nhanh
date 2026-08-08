@@ -107,32 +107,8 @@ class _GreetingScreenState extends State<GreetingScreen> {
             name,
           );
       if (mounted) {
-        showDialog(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Row(
-              children: [
-                Icon(Icons.mark_email_read_outlined, color: AppTheme.primary),
-                SizedBox(width: 8),
-                Text('Xác thực Email'),
-              ],
-            ),
-            content: Text(
-              'Email xác thực đã được gửi tới $email.\nVui lòng kiểm tra hộp thư và mở liên kết xác nhận để kích hoạt tài khoản.',
-              style: const TextStyle(fontSize: 14, height: 1.4),
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  setState(() => _isRegisterMode = false);
-                },
-                child: const Text('Đã hiểu, quay lại Đăng nhập'),
-              ),
-            ],
-          ),
-        );
+        _showSuccess('Đăng ký thành công! Chào mừng bạn.');
+        context.go('/home');
       }
     } catch (e) {
       _showError('Đăng ký thất bại: ${_friendlyAuthErrorMessage(e)}');
