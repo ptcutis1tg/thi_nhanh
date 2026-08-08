@@ -241,8 +241,14 @@ class AuthProvider extends ChangeNotifier {
     final cleanEmail = email.trim();
     await EmailVerifier.verifyEmail(cleanEmail);
 
+    final key = cleanEmail.toLowerCase();
+    // Kiểm tra xem Email đã đăng ký tài khoản trong hệ thống chưa
+    if (!_registeredUsers.containsKey(key)) {
+      throw Exception('Email "$cleanEmail" chưa được đăng ký tài khoản trong hệ thống.');
+    }
+
     final randomOtp = (100000 + Random().nextInt(900000)).toString();
-    _localOTPs[cleanEmail.toLowerCase()] = _OTPRecord(
+    _localOTPs[key] = _OTPRecord(
       code: randomOtp,
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
@@ -261,11 +267,6 @@ class AuthProvider extends ChangeNotifier {
         } else {
           rethrow;
         }
-      }
-    } else {
-      final key = cleanEmail.toLowerCase();
-      if (!_registeredUsers.containsKey(key)) {
-        throw Exception('Email này chưa được đăng ký trong hệ thống.');
       }
     }
     return null;
