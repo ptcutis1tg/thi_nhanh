@@ -185,15 +185,24 @@ class AuthProvider extends ChangeNotifier {
         if (response.user != null) {
           _user = response.user;
         }
+        // Thử tự động đăng nhập luôn nếu session khả dụng
+        if (response.session == null) {
+          try {
+            await _supabaseClient!.auth.signInWithPassword(
+              email: cleanEmail,
+              password: password,
+            );
+          } catch (_) {}
+        }
       } catch (e) {
         debugPrint('Lỗi đăng ký Supabase Email: $e');
         rethrow;
       }
-    } else {
-      _userEmail = cleanEmail;
-      _userName = fullName;
-      _userAvatarUrl = null;
     }
+
+    _userEmail = cleanEmail;
+    _userName = fullName;
+    _userAvatarUrl = null;
 
     await _saveState();
     notifyListeners();
