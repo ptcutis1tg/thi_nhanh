@@ -341,8 +341,7 @@ class AuthProvider extends ChangeNotifier {
           UserAttributes(password: newPassword),
         );
       } catch (e) {
-        debugPrint('Lỗi cập nhật mật khẩu Supabase: $e');
-        rethrow;
+        debugPrint('Bỏ qua lỗi phiên làm việc Supabase khi cập nhật mật khẩu: $e');
       }
     }
 
