@@ -61,7 +61,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
         context.go('/home');
       }
     } catch (e) {
-      _showError('Đăng nhập thất bại: ${e.toString()}');
+      _showError('Đăng nhập thất bại: ${_friendlyAuthErrorMessage(e)}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -69,6 +69,9 @@ class _GreetingScreenState extends State<GreetingScreen> {
 
   String _friendlyAuthErrorMessage(dynamic e) {
     final str = e.toString();
+    if (str.contains('email_not_confirmed') || str.contains('Email not confirmed')) {
+      return 'Email của bạn chưa được kích hoạt! Vui lòng mở hộp thư Email để bấm vào liên kết xác nhận trước khi đăng nhập.';
+    }
     if (str.contains('over_email_send_rate_limit') || str.contains('rate limit exceeded')) {
       return 'Bạn đã thực hiện gửi quá nhiều yêu cầu xác thực email trong thời gian ngắn. Vui lòng chờ 1 - 2 phút rồi thử lại nhé!';
     }
