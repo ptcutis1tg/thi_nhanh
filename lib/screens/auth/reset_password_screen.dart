@@ -319,7 +319,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   _generatedOtp!,
                   style: const TextStyle(
                     fontSize: 28,
-                    fontWeight: FontWeight.extrabold,
+                    fontWeight: FontWeight.w800,
                     color: AppTheme.primary,
                     letterSpacing: 6,
                   ),
