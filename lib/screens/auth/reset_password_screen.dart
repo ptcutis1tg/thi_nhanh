@@ -88,9 +88,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().sendPasswordResetEmail(email);
+      final otpCode = await context.read<AuthProvider>().sendPasswordResetEmail(email);
       if (mounted) {
-        _showSuccess('Mã OTP 6 số ngẫu nhiên đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
+        if (otpCode != null && otpCode.isNotEmpty) {
+          _showSuccess('Mã OTP 6 số xác thực của bạn là: $otpCode (Đồng thời đã gửi tới email $email)');
+        } else {
+          _showSuccess('Mã OTP 6 số xác nhận đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
+        }
         setState(() => _currentStep = 2);
         _startCountdown();
       }

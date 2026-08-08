@@ -33,10 +33,21 @@ void main() async {
     debugPrint('Không tìm thấy file .env, sử dụng biến môi trường mặc định.');
   }
 
-  // Ưu tiên lấy từ .env, nếu không có thì lấy từ tham số build --dart-define
+  // Ưu tiên lấy từ .env, nếu không có thì lấy từ tham số build --dart-define, cuối cùng là giá trị mặc định của dự án
   final isEnvInitialized = dotenv.isInitialized;
-  final supabaseUrl = (isEnvInitialized ? dotenv.env['SUPABASE_URL'] : null) ?? const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
-  final supabaseKey = (isEnvInitialized ? dotenv.env['SUPABASE_PUBLISHABLE_KEY'] : null) ?? const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY', defaultValue: '');
+  final envUrl = isEnvInitialized ? dotenv.env['SUPABASE_URL'] : null;
+  final envKey = isEnvInitialized ? dotenv.env['SUPABASE_PUBLISHABLE_KEY'] : null;
+  
+  final defineUrl = const String.fromEnvironment('SUPABASE_URL');
+  final defineKey = const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+
+  final supabaseUrl = (envUrl != null && envUrl.isNotEmpty)
+      ? envUrl
+      : (defineUrl.isNotEmpty ? defineUrl : 'https://egsmzfrhekpacpjoxijs.supabase.co');
+
+  final supabaseKey = (envKey != null && envKey.isNotEmpty)
+      ? envKey
+      : (defineKey.isNotEmpty ? defineKey : 'sb_publishable_pdO9X15rs1aobOdydiksWw_URfC684D');
 
   bool isSupabaseInitialized = false;
   final isPlaceholderKey = supabaseUrl.contains('your_supabase_url') || supabaseKey.contains('your_supabase_anon_key');

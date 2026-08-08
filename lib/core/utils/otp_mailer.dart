@@ -37,28 +37,25 @@ Mã này có hiệu lực trong 10 phút. Vui lòng nhập mã vào ứng dụng
       debugPrint('Lỗi Web3Forms Mailer: $e');
     }
 
-    // 2. Dự phòng qua FormSubmit Direct Endpoint
+    // 2. Dự phòng qua cổng StaticForms API (Gửi trực tiếp không cần kích hoạt form)
     try {
       final response2 = await http.post(
-        Uri.parse('https://formsubmit.co/ajax/$cleanEmail'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        Uri.parse('https://api.staticforms.xyz/submit'),
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          '_subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
-          '_captcha': 'false',
-          'Mã xác thực OTP 6 chữ số': otpCode,
-          'Ứng dụng': 'Thi Nhanh App',
+          'email': cleanEmail,
+          'subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
+          'message': 'Mã xác thực OTP 6 chữ số để khôi phục mật khẩu của bạn là: $otpCode (Hiệu lực trong 10 phút)',
+          'replyTo': '@',
         }),
       );
 
       if (response2.statusCode == 200) {
-        debugPrint('Đã phát mã OTP $otpCode qua FormSubmit tới $cleanEmail');
+        debugPrint('Đã phát mã OTP $otpCode qua StaticForms tới $cleanEmail');
         return true;
       }
     } catch (e) {
-      debugPrint('Lỗi FormSubmit Mailer: $e');
+      debugPrint('Lỗi StaticForms Mailer: $e');
     }
 
     return false;
