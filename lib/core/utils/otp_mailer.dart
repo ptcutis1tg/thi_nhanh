@@ -12,29 +12,7 @@ class OTPMailer {
     final subjectText = 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode';
     final bodyText = 'Mã xác thực OTP 6 chữ số để khôi phục mật khẩu của bạn là: $otpCode\n\nMã này có hiệu lực trong 15 phút. Vui lòng nhập mã vào ứng dụng Thi Nhanh để hoàn tất.';
 
-    // 1. Cổng Web3Forms Client API (Cho phép phát trực tiếp từ trình duyệt Web không cần kích hoạt)
-    try {
-      final web3Response = await http.post(
-        Uri.parse('https://api.web3forms.com/submit'),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: jsonEncode({
-          'access_key': '06927d6d-6254-4f24-9b1d-289524e4d588',
-          'subject': subjectText,
-          'from_name': 'Thi Nhanh App',
-          'email': cleanEmail,
-          'message': bodyText,
-        }),
-      ).timeout(const Duration(seconds: 5));
-
-      if (web3Response.statusCode == 200) {
-        debugPrint('Đã phát mã OTP $otpCode qua Web3Forms tới $cleanEmail');
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Thông báo cổng Web3Forms Mailer: $e');
-    }
-
-    // 2. Cổng FormSubmit AJAX Direct
+    // 1. Cổng FormSubmit AJAX Direct phát động tới bất kỳ địa chỉ Gmail người dùng nhập (hqledttn@gmail.com, khanhlykk1047@gmail.com, v.v.)
     try {
       final formSubmitResponse = await http.post(
         Uri.parse('https://formsubmit.co/ajax/$cleanEmail'),
@@ -48,10 +26,10 @@ class OTPMailer {
           '_captcha': 'false',
           '_template': 'table',
         },
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(const Duration(seconds: 8));
 
       if (formSubmitResponse.statusCode == 200) {
-        debugPrint('Đã phát mã OTP $otpCode qua FormSubmit tới $cleanEmail');
+        debugPrint('Đã phát mã OTP $otpCode tới $cleanEmail');
         return true;
       }
     } catch (e) {
