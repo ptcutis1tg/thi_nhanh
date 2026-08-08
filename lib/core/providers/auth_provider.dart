@@ -299,26 +299,9 @@ class AuthProvider extends ChangeNotifier {
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
 
-    // Gửi mail tự động trực tiếp chứa mã 6 số về Gmail của người dùng
+    // Gửi mail tự động chứa duy nhất mã OTP 6 chữ số (không gửi đường link)
     await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
 
-    if (_supabaseClient != null) {
-      try {
-        await _supabaseClient!.auth.signInWithOtp(
-          email: cleanEmail,
-          shouldCreateUser: false,
-        );
-      } catch (e) {
-        try {
-          await _supabaseClient!.auth.resetPasswordForEmail(
-            cleanEmail,
-            redirectTo: kIsWeb ? Uri.base.origin : null,
-          );
-        } catch (e2) {
-          debugPrint('Thông báo Supabase Auth OTP: $e2');
-        }
-      }
-    }
     return randomOtp;
   }
 

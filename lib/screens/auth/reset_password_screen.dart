@@ -89,17 +89,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final otpCode = await context.read<AuthProvider>().sendPasswordResetEmail(email);
+      await context.read<AuthProvider>().sendPasswordResetEmail(email);
       if (mounted) {
         setState(() {
-          _generatedOtp = otpCode;
           _currentStep = 2;
         });
-        if (otpCode != null && otpCode.isNotEmpty) {
-          _showSuccess('Mã OTP 6 số xác thực của bạn là: $otpCode');
-        } else {
-          _showSuccess('Mã OTP 6 số xác nhận đã được gửi về email $email.');
-        }
+        _showSuccess('Mã xác minh OTP 6 số đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
         _startCountdown();
       }
     } catch (e) {
@@ -291,43 +286,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Mã xác minh 6 số đã được tạo cho email:\n${_emailController.text.trim()}',
+          'Mã xác minh 6 số đã được gửi tới email:\n${_emailController.text.trim()}',
           style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
         ),
-        if (_generatedOtp != null && _generatedOtp!.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppTheme.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  'MÃ XÁC THỰC OTP CỦA BẠN:',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textSecondary,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                SelectableText(
-                  _generatedOtp!,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.primary,
-                    letterSpacing: 6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         const SizedBox(height: 20),
         TextField(
           controller: _otpController,
