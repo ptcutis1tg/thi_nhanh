@@ -304,13 +304,19 @@ class AuthProvider extends ChangeNotifier {
 
     if (_supabaseClient != null) {
       try {
-        await _supabaseClient!.auth.resetPasswordForEmail(
-          cleanEmail,
-          redirectTo: kIsWeb ? Uri.base.origin : null,
+        await _supabaseClient!.auth.signInWithOtp(
+          email: cleanEmail,
+          shouldCreateUser: false,
         );
       } catch (e) {
-        final str = e.toString();
-        debugPrint('Thông báo Supabase resetPasswordForEmail (tiếp tục sử dụng mã OTP 6 số): $str');
+        try {
+          await _supabaseClient!.auth.resetPasswordForEmail(
+            cleanEmail,
+            redirectTo: kIsWeb ? Uri.base.origin : null,
+          );
+        } catch (e2) {
+          debugPrint('Thông báo Supabase Auth OTP: $e2');
+        }
       }
     }
     return randomOtp;
@@ -326,18 +332,21 @@ class AuthProvider extends ChangeNotifier {
     bool isVerified = false;
 
     if (_supabaseClient != null) {
-      try {
-        final response = await _supabaseClient!.auth.verifyOTP(
-          email: cleanEmail,
-          token: cleanOtp,
-          type: OtpType.recovery,
-        );
-        if (response.user != null) {
-          _user = response.user;
+      for (final type in [OtpType.recovery, OtpType.magiclink, OtpType.email]) {
+        try {
+          final response = await _supabaseClient!.auth.verifyOTP(
+            email: cleanEmail,
+            token: cleanOtp,
+            type: type,
+          );
+          if (response.user != null) {
+            _user = response.user;
+          }
+          isVerified = true;
+          break;
+        } catch (e) {
+          debugPrint('Lỗi xác nhận mã OTP Supabase ($type): $e');
         }
-        isVerified = true;
-      } catch (e) {
-        debugPrint('Lỗi xác nhận mã OTP Supabase: $e');
       }
     }
 
