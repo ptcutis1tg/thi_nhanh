@@ -137,17 +137,31 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signInWithEmail(String email, String password) async {
-    final key = email.trim().toLowerCase();
-    
+    final cleanEmail = email.trim();
+    final key = cleanEmail.toLowerCase();
+
+    bool isLocalPasswordValid = false;
+    if (_registeredUsers.containsKey(key)) {
+      final savedPassword = _registeredUsers[key]!['password'];
+      if (savedPassword == password) {
+        isLocalPasswordValid = true;
+      }
+    }
+
     if (_supabaseClient != null) {
       try {
-        await _supabaseClient!.auth.signInWithPassword(
-          email: email,
+        final response = await _supabaseClient!.auth.signInWithPassword(
+          email: cleanEmail,
           password: password,
         );
+        if (response.user != null) {
+          _user = response.user;
+        }
       } catch (e) {
         debugPrint('Lỗi đăng nhập Supabase Email: $e');
-        rethrow;
+        if (!isLocalPasswordValid) {
+          rethrow;
+        }
       }
     }
 
@@ -156,16 +170,16 @@ class AuthProvider extends ChangeNotifier {
       if (savedPassword != null && savedPassword.isNotEmpty && savedPassword != password) {
         throw Exception('Mật khẩu không chính xác. Vui lòng thử lại.');
       }
-      _userEmail = email;
+      _userEmail = cleanEmail;
       _userName = _registeredUsers[key]!['name'];
       _userAvatarUrl = _registeredUsers[key]!['avatar'];
     } else {
-      final defaultName = email.contains('@') ? email.split('@').first : 'Người dùng';
+      final defaultName = cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng';
       _registeredUsers[key] = {
         'name': defaultName,
         'password': password,
       };
-      _userEmail = email;
+      _userEmail = cleanEmail;
       _userName = defaultName;
       _userAvatarUrl = null;
     }
