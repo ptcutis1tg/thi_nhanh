@@ -241,7 +241,21 @@ class AuthProvider extends ChangeNotifier {
             'password': password,
           };
           await _saveState();
-          throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập.');
+          // Thử đăng nhập tự động luôn nếu mật khẩu khớp
+          try {
+            final signInRes = await _supabaseClient!.auth.signInWithPassword(
+              email: cleanEmail,
+              password: password,
+            );
+            if (signInRes.user != null) {
+              _user = signInRes.user;
+              _userEmail = cleanEmail;
+              _userName = fullName.isNotEmpty ? fullName : cleanEmail.split('@').first;
+              notifyListeners();
+              return;
+            }
+          } catch (_) {}
+          throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập hoặc chọn Quên mật khẩu.');
         }
         // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
         if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
