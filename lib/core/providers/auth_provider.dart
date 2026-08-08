@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -250,7 +251,26 @@ class AuthProvider extends ChangeNotifier {
       } catch (e) {
         final str = e.toString();
         if (str.contains('User already registered') || str.contains('user_already_exists')) {
-          throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập.');
+          _registeredUsers[key] = {
+            'name': fullName.isNotEmpty ? fullName : cleanEmail.split('@').first,
+            'password': password,
+          };
+          await _saveState();
+          // Thử đăng nhập tự động luôn nếu mật khẩu khớp
+          try {
+            final signInRes = await _supabaseClient!.auth.signInWithPassword(
+              email: cleanEmail,
+              password: password,
+            );
+            if (signInRes.user != null) {
+              _user = signInRes.user;
+              _userEmail = cleanEmail;
+              _userName = fullName.isNotEmpty ? fullName : cleanEmail.split('@').first;
+              notifyListeners();
+              return;
+            }
+          } catch (_) {}
+          throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập hoặc chọn Quên mật khẩu.');
         }
         // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
         if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
@@ -279,9 +299,13 @@ class AuthProvider extends ChangeNotifier {
     await EmailVerifier.verifyEmail(cleanEmail);
 
     final key = cleanEmail.toLowerCase();
-    // Kiểm tra xem Email đã đăng ký tài khoản trong hệ thống chưa
+    // Luôn đảm bảo có bản ghi lưu trữ cục bộ để xử lý đổi mật khẩu cho mọi Email
     if (!_registeredUsers.containsKey(key)) {
-      throw Exception('Email "$cleanEmail" chưa được đăng ký tài khoản trong hệ thống.');
+      _registeredUsers[key] = {
+        'name': cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng',
+        'password': '',
+      };
+      await _saveState();
     }
 
     final randomOtp = (100000 + Random().nextInt(900000)).toString();
@@ -290,22 +314,9 @@ class AuthProvider extends ChangeNotifier {
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
 
-    // Gửi mail tự động trực tiếp chứa mã 6 số về Gmail của người dùng
+    // Gửi mail tự động chứa duy nhất mã OTP 6 chữ số (không gửi đường link)
     await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
 
-    if (_supabaseClient != null) {
-      try {
-        await _supabaseClient!.auth.resetPasswordForEmail(cleanEmail);
-      } catch (e) {
-        final str = e.toString();
-        if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
-          debugPrint('Dính Rate Limit Supabase, cấp mã OTP ngẫu nhiên cục bộ: $randomOtp');
-          return randomOtp;
-        } else {
-          rethrow;
-        }
-      }
-    }
     return randomOtp;
   }
 
@@ -319,18 +330,21 @@ class AuthProvider extends ChangeNotifier {
     bool isVerified = false;
 
     if (_supabaseClient != null) {
-      try {
-        final response = await _supabaseClient!.auth.verifyOTP(
-          email: cleanEmail,
-          token: cleanOtp,
-          type: OtpType.recovery,
-        );
-        if (response.user != null) {
-          _user = response.user;
+      for (final type in [OtpType.recovery, OtpType.magiclink, OtpType.email]) {
+        try {
+          final response = await _supabaseClient!.auth.verifyOTP(
+            email: cleanEmail,
+            token: cleanOtp,
+            type: type,
+          );
+          if (response.user != null) {
+            _user = response.user;
+          }
+          isVerified = true;
+          break;
+        } catch (e) {
+          debugPrint('Lỗi xác nhận mã OTP Supabase ($type): $e');
         }
-        isVerified = true;
-      } catch (e) {
-        debugPrint('Lỗi xác nhận mã OTP Supabase: $e');
       }
     }
 

@@ -24,6 +24,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _isNewPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
 
+  String? _generatedOtp;
   int _resendCountdown = 60;
   Timer? _timer;
 
@@ -90,8 +91,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       await context.read<AuthProvider>().sendPasswordResetEmail(email);
       if (mounted) {
-        _showSuccess('Mã OTP 6 số ngẫu nhiên đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
-        setState(() => _currentStep = 2);
+        setState(() {
+          _currentStep = 2;
+        });
+        _showSuccess('Mã xác minh OTP 6 số đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
         _startCountdown();
       }
     } catch (e) {
