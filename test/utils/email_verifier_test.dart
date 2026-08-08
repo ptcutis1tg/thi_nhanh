@@ -3,9 +3,9 @@ import 'package:onthi_community/core/utils/email_verifier.dart';
 
 void main() {
   group('EmailVerifier Tests', () {
-    test('Valid existing domain email passes verification', () async {
+    test('Valid deliverable email passes verification', () async {
       expect(
-        EmailVerifier.verifyEmail('testuser@gmail.com'),
+        EmailVerifier.verifyEmail('khanhlykk1047@gmail.com'),
         completes,
       );
     });
