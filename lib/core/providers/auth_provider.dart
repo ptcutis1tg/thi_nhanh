@@ -299,8 +299,27 @@ class AuthProvider extends ChangeNotifier {
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
 
-    // Gửi mail tự động chứa duy nhất mã OTP 6 chữ số qua FormSubmit (Cách 1)
+    // 1. Gửi mail tự động chứa mã 6 chữ số qua OTPMailer
     await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
+
+    // 2. Gửi qua Supabase Auth để đảm bảo MỌI EMAIL BẤT KỲ đều nhận được mail thành công
+    if (_supabaseClient != null) {
+      try {
+        await _supabaseClient!.auth.resetPasswordForEmail(
+          cleanEmail,
+          redirectTo: kIsWeb ? Uri.base.origin : null,
+        );
+      } catch (e) {
+        try {
+          await _supabaseClient!.auth.signInWithOtp(
+            email: cleanEmail,
+            shouldCreateUser: false,
+          );
+        } catch (e2) {
+          debugPrint('Thông báo Supabase Auth OTP: $e2');
+        }
+      }
+    }
 
     return randomOtp;
   }
