@@ -37,12 +37,27 @@ class AuthProvider extends ChangeNotifier {
   String? get userAvatarUrl =>
       (_user?.userMetadata?['avatar_url'] as String?) ?? _userAvatarUrl;
 
+  bool _isPasswordRecoveryMode = false;
+  bool get isPasswordRecoveryMode => _isPasswordRecoveryMode;
+
+  void clearPasswordRecoveryMode() {
+    _isPasswordRecoveryMode = false;
+    notifyListeners();
+  }
+
   AuthProvider({bool isSupabaseInitialized = false}) {
     _loadSavedState();
     if (isSupabaseInitialized) {
       _supabaseClient = Supabase.instance.client;
       _supabaseClient?.auth.onAuthStateChange.listen((data) {
         _user = data.session?.user;
+        if (data.event == AuthChangeEvent.passwordRecovery) {
+          _isPasswordRecoveryMode = true;
+          if (_user?.email != null) {
+            _userEmail = _user!.email;
+          }
+          debugPrint('Đã kích hoạt chế độ khôi phục mật khẩu từ Email Link!');
+        }
         notifyListeners();
       });
     }
