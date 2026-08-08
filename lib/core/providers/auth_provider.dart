@@ -270,18 +270,13 @@ class AuthProvider extends ChangeNotifier {
     await EmailVerifier.verifyEmail(cleanEmail);
 
     final key = cleanEmail.toLowerCase();
-    // Kiểm tra xem Email đã đăng ký tài khoản trong hệ thống chưa (hỗ trợ tài khoản Supabase trên môi trường web/thiết bị mới)
+    // Luôn đảm bảo có bản ghi lưu trữ cục bộ để xử lý đổi mật khẩu cho mọi Email
     if (!_registeredUsers.containsKey(key)) {
-      if (_supabaseClient == null) {
-        throw Exception('Email "$cleanEmail" chưa được đăng ký tài khoản trong hệ thống.');
-      } else {
-        // Tự động đồng bộ bản ghi cục bộ cho tài khoản đã tồn tại trên Supabase backend
-        _registeredUsers[key] = {
-          'name': cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng',
-          'password': '',
-        };
-        await _saveState();
-      }
+      _registeredUsers[key] = {
+        'name': cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng',
+        'password': '',
+      };
+      await _saveState();
     }
 
     final randomOtp = (100000 + Random().nextInt(900000)).toString();
