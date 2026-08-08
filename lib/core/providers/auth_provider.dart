@@ -194,10 +194,10 @@ class AuthProvider extends ChangeNotifier {
     await EmailVerifier.verifyEmail(cleanEmail);
 
     final key = cleanEmail.toLowerCase();
-    _registeredUsers[key] = {
-      'name': fullName,
-      'password': password,
-    };
+    // Kiểm tra trùng lặp Email: Mỗi Gmail chỉ được đăng ký 1 tài khoản duy nhất
+    if (_registeredUsers.containsKey(key)) {
+      throw Exception('Email "$cleanEmail" đã được sử dụng để đăng ký tài khoản. Mỗi Email chỉ được đăng ký 1 tài khoản duy nhất.');
+    }
 
     if (_supabaseClient != null) {
       try {
@@ -220,6 +220,9 @@ class AuthProvider extends ChangeNotifier {
         }
       } catch (e) {
         final str = e.toString();
+        if (str.contains('User already registered') || str.contains('user_already_exists')) {
+          throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập.');
+        }
         // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
         if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
           debugPrint('Bỏ qua giới hạn tần suất gửi mail của Supabase, tiến hành đăng ký trực tiếp: $e');
@@ -228,6 +231,11 @@ class AuthProvider extends ChangeNotifier {
         }
       }
     }
+
+    _registeredUsers[key] = {
+      'name': fullName,
+      'password': password,
+    };
 
     _userEmail = cleanEmail;
     _userName = fullName;
