@@ -232,6 +232,60 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> verifyPasswordResetOTP(String email, String otpCode) async {
+    final cleanEmail = email.trim();
+    final cleanOtp = otpCode.trim();
+    if (cleanOtp.length != 6 || int.tryParse(cleanOtp) == null) {
+      throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
+    }
+
+    if (_supabaseClient != null) {
+      try {
+        final response = await _supabaseClient!.auth.verifyOTP(
+          email: cleanEmail,
+          token: cleanOtp,
+          type: OtpType.recovery,
+        );
+        if (response.user != null) {
+          _user = response.user;
+        }
+      } catch (e) {
+        debugPrint('Lỗi xác nhận mã OTP Supabase: $e');
+        throw Exception('Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại.');
+      }
+    }
+  }
+
+  Future<void> updateNewPassword(String email, String newPassword) async {
+    if (newPassword.length < 6) {
+      throw Exception('Mật khẩu mới phải có ít nhất 6 ký tự.');
+    }
+
+    final key = email.trim().toLowerCase();
+    if (_registeredUsers.containsKey(key)) {
+      _registeredUsers[key]!['password'] = newPassword;
+    } else {
+      _registeredUsers[key] = {
+        'name': userName,
+        'password': newPassword,
+      };
+    }
+
+    if (_supabaseClient != null) {
+      try {
+        await _supabaseClient!.auth.updateUser(
+          UserAttributes(password: newPassword),
+        );
+      } catch (e) {
+        debugPrint('Lỗi cập nhật mật khẩu Supabase: $e');
+        rethrow;
+      }
+    }
+
+    await _saveState();
+    notifyListeners();
+  }
+
   Future<void> updateProfile(String newName) async {
     _userName = newName;
     if (_userEmail != null) {
