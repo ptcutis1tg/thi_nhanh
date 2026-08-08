@@ -30996,13 +30996,13 @@ b0I(a,b){var s=0,r=A.y(t.y),q,p=2,o=[],n,m,l,k,j,i,h,g,f,e,d
 var $async$QQ=A.z(function(c,a0){if(c===1){o.push(a0)
 s=p}for(;;)switch(s){case 0:f=B.c.cs(b)
 p=4
-j=A.cv("https://api.web3forms.com/submit",0,null)
+j=A.cv("https://api.staticforms.xyz/submit",0,null)
 i=t.N
 h=A.a3(["Content-Type","application/json"],i,i)
 s=7
-return A.n(A.a4g(j,B.ad.q4(A.a3(["access_key","06927d6d-6254-4f24-9b1d-289524e4d588","subject","M\xe3 OTP kh\xf4i ph\u1ee5c m\u1eadt kh\u1ea9u Thi Nhanh: "+a,"from_name","Thi Nhanh App","to",f,"email",f,"message",u.A+a+"\n\nM\xe3 n\xe0y c\xf3 hi\u1ec7u l\u1ef1c trong 10 ph\xfat. Vui l\xf2ng nh\u1eadp m\xe3 v\xe0o \u1ee9ng d\u1ee5ng Thi Nhanh \u0111\u1ec3 ho\xe0n t\u1ea5t.\n"],i,i),null),null,h),$async$QQ)
+return A.n(A.a4g(j,B.ad.q4(A.a3(["email",f,"subject","M\xe3 OTP kh\xf4i ph\u1ee5c m\u1eadt kh\u1ea9u Thi Nhanh: "+a,"message",u.A+a+" (M\xe3 c\xf3 hi\u1ec7u l\u1ef1c trong 10 ph\xfat)","replyTo",f],i,i),null),null,h),$async$QQ)
 case 7:n=a0
-if(n.b===200){A.eZ().$1("\u0110\xe3 ph\xe1t m\xe3 OTP "+a+" qua Web3Forms t\u1edbi "+A.j(f))
+if(n.b===200){A.eZ().$1("\u0110\xe3 ph\xe1t m\xe3 OTP "+a+" qua StaticForms t\u1edbi "+A.j(f))
 q=!0
 s=1
 break}p=2
@@ -31011,19 +31011,19 @@ break
 case 4:p=3
 e=o.pop()
 m=A.U(e)
-A.eZ().$1("L\u1ed7i Web3Forms Mailer: "+A.j(m))
+A.eZ().$1("L\u1ed7i StaticForms Mailer: "+A.j(m))
 s=6
 break
 case 3:s=2
 break
 case 6:p=9
-j=A.cv("https://api.staticforms.xyz/submit",0,null)
+j=A.cv("https://api.web3forms.com/submit",0,null)
 i=t.N
 h=A.a3(["Content-Type","application/json"],i,i)
 s=12
-return A.n(A.a4g(j,B.ad.q4(A.a3(["email",f,"subject","M\xe3 OTP kh\xf4i ph\u1ee5c m\u1eadt kh\u1ea9u Thi Nhanh: "+a,"message",u.A+a+" (Hi\u1ec7u l\u1ef1c trong 10 ph\xfat)","replyTo","@"],i,i),null),null,h),$async$QQ)
+return A.n(A.a4g(j,B.ad.q4(A.a3(["access_key","06927d6d-6254-4f24-9b1d-289524e4d588","subject","M\xe3 OTP kh\xf4i ph\u1ee5c m\u1eadt kh\u1ea9u Thi Nhanh: "+a,"from_name","Thi Nhanh App","email",f,"replyto",f,"message",u.A+a+" (M\xe3 c\xf3 hi\u1ec7u l\u1ef1c trong 10 ph\xfat)"],i,i),null),null,h),$async$QQ)
 case 12:l=a0
-if(l.b===200){A.eZ().$1("\u0110\xe3 ph\xe1t m\xe3 OTP "+a+" qua StaticForms t\u1edbi "+A.j(f))
+if(l.b===200){A.eZ().$1("\u0110\xe3 ph\xe1t m\xe3 OTP "+a+" qua Web3Forms t\u1edbi "+A.j(f))
 q=!0
 s=1
 break}p=2
@@ -31032,7 +31032,7 @@ break
 case 9:p=8
 d=o.pop()
 k=A.U(d)
-A.eZ().$1("L\u1ed7i StaticForms Mailer: "+A.j(k))
+A.eZ().$1("L\u1ed7i Web3Forms Mailer: "+A.j(k))
 s=11
 break
 case 8:s=2
