@@ -254,10 +254,6 @@ class AuthProvider extends ChangeNotifier {
           _user = response.user;
         }
       } catch (e) {
-        if (cleanOtp == '123456') {
-          debugPrint('Sử dụng mã OTP mặc định 123456 cho thử nghiệm: $e');
-          return;
-        }
         debugPrint('Lỗi xác nhận mã OTP Supabase: $e');
         throw Exception('Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại.');
       }
