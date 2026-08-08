@@ -211,7 +211,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.textPrimary,
+                                color: AppTheme.textMain,
                               ),
                             ),
                           ],
