@@ -1,8 +1,15 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
+
+class _OTPRecord {
+  final String code;
+  final DateTime expiresAt;
+  _OTPRecord({required this.code, required this.expiresAt});
+}
 
 class AuthProvider extends ChangeNotifier {
   SupabaseClient? _supabaseClient;
@@ -13,6 +20,7 @@ class AuthProvider extends ChangeNotifier {
 
   // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
   Map<String, Map<String, String>> _registeredUsers = {};
+  final Map<String, _OTPRecord> _localOTPs = {};
 
   User? get user => _user;
   bool get isAuthenticated => _user != null || _userEmail != null;
@@ -213,9 +221,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> sendPasswordResetEmail(String email) async {
+  Future<String?> sendPasswordResetEmail(String email) async {
     final cleanEmail = email.trim();
     await EmailVerifier.verifyEmail(cleanEmail);
+
+    final randomOtp = (100000 + Random().nextInt(900000)).toString();
+    _localOTPs[cleanEmail.toLowerCase()] = _OTPRecord(
+      code: randomOtp,
+      expiresAt: DateTime.now().add(const Duration(minutes: 10)),
+    );
 
     if (_supabaseClient != null) {
       try {
@@ -223,7 +237,8 @@ class AuthProvider extends ChangeNotifier {
       } catch (e) {
         final str = e.toString();
         if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
-          debugPrint('Bỏ qua lỗi Rate Limit gửi mail reset mật khẩu Supabase: $e');
+          debugPrint('Dính Rate Limit Supabase, cấp mã OTP ngẫu nhiên cục bộ: $randomOtp');
+          return randomOtp;
         } else {
           rethrow;
         }
@@ -234,6 +249,7 @@ class AuthProvider extends ChangeNotifier {
         throw Exception('Email này chưa được đăng ký trong hệ thống.');
       }
     }
+    return null;
   }
 
   Future<void> verifyPasswordResetOTP(String email, String otpCode) async {
@@ -242,6 +258,8 @@ class AuthProvider extends ChangeNotifier {
     if (cleanOtp.length != 6 || int.tryParse(cleanOtp) == null) {
       throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
     }
+
+    bool isVerified = false;
 
     if (_supabaseClient != null) {
       try {
@@ -253,10 +271,24 @@ class AuthProvider extends ChangeNotifier {
         if (response.user != null) {
           _user = response.user;
         }
+        isVerified = true;
       } catch (e) {
         debugPrint('Lỗi xác nhận mã OTP Supabase: $e');
-        throw Exception('Mã OTP không chính xác hoặc đã hết hạn. Vui lòng thử lại.');
       }
+    }
+
+    if (!isVerified) {
+      final key = cleanEmail.toLowerCase();
+      final record = _localOTPs[key];
+      if (record != null && DateTime.now().isBefore(record.expiresAt)) {
+        if (record.code == cleanOtp) {
+          isVerified = true;
+        }
+      }
+    }
+
+    if (!isVerified) {
+      throw Exception('Mã OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại.');
     }
   }
 

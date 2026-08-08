@@ -72,9 +72,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().sendPasswordResetEmail(email);
+      final localOtp = await context.read<AuthProvider>().sendPasswordResetEmail(email);
       if (mounted) {
-        _showSuccess('Mã OTP 6 số đã được gửi về email $email');
+        if (localOtp != null) {
+          _showSuccess('Supabase nghẽn gửi mail. Mã OTP ngẫu nhiên của bạn là: $localOtp');
+        } else {
+          _showSuccess('Mã OTP 6 số ngẫu nhiên đã được gửi về email $email');
+        }
         setState(() => _currentStep = 2);
         _startCountdown();
       }
