@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'screens/auth/greeting_screen.dart';
+import 'screens/auth/reset_password_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/search_screen.dart';
 import 'screens/exam/create_exam_screen.dart';
@@ -44,7 +45,7 @@ void main() async {
     try {
       await Supabase.initialize(
         url: supabaseUrl,
-        anonKey: supabaseKey,
+        publishableKey: supabaseKey,
       );
       isSupabaseInitialized = true;
     } catch (e) {
