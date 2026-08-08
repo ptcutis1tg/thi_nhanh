@@ -277,7 +277,7 @@ class AuthProvider extends ChangeNotifier {
         }
       }
     }
-    return null;
+    return randomOtp;
   }
 
   Future<void> verifyPasswordResetOTP(String email, String otpCode) async {
