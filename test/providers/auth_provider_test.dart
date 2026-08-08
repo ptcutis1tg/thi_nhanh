@@ -36,5 +36,12 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    test('Google sign-in reports a missing Supabase configuration', () async {
+      await expectLater(
+        authProvider.signInWithGoogle(),
+        throwsA(isA<StateError>()),
+      );
+    });
   });
 }

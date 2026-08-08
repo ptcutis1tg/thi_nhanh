@@ -66,6 +66,17 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> init() async {
     await _loadSavedState();
+    final currentUser = _supabaseClient?.auth.currentUser;
+    if (currentUser != null) {
+      _user = currentUser;
+      _userEmail = currentUser.email;
+      _userName = currentUser.userMetadata?['full_name'] as String? ??
+          _userName;
+      _userAvatarUrl = currentUser.userMetadata?['avatar_url'] as String? ??
+          _userAvatarUrl;
+      await _saveState();
+      notifyListeners();
+    }
   }
 
   Future<void> _loadSavedState() async {
@@ -127,7 +138,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signInWithGoogle() async {
-    if (_supabaseClient == null) return;
+    if (_supabaseClient == null) {
+      throw StateError(
+        'Đăng nhập Google chưa được cấu hình. Vui lòng thiết lập Supabase trước.',
+      );
+    }
     try {
       await _supabaseClient!.auth.signInWithOAuth(OAuthProvider.google);
     } catch (e) {

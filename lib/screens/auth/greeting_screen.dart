@@ -22,6 +22,18 @@ class _GreetingScreenState extends State<GreetingScreen> {
   bool _isConfirmPasswordObscured = true;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Supabase restores the browser session after the OAuth redirect before
+    // this screen is built. Send signed-in users straight to the app.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && context.read<AuthProvider>().isAuthenticated) {
+        context.go('/home');
+      }
+    });
+  }
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -122,7 +134,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
     try {
       await context.read<AuthProvider>().signInWithGoogle();
     } catch (e) {
-      _showError('Đăng nhập Google thất bại: ${e.toString()}');
+      _showError('Đăng nhập Google thất bại: ${_friendlyAuthErrorMessage(e)}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
