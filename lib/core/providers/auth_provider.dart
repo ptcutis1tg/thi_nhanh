@@ -67,17 +67,6 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> init() async {
     await _loadSavedState();
-    final currentUser = _supabaseClient?.auth.currentUser;
-    if (currentUser != null) {
-      _user = currentUser;
-      _userEmail = currentUser.email;
-      _userName = currentUser.userMetadata?['full_name'] as String? ??
-          _userName;
-      _userAvatarUrl = currentUser.userMetadata?['avatar_url'] as String? ??
-          _userAvatarUrl;
-      await _saveState();
-      notifyListeners();
-    }
   }
 
   Future<void> _loadSavedState() async {
@@ -139,11 +128,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signInWithGoogle() async {
-    if (_supabaseClient == null) {
-      throw StateError(
-        'Đăng nhập Google chưa được cấu hình. Vui lòng thiết lập Supabase trước.',
-      );
-    }
+    if (_supabaseClient == null) return;
     try {
       await _supabaseClient!.auth.signInWithOAuth(OAuthProvider.google);
     } catch (e) {
@@ -314,20 +299,8 @@ class AuthProvider extends ChangeNotifier {
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
 
-    // 1. Gửi mail tự động chứa mã 6 chữ số qua OTPMailer
+    // Gửi mail tự động chứa duy nhất mã OTP 6 chữ số qua FormSubmit (Cách 1)
     await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
-
-    // 2. Kích hoạt phát email khôi phục từ Supabase Auth
-    if (_supabaseClient != null) {
-      try {
-        await _supabaseClient!.auth.resetPasswordForEmail(
-          cleanEmail,
-          redirectTo: kIsWeb ? Uri.base.origin : null,
-        );
-      } catch (e) {
-        debugPrint('Thông báo Supabase resetPasswordForEmail: $e');
-      }
-    }
 
     return randomOtp;
   }
