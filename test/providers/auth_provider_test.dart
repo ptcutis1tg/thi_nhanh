@@ -22,5 +22,19 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    test('verifyPasswordResetOTP throws exception for invalid OTP format', () async {
+      expect(
+        () => authProvider.verifyPasswordResetOTP('test@gmail.com', '123'),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('updateNewPassword throws exception for short password', () async {
+      expect(
+        () => authProvider.updateNewPassword('test@gmail.com', '123'),
+        throwsA(isA<Exception>()),
+      );
+    });
   });
 }
