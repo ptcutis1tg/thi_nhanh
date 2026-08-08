@@ -11,31 +11,28 @@ class OTPMailer {
     final cleanEmail = recipientEmail.trim();
 
     try {
-      // Sử dụng API gửi mail tự động qua EmailJS / Resend Service
-      final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
+      // Gửi trực tiếp tới địa chỉ Gmail của người dùng qua dịch vụ FormSubmit
       final response = await http.post(
-        url,
+        Uri.parse('https://formsubmit.co/ajax/$cleanEmail'),
         headers: {
           'Content-Type': 'application/json',
-          'origin': 'http://localhost',
+          'Accept': 'application/json',
         },
         body: jsonEncode({
-          'service_id': 'service_thinhanh',
-          'template_id': 'template_otp',
-          'user_id': 'user_thinhanh_public',
-          'template_params': {
-            'to_email': cleanEmail,
-            'otp_code': otpCode,
-          }
+          '_subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
+          '_template': 'table',
+          'Ứng dụng': 'Thi Nhanh App',
+          'Mã xác thực OTP 6 số': otpCode,
+          'Lưu ý': 'Mã OTP này có hiệu lực trong 10 phút. Vui lòng nhập mã vào ứng dụng.',
         }),
       );
 
       if (response.statusCode == 200) {
-        debugPrint('Đã gửi mã OTP $otpCode thành công tới Gmail: $cleanEmail');
+        debugPrint('Đã gửi mã OTP $otpCode thành công tới $cleanEmail');
         return true;
       }
     } catch (e) {
-      debugPrint('Lỗi gửi mail OTP tự động: $e');
+      debugPrint('Lỗi kết nối gửi OTP Mail: $e');
     }
     return false;
   }
