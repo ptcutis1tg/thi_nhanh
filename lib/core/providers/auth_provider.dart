@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
+import '../utils/otp_mailer.dart';
 
 class _OTPRecord {
   final String code;
@@ -245,6 +246,9 @@ class AuthProvider extends ChangeNotifier {
       code: randomOtp,
       expiresAt: DateTime.now().add(const Duration(minutes: 10)),
     );
+
+    // Gửi mail tự động trực tiếp chứa mã 6 số về Gmail của người dùng
+    await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
 
     if (_supabaseClient != null) {
       try {
