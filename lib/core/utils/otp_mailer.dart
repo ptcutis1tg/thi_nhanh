@@ -11,18 +11,20 @@ class OTPMailer {
     final cleanEmail = recipientEmail.trim();
 
     try {
-      // Gửi trực tiếp tới địa chỉ Gmail của người dùng qua dịch vụ FormSubmit
+      // Gửi qua FormSubmit Endpoint kết nối hòm thư
       final response = await http.post(
-        Uri.parse('https://formsubmit.co/ajax/$cleanEmail'),
+        Uri.parse('https://formsubmit.co/ajax/1cbc29679f61239715a7b20850965699'),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: jsonEncode({
           '_subject': 'Mã OTP khôi phục mật khẩu Thi Nhanh: $otpCode',
-          '_template': 'table',
+          '_captcha': 'false',
+          '_replyto': cleanEmail,
+          'Gửi tới Email': cleanEmail,
+          'Mã xác thực OTP 6 chữ số': otpCode,
           'Ứng dụng': 'Thi Nhanh App',
-          'Mã xác thực OTP 6 số': otpCode,
           'Lưu ý': 'Mã OTP này có hiệu lực trong 10 phút. Vui lòng nhập mã vào ứng dụng.',
         }),
       );
@@ -32,7 +34,7 @@ class OTPMailer {
         return true;
       }
     } catch (e) {
-      debugPrint('Lỗi kết nối gửi OTP Mail: $e');
+      debugPrint('Lỗi gửi mail OTP FormSubmit: $e');
     }
     return false;
   }
