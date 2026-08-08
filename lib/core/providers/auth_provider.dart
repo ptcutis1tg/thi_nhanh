@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -235,6 +236,11 @@ class AuthProvider extends ChangeNotifier {
       } catch (e) {
         final str = e.toString();
         if (str.contains('User already registered') || str.contains('user_already_exists')) {
+          _registeredUsers[key] = {
+            'name': fullName.isNotEmpty ? fullName : cleanEmail.split('@').first,
+            'password': password,
+          };
+          await _saveState();
           throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập.');
         }
         // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
@@ -264,9 +270,18 @@ class AuthProvider extends ChangeNotifier {
     await EmailVerifier.verifyEmail(cleanEmail);
 
     final key = cleanEmail.toLowerCase();
-    // Kiểm tra xem Email đã đăng ký tài khoản trong hệ thống chưa
+    // Kiểm tra xem Email đã đăng ký tài khoản trong hệ thống chưa (hỗ trợ tài khoản Supabase trên môi trường web/thiết bị mới)
     if (!_registeredUsers.containsKey(key)) {
-      throw Exception('Email "$cleanEmail" chưa được đăng ký tài khoản trong hệ thống.');
+      if (_supabaseClient == null) {
+        throw Exception('Email "$cleanEmail" chưa được đăng ký tài khoản trong hệ thống.');
+      } else {
+        // Tự động đồng bộ bản ghi cục bộ cho tài khoản đã tồn tại trên Supabase backend
+        _registeredUsers[key] = {
+          'name': cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng',
+          'password': '',
+        };
+        await _saveState();
+      }
     }
 
     final randomOtp = (100000 + Random().nextInt(900000)).toString();
@@ -280,15 +295,13 @@ class AuthProvider extends ChangeNotifier {
 
     if (_supabaseClient != null) {
       try {
-        await _supabaseClient!.auth.resetPasswordForEmail(cleanEmail);
+        await _supabaseClient!.auth.resetPasswordForEmail(
+          cleanEmail,
+          redirectTo: kIsWeb ? Uri.base.origin : null,
+        );
       } catch (e) {
         final str = e.toString();
-        if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
-          debugPrint('Dính Rate Limit Supabase, cấp mã OTP ngẫu nhiên cục bộ: $randomOtp');
-          return randomOtp;
-        } else {
-          rethrow;
-        }
+        debugPrint('Thông báo Supabase resetPasswordForEmail (tiếp tục sử dụng mã OTP 6 số): $str');
       }
     }
     return randomOtp;
