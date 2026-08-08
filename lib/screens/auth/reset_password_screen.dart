@@ -27,6 +27,22 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   int _resendCountdown = 60;
   Timer? _timer;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      if (auth.isPasswordRecoveryMode) {
+        setState(() {
+          _currentStep = 3;
+          if (auth.userEmail.isNotEmpty && auth.userEmail != 'chua_dang_ky@gmail.com') {
+            _emailController.text = auth.userEmail;
+          }
+        });
+      }
+    });
+  }
+
   void _startCountdown() {
     _resendCountdown = 60;
     _timer?.cancel();
@@ -131,7 +147,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().updateNewPassword(email, newPassword);
+      final auth = context.read<AuthProvider>();
+      await auth.updateNewPassword(email, newPassword);
+      auth.clearPasswordRecoveryMode();
       if (mounted) {
         _showSuccess('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
         context.go('/greeting');
