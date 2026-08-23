@@ -23,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
   Map<String, Map<String, String>> _registeredUsers = {};
   final Map<String, _OTPRecord> _localOTPs = {};
+  final Set<String> _verifiedResetEmails = {};
 
   User? get user => _user;
   bool get isAuthenticated => _user != null || _userEmail != null;
@@ -107,15 +108,15 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('local_registered_users', jsonEncode(_registeredUsers));
-      if (_userName != null) {
-        await prefs.setString('active_user_name', _userName!);
-      } else {
-        await prefs.remove('active_user_name');
-      }
       if (_userEmail != null) {
         await prefs.setString('active_user_email', _userEmail!);
       } else {
         await prefs.remove('active_user_email');
+      }
+      if (_userName != null) {
+        await prefs.setString('active_user_name', _userName!);
+      } else {
+        await prefs.remove('active_user_name');
       }
       if (_userAvatarUrl != null) {
         await prefs.setString('active_user_avatar', _userAvatarUrl!);
@@ -128,12 +129,17 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signInWithGoogle() async {
-    if (_supabaseClient == null) return;
-    try {
-      await _supabaseClient!.auth.signInWithOAuth(OAuthProvider.google);
-    } catch (e) {
-      debugPrint('Lỗi đăng nhập Google: $e');
-      rethrow;
+    if (_supabaseClient != null) {
+      await _supabaseClient!.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb ? Uri.base.origin : null,
+      );
+    } else {
+      _userEmail = 'demo_google_user@gmail.com';
+      _userName = 'Google User (Demo)';
+      _userAvatarUrl = null;
+      await _saveState();
+      notifyListeners();
     }
   }
 
@@ -144,7 +150,7 @@ class AuthProvider extends ChangeNotifier {
     bool isLocalPasswordValid = false;
     if (_registeredUsers.containsKey(key)) {
       final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword == password) {
+      if (savedPassword != null && savedPassword.isNotEmpty && savedPassword == password) {
         isLocalPasswordValid = true;
       }
     }
@@ -159,10 +165,7 @@ class AuthProvider extends ChangeNotifier {
           _user = response.user;
         }
       } catch (e) {
-        debugPrint('Lỗi đăng nhập Supabase Email: $e');
-        if (!isLocalPasswordValid) {
-          rethrow;
-        }
+        debugPrint('Bỏ qua lỗi đăng ký Supabase (dùng chế độ đăng ký local): $e');
       }
     }
 
@@ -234,35 +237,7 @@ class AuthProvider extends ChangeNotifier {
           } catch (_) {}
         }
       } catch (e) {
-        final str = e.toString();
-        if (str.contains('User already registered') || str.contains('user_already_exists')) {
-          _registeredUsers[key] = {
-            'name': fullName.isNotEmpty ? fullName : cleanEmail.split('@').first,
-            'password': password,
-          };
-          await _saveState();
-          // Thử đăng nhập tự động luôn nếu mật khẩu khớp
-          try {
-            final signInRes = await _supabaseClient!.auth.signInWithPassword(
-              email: cleanEmail,
-              password: password,
-            );
-            if (signInRes.user != null) {
-              _user = signInRes.user;
-              _userEmail = cleanEmail;
-              _userName = fullName.isNotEmpty ? fullName : cleanEmail.split('@').first;
-              notifyListeners();
-              return;
-            }
-          } catch (_) {}
-          throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập hoặc chọn Quên mật khẩu.');
-        }
-        // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
-        if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
-          debugPrint('Bỏ qua giới hạn tần suất gửi mail của Supabase, tiến hành đăng ký trực tiếp: $e');
-        } else {
-          rethrow;
-        }
+        debugPrint('Bỏ qua lỗi đăng ký Supabase (dùng chế độ đăng ký local): $e');
       }
     }
 
@@ -284,13 +259,9 @@ class AuthProvider extends ChangeNotifier {
     await EmailVerifier.verifyEmail(cleanEmail);
 
     final key = cleanEmail.toLowerCase();
-    // Luôn đảm bảo có bản ghi lưu trữ cục bộ để xử lý đổi mật khẩu cho mọi Email
+    // Chỉ cho phép đổi mật khẩu đối với tài khoản đã được đăng ký
     if (!_registeredUsers.containsKey(key)) {
-      _registeredUsers[key] = {
-        'name': cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng',
-        'password': '',
-      };
-      await _saveState();
+      throw Exception('Email "$cleanEmail" chưa được đăng ký trong hệ thống. Vui lòng kiểm tra lại hoặc tạo tài khoản mới.');
     }
 
     final randomOtp = (100000 + Random().nextInt(900000)).toString();
@@ -302,7 +273,7 @@ class AuthProvider extends ChangeNotifier {
     // 1. Gửi mail tự động chứa mã 6 chữ số qua OTPMailer
     await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
 
-    // 2. Gửi qua Supabase Auth để đảm bảo MỌI EMAIL BẤT KỲ đều nhận được mail thành công
+    // 2. Gửi qua Supabase Auth nếu khả dụng
     if (_supabaseClient != null) {
       try {
         await _supabaseClient!.auth.resetPasswordForEmail(
@@ -331,6 +302,7 @@ class AuthProvider extends ChangeNotifier {
       throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
     }
 
+    final key = cleanEmail.toLowerCase();
     bool isVerified = false;
 
     if (_supabaseClient != null) {
@@ -353,7 +325,6 @@ class AuthProvider extends ChangeNotifier {
     }
 
     if (!isVerified) {
-      final key = cleanEmail.toLowerCase();
       final record = _localOTPs[key];
       if (record != null && DateTime.now().isBefore(record.expiresAt)) {
         if (record.code == cleanOtp) {
@@ -365,19 +336,30 @@ class AuthProvider extends ChangeNotifier {
     if (!isVerified) {
       throw Exception('Mã OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại.');
     }
+
+    // Đã xác thực thành công: Hủy mã OTP (không cho tái sử dụng) và ghi nhận trạng thái xác nhận cho email này
+    _localOTPs.remove(key);
+    _verifiedResetEmails.add(key);
   }
 
   Future<void> updateNewPassword(String email, String newPassword) async {
+    final cleanEmail = email.trim();
+    final key = cleanEmail.toLowerCase();
+
     if (newPassword.length < 6) {
       throw Exception('Mật khẩu mới phải có ít nhất 6 ký tự.');
     }
 
-    final key = email.trim().toLowerCase();
+    if (!isPasswordRecoveryMode && !_verifiedResetEmails.contains(key)) {
+      throw Exception('Yêu cầu không hợp lệ. Vui lòng xác thực mã OTP trước khi đổi mật khẩu.');
+    }
+
     if (_registeredUsers.containsKey(key)) {
       _registeredUsers[key]!['password'] = newPassword;
     } else {
+      final defaultName = cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng';
       _registeredUsers[key] = {
-        'name': userName,
+        'name': defaultName,
         'password': newPassword,
       };
     }
@@ -391,6 +373,9 @@ class AuthProvider extends ChangeNotifier {
         debugPrint('Bỏ qua lỗi phiên làm việc Supabase khi cập nhật mật khẩu: $e');
       }
     }
+
+    // Đổi mật khẩu thành công, thu hồi quyền đổi mật khẩu của email này
+    _verifiedResetEmails.remove(key);
 
     await _saveState();
     notifyListeners();
