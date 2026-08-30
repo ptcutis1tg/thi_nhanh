@@ -26,7 +26,9 @@ class AuthProvider extends ChangeNotifier {
   final Map<String, _OTPRecord> _localOTPs = {};
 
   User? get user => _user;
-  bool get isAuthenticated => _user != null || _userEmail != null;
+  bool get isAuthenticated =>
+      _user != null || (_supabaseClient == null && _userEmail != null);
+  bool get hasSupabaseSession => _supabaseClient?.auth.currentSession != null;
 
   String get userName =>
       _user?.userMetadata?['full_name'] as String? ??
@@ -152,14 +154,6 @@ class AuthProvider extends ChangeNotifier {
     final cleanEmail = email.trim();
     final key = cleanEmail.toLowerCase();
 
-    bool isLocalPasswordValid = false;
-    if (_registeredUsers.containsKey(key)) {
-      final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword == password) {
-        isLocalPasswordValid = true;
-      }
-    }
-
     if (_supabaseClient != null) {
       try {
         final response = await _supabaseClient!.auth.signInWithPassword(
@@ -175,9 +169,9 @@ class AuthProvider extends ChangeNotifier {
         if (str.contains('email_not_confirmed') || str.contains('Email not confirmed')) {
           rethrow;
         }
-        if (!isLocalPasswordValid) {
-          rethrow;
-        }
+        // Never turn a failed real login into a local-only account: protected
+        // Supabase RPCs require a server session and auth.uid().
+        rethrow;
       }
     }
 
@@ -270,12 +264,9 @@ class AuthProvider extends ChangeNotifier {
           } catch (_) {}
           throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập hoặc chọn Quên mật khẩu.');
         }
-        // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
-        if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
-          debugPrint('Bỏ qua giới hạn tần suất gửi mail của Supabase, tiến hành đăng ký trực tiếp: $e');
-        } else {
-          rethrow;
-        }
+        // Local fallback would look signed-in in the UI but has no Supabase
+        // session, so report every real registration failure to the user.
+        rethrow;
       }
     }
 

@@ -9,6 +9,7 @@ import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/repositories/assessment_repository.dart';
 import 'core/repositories/teacher_exam_repository.dart';
+import 'core/repositories/room_repository.dart';
 import 'screens/auth/greeting_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -85,6 +86,10 @@ void main() async {
         if (isSupabaseInitialized)
           Provider<TeacherExamRepository>(
             create: (_) => TeacherExamRepository(Supabase.instance.client),
+          ),
+        if (isSupabaseInitialized)
+          Provider<RoomRepository>(
+            create: (_) => RoomRepository(Supabase.instance.client),
           ),
       ],
       child: const ThiNhanhApp(),
@@ -214,7 +219,9 @@ final GoRouter _router = GoRouter(
     // Các màn hình không có TopNavBar
     GoRoute(
       path: '/teacher_waiting_room',
-      builder: (context, state) => const TeacherWaitingRoomScreen(),
+      builder: (context, state) => TeacherWaitingRoomScreen(
+        roomId: state.uri.queryParameters['roomId'],
+      ),
     ),
     GoRoute(
       path: '/student_waiting_room',

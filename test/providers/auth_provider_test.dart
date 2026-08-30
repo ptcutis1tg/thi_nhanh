@@ -45,5 +45,11 @@ void main() {
         throwsA(isA<StateError>()),
       );
     });
+
+    test('local-only sign-in is not treated as a Supabase session', () async {
+      await authProvider.signInWithEmail('local@example.com', '123456');
+
+      expect(authProvider.hasSupabaseSession, isFalse);
+    });
   });
 }

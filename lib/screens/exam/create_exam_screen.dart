@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/repositories/teacher_exam_repository.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 
 class CreateExamScreen extends StatefulWidget {
@@ -124,6 +125,16 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   }
 
   Future<bool> _saveDraft() async {
+    if (!context.read<AuthProvider>().hasSupabaseSession) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Bạn cần đăng nhập bằng tài khoản Supabase trước khi lưu đề.'),
+          backgroundColor: AppTheme.error,
+        ));
+        context.go('/greeting');
+      }
+      return false;
+    }
     if (!_isConfigured) return false;
     setState(() => _isLoading = true);
     try {

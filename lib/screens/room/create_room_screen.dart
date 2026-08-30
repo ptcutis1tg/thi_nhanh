@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/repositories/teacher_exam_repository.dart';
+import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
 
 class CreateRoomScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   TeacherExamSummary? _selectedExam;
   bool _requirePassword = false;
   bool _isLoadingExams = true;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -34,12 +36,28 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     });
   }
 
-  void _createRoom() {
+  Future<void> _createRoom() async {
     if (_roomNameController.text.trim().isEmpty || _selectedExam == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hãy đặt tên phòng và chọn đề thi.'), backgroundColor: AppTheme.error));
       return;
     }
-    context.go('/teacher_waiting_room');
+    setState(() => _isCreating = true);
+    try {
+      final room = await context.read<RoomRepository>().create(
+            examId: _selectedExam!.id,
+            name: _roomNameController.text.trim(),
+            password: _requirePassword ? _passwordController.text : null,
+          );
+      if (mounted) context.go('/teacher_waiting_room?roomId=${room.id}');
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể tạo phòng: $error'), backgroundColor: AppTheme.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCreating = false);
+    }
   }
 
   @override
