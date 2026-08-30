@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
@@ -147,11 +146,10 @@ class AuthProvider extends ChangeNotifier {
     final cleanEmail = email.trim();
     final key = cleanEmail.toLowerCase();
 
-    bool isLocalPasswordValid = false;
     if (_registeredUsers.containsKey(key)) {
       final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword != null && savedPassword.isNotEmpty && savedPassword == password) {
-        isLocalPasswordValid = true;
+      if (savedPassword != null && savedPassword.isNotEmpty && savedPassword != password) {
+        throw Exception('Mật khẩu không chính xác. Vui lòng thử lại.');
       }
     }
 
