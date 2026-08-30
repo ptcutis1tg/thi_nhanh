@@ -7,11 +7,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/repositories/assessment_repository.dart';
+import 'core/repositories/teacher_exam_repository.dart';
+import 'core/repositories/room_repository.dart';
 import 'screens/auth/greeting_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/search_screen.dart';
 import 'screens/exam/create_exam_screen.dart';
+import 'screens/exam/teacher_exams_screen.dart';
 import 'screens/room/create_room_screen.dart';
 import 'screens/room/teacher_waiting_room_screen.dart';
 import 'screens/room/student_waiting_room_screen.dart';
@@ -75,6 +79,18 @@ void main() async {
         ChangeNotifierProvider.value(value: authProvider),
         if (isSupabaseInitialized)
           Provider.value(value: Supabase.instance.client),
+        if (isSupabaseInitialized)
+          Provider<AssessmentRepository>(
+            create: (_) => AssessmentRepository(Supabase.instance.client),
+          ),
+        if (isSupabaseInitialized)
+          Provider<TeacherExamRepository>(
+            create: (_) => TeacherExamRepository(Supabase.instance.client),
+          ),
+        if (isSupabaseInitialized)
+          Provider<RoomRepository>(
+            create: (_) => RoomRepository(Supabase.instance.client),
+          ),
       ],
       child: const ThiNhanhApp(),
     ),
@@ -86,8 +102,9 @@ final Map<String, int> _routeIndices = {
   '/home': 0,
   '/search': 1,
   '/create_exam': 2,
-  '/create_room': 3,
-  '/profile': 4,
+  '/teacher_exams': 3,
+  '/create_room': 4,
+  '/profile': 5,
 };
 
 int _lastIndex = 0;
@@ -162,7 +179,15 @@ final GoRouter _router = GoRouter(
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
             state: state,
-            child: const CreateExamScreen(),
+            child: CreateExamScreen(examId: state.uri.queryParameters['examId']),
+          ),
+        ),
+        GoRoute(
+          path: '/teacher_exams',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const TeacherExamsScreen(),
           ),
         ),
         GoRoute(
@@ -194,7 +219,9 @@ final GoRouter _router = GoRouter(
     // Các màn hình không có TopNavBar
     GoRoute(
       path: '/teacher_waiting_room',
-      builder: (context, state) => const TeacherWaitingRoomScreen(),
+      builder: (context, state) => TeacherWaitingRoomScreen(
+        roomId: state.uri.queryParameters['roomId'],
+      ),
     ),
     GoRoute(
       path: '/student_waiting_room',
@@ -206,7 +233,9 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/taking_exam',
-      builder: (context, state) => const TakingExamScreen(),
+      builder: (context, state) => TakingExamScreen(
+        attemptId: state.uri.queryParameters['attemptId'],
+      ),
     ),
     GoRoute(
       path: '/live_dashboard',

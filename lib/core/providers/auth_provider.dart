@@ -19,13 +19,16 @@ class AuthProvider extends ChangeNotifier {
   String? _userName;
   String? _userEmail;
   String? _userAvatarUrl;
+  String _activeRole = 'student';
 
   // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
   Map<String, Map<String, String>> _registeredUsers = {};
   final Map<String, _OTPRecord> _localOTPs = {};
 
   User? get user => _user;
-  bool get isAuthenticated => _user != null || _userEmail != null;
+  bool get isAuthenticated =>
+      _user != null || (_supabaseClient == null && _userEmail != null);
+  bool get hasSupabaseSession => _supabaseClient?.auth.currentSession != null;
 
   String get userName =>
       _user?.userMetadata?['full_name'] as String? ??
@@ -38,6 +41,10 @@ class AuthProvider extends ChangeNotifier {
 
   String? get userAvatarUrl =>
       (_user?.userMetadata?['avatar_url'] as String?) ?? _userAvatarUrl;
+
+  String get activeRole => _activeRole;
+  bool get isTeacher => _activeRole == 'teacher';
+  String get activeRoleLabel => isTeacher ? 'Giáo viên' : 'Học sinh';
 
   bool _isPasswordRecoveryMode = false;
   bool get isPasswordRecoveryMode => _isPasswordRecoveryMode;
@@ -82,6 +89,9 @@ class AuthProvider extends ChangeNotifier {
       _userEmail = prefs.getString('active_user_email');
       _userName = prefs.getString('active_user_name');
       _userAvatarUrl = prefs.getString('active_user_avatar');
+      _activeRole = prefs.getString('active_user_role') == 'teacher'
+          ? 'teacher'
+          : 'student';
 
       // Restoring name and avatar from registered DB for active email
       if (_userEmail != null) {
@@ -122,13 +132,16 @@ class AuthProvider extends ChangeNotifier {
       } else {
         await prefs.remove('active_user_avatar');
       }
+      await prefs.setString('active_user_role', _activeRole);
     } catch (e) {
       debugPrint('Lỗi lưu dữ liệu tài khoản vào SharedPreferences: $e');
     }
   }
 
   Future<void> signInWithGoogle() async {
-    if (_supabaseClient == null) return;
+    if (_supabaseClient == null) {
+      throw StateError('Supabase is not initialized.');
+    }
     try {
       await _supabaseClient!.auth.signInWithOAuth(OAuthProvider.google);
     } catch (e) {
@@ -141,14 +154,6 @@ class AuthProvider extends ChangeNotifier {
     final cleanEmail = email.trim();
     final key = cleanEmail.toLowerCase();
 
-    bool isLocalPasswordValid = false;
-    if (_registeredUsers.containsKey(key)) {
-      final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword == password) {
-        isLocalPasswordValid = true;
-      }
-    }
-
     if (_supabaseClient != null) {
       try {
         final response = await _supabaseClient!.auth.signInWithPassword(
@@ -160,9 +165,13 @@ class AuthProvider extends ChangeNotifier {
         }
       } catch (e) {
         debugPrint('Lỗi đăng nhập Supabase Email: $e');
-        if (!isLocalPasswordValid) {
+        final str = e.toString();
+        if (str.contains('email_not_confirmed') || str.contains('Email not confirmed')) {
           rethrow;
         }
+        // Never turn a failed real login into a local-only account: protected
+        // Supabase RPCs require a server session and auth.uid().
+        rethrow;
       }
     }
 
@@ -226,15 +235,13 @@ class AuthProvider extends ChangeNotifier {
         }
         // Thử tự động đăng nhập luôn nếu session khả dụng
         if (response.session == null) {
-          try {
-            await _supabaseClient!.auth.signInWithPassword(
-              email: cleanEmail,
-              password: password,
-            );
-          } catch (_) {}
+          throw Exception('email_not_confirmed');
         }
       } catch (e) {
         final str = e.toString();
+        if (str.contains('email_not_confirmed')) {
+          rethrow;
+        }
         if (str.contains('User already registered') || str.contains('user_already_exists')) {
           _registeredUsers[key] = {
             'name': fullName.isNotEmpty ? fullName : cleanEmail.split('@').first,
@@ -257,12 +264,9 @@ class AuthProvider extends ChangeNotifier {
           } catch (_) {}
           throw Exception('Email "$cleanEmail" đã được đăng ký tài khoản trong hệ thống. Vui lòng Đăng nhập hoặc chọn Quên mật khẩu.');
         }
-        // Nếu dính giới hạn tần suất gửi email từ Supabase (over_email_send_rate_limit / 429), bỏ qua và cho phép đăng ký trực tiếp
-        if (str.contains('rate limit') || str.contains('over_email_send_rate_limit') || str.contains('429')) {
-          debugPrint('Bỏ qua giới hạn tần suất gửi mail của Supabase, tiến hành đăng ký trực tiếp: $e');
-        } else {
-          rethrow;
-        }
+        // Local fallback would look signed-in in the UI but has no Supabase
+        // session, so report every real registration failure to the user.
+        rethrow;
       }
     }
 
@@ -410,6 +414,30 @@ class AuthProvider extends ChangeNotifier {
       }
     }
     await _saveState();
+    notifyListeners();
+  }
+
+  Future<void> updateActiveRole(String role) async {
+    if (role != 'student' && role != 'teacher') {
+      throw ArgumentError.value(role, 'role');
+    }
+    _activeRole = role;
+    await _saveState();
+
+    // The local value keeps the selector responsive until the profile
+    // migration is applied. Once available, Supabase becomes the shared copy.
+    final userId = _user?.id;
+    if (_supabaseClient != null && userId != null) {
+      try {
+        await _supabaseClient!.from('profiles').upsert({
+          'id': userId,
+          'active_role': role,
+          'display_name': userName,
+        });
+      } catch (error) {
+        debugPrint('Không thể đồng bộ vai trò lên Supabase: $error');
+      }
+    }
     notifyListeners();
   }
 

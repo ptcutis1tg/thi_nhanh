@@ -13,6 +13,45 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
+class _RoleChoice extends StatelessWidget {
+  const _RoleChoice({required this.icon, required this.title, required this.subtitle, required this.selected, required this.onTap});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: selected ? AppTheme.primary.withValues(alpha: .10) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 104),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: selected ? AppTheme.primary : const Color(0xFFE2E8F0), width: selected ? 2 : 1),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(icon, color: selected ? AppTheme.primary : AppTheme.textSecondary),
+                const Spacer(),
+                if (selected) const Icon(Icons.check_circle, color: AppTheme.primary),
+              ]),
+              const SizedBox(height: 22),
+              Text(title, style: TextStyle(fontWeight: FontWeight.w700, color: selected ? AppTheme.primary : AppTheme.textMain)),
+              const SizedBox(height: 3),
+              Text(subtitle, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+            ]),
+          ),
+        ),
+      );
+}
+
 class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
@@ -25,6 +64,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isConfirmPasswordObscured = true;
   bool _isSavingInfo = false;
   bool _isSavingPassword = false;
+  bool _isSavingRole = false;
 
   @override
   void initState() {
@@ -56,6 +96,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       setState(() => _isSavingInfo = false);
       _showSnackBar('Cập nhật thông tin cá nhân thành công!');
+    }
+  }
+
+  Future<void> _changeRole(String role) async {
+    final authProvider = context.read<AuthProvider>();
+    if (_isSavingRole || authProvider.activeRole == role) return;
+    setState(() => _isSavingRole = true);
+    try {
+      await authProvider.updateActiveRole(role);
+      if (mounted) {
+        _showSnackBar('Đã chuyển sang vai trò ${role == 'teacher' ? 'Giáo viên' : 'Học sinh'}.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSavingRole = false);
     }
   }
 
@@ -244,9 +298,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 borderRadius: BorderRadius.circular(100),
                                 border: Border.all(color: const Color(0xFFE5DEFF)),
                               ),
-                              child: const Text(
-                                '🎓 Học sinh',
-                                style: TextStyle(
+                              child: Text(
+                                authProvider.isTeacher
+                                    ? '👩‍🏫 Giáo viên'
+                                    : '🎓 Học sinh',
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   color: AppTheme.primary,
@@ -256,6 +312,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                       ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(children: [
+                        Icon(Icons.switch_account_outlined, color: AppTheme.primary, size: 22),
+                        SizedBox(width: 10),
+                        Text('Vai trò sử dụng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textMain)),
+                      ]),
+                      const SizedBox(height: 8),
+                      const Text('Bạn có thể đổi vai trò bất cứ lúc nào trong cài đặt.', style: TextStyle(color: AppTheme.textSecondary)),
+                      const SizedBox(height: 18),
+                      Row(children: [
+                        Expanded(child: _RoleChoice(icon: Icons.school_outlined, title: 'Học sinh', subtitle: 'Làm bài và xem kết quả', selected: authProvider.activeRole == 'student', onTap: _isSavingRole ? null : () => _changeRole('student'))),
+                        const SizedBox(width: 14),
+                        Expanded(child: _RoleChoice(icon: Icons.menu_book_outlined, title: 'Giáo viên', subtitle: 'Tạo đề và phòng thi', selected: authProvider.activeRole == 'teacher', onTap: _isSavingRole ? null : () => _changeRole('teacher'))),
+                      ]),
+                      if (_isSavingRole) ...[
+                        const SizedBox(height: 14),
+                        const LinearProgressIndicator(),
+                      ],
                     ],
                   ),
                 ),
@@ -574,7 +669,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
+                      Expanded(
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text(
@@ -594,7 +690,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                         ],
+                        ),
                       ),
+                      const SizedBox(width: 16),
                       OutlinedButton.icon(
                         onPressed: () async {
                           await authProvider.signOut();
