@@ -76,10 +76,12 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
               _buildNavItem(context, 'Home', '/home', isActive: GoRouterState.of(context).matchedLocation == '/home'),
               const SizedBox(width: 32),
               _buildNavItem(context, 'Tìm kiếm', '/search', isActive: GoRouterState.of(context).matchedLocation == '/search'),
-              const SizedBox(width: 32),
-              _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
-              const SizedBox(width: 32),
-              _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
+              if (authProvider.isTeacher) ...[
+                const SizedBox(width: 32),
+                _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
+                const SizedBox(width: 32),
+                _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
+              ],
             ],
           ),
           
@@ -106,6 +108,12 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                     suffixIcon: const Icon(Icons.arrow_forward, size: 18),
                   ),
                 ),
+              ),
+              const SizedBox(width: 10),
+              IconButton(
+                tooltip: 'Hướng dẫn sử dụng',
+                onPressed: () => _showQuickGuide(context),
+                icon: const Icon(Icons.help_outline_rounded, color: AppTheme.primary),
               ),
               const SizedBox(width: 16),
               InkWell(
@@ -153,4 +161,82 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
+
+  void _showQuickGuide(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.lightbulb_outline_rounded, color: AppTheme.primary),
+            SizedBox(width: 10),
+            Text('Hướng dẫn nhanh'),
+          ],
+        ),
+        content: const SizedBox(
+          width: 440,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _GuideItem(
+                icon: Icons.menu_book_outlined,
+                title: 'Đề tự luyện',
+                description: 'Bạn có thể làm bất cứ lúc nào. Đáp án được tự lưu và xem kết quả ngay sau khi nộp bài.',
+              ),
+              SizedBox(height: 18),
+              _GuideItem(
+                icon: Icons.groups_outlined,
+                title: 'Phòng thi trực tiếp',
+                description: 'Bạn vào bằng mã hoặc liên kết giáo viên gửi. Bài thi chỉ bắt đầu khi giáo viên mở phòng và điểm được công bố khi phòng kết thúc.',
+              ),
+              SizedBox(height: 18),
+              _GuideItem(
+                icon: Icons.switch_account_outlined,
+                title: 'Đổi vai trò',
+                description: 'Mở hồ sơ ở góc phải để chọn Học sinh hoặc Giáo viên. Giáo viên mới thấy mục tạo đề và tạo phòng thi.',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Đã hiểu'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideItem extends StatelessWidget {
+  const _GuideItem({required this.icon, required this.title, required this.description});
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: .1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: AppTheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textMain)),
+              const SizedBox(height: 4),
+              Text(description, style: const TextStyle(color: AppTheme.textSecondary, height: 1.35)),
+            ]),
+          ),
+        ],
+      );
 }

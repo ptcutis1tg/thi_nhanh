@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/repositories/assessment_repository.dart';
 
 class ExamDetailScreen extends StatefulWidget {
   const ExamDetailScreen({super.key});
@@ -11,8 +13,10 @@ class ExamDetailScreen extends StatefulWidget {
 }
 
 class _ExamDetailScreenState extends State<ExamDetailScreen> {
+  static const _demoExamId = '10000000-0000-4000-8000-000000000002';
   final _roomCodeController = TextEditingController();
   bool _saved = false;
+  bool _isStarting = false;
 
   @override
   void dispose() {
@@ -20,12 +24,24 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
     super.dispose();
   }
 
-  void _start() {
+  Future<void> _start() async {
     if (_roomCodeController.text.trim().isNotEmpty) {
       context.go('/room/password');
       return;
     }
-    context.go('/taking_exam');
+    setState(() => _isStarting = true);
+    try {
+      final attempt = await context.read<AssessmentRepository>().beginPractice(_demoExamId);
+      if (mounted) context.go('/taking_exam?attemptId=${attempt.attemptId}');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Không thể bắt đầu đề. Hãy kiểm tra cấu hình Supabase và migrations.'),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _isStarting = false);
+    }
   }
 
   @override
@@ -40,7 +56,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
           LayoutBuilder(builder: (context, constraints) {
             final narrow = constraints.maxWidth < 840;
             final summary = _ExamSummaryCard();
-            final action = _ActionPanel(controller: _roomCodeController, saved: _saved, onStart: _start, onSaved: () => setState(() => _saved = !_saved));
+            final action = _ActionPanel(controller: _roomCodeController, saved: _saved, isStarting: _isStarting, onStart: _start, onSaved: () => setState(() => _saved = !_saved));
             return Column(children: [
               summary,
               const SizedBox(height: 28),
@@ -82,10 +98,11 @@ class _Fact extends StatelessWidget {
 }
 
 class _ActionPanel extends StatelessWidget {
-  const _ActionPanel({required this.controller, required this.saved, required this.onStart, required this.onSaved});
+  const _ActionPanel({required this.controller, required this.saved, required this.isStarting, required this.onStart, required this.onSaved});
   final TextEditingController controller;
   final bool saved;
-  final VoidCallback onStart;
+  final bool isStarting;
+  final Future<void> Function() onStart;
   final VoidCallback onSaved;
 
   @override
@@ -97,7 +114,7 @@ class _ActionPanel extends StatelessWidget {
       const SizedBox(height: 20),
       TextField(controller: controller, decoration: const InputDecoration(labelText: 'Mã phòng thi (nếu có)', hintText: 'Nhập mã phòng do giáo viên cung cấp')),
       const SizedBox(height: 16),
-      ElevatedButton.icon(onPressed: onStart, icon: const Icon(Icons.play_arrow), label: const Text('Vào phòng thi ngay')),
+      ElevatedButton.icon(onPressed: isStarting ? null : onStart, icon: isStarting ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.play_arrow), label: Text(isStarting ? 'Đang chuẩn bị đề...' : 'Bắt đầu tự luyện')),
       const SizedBox(height: 10),
       OutlinedButton.icon(onPressed: onSaved, icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border), label: Text(saved ? 'Đã lưu vào yêu thích' : 'Lưu vào yêu thích')),
     ]),

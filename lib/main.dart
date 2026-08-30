@@ -7,6 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
+import 'core/repositories/assessment_repository.dart';
 import 'screens/auth/greeting_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -75,6 +76,10 @@ void main() async {
         ChangeNotifierProvider.value(value: authProvider),
         if (isSupabaseInitialized)
           Provider.value(value: Supabase.instance.client),
+        if (isSupabaseInitialized)
+          Provider<AssessmentRepository>(
+            create: (_) => AssessmentRepository(Supabase.instance.client),
+          ),
       ],
       child: const ThiNhanhApp(),
     ),
@@ -206,7 +211,9 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/taking_exam',
-      builder: (context, state) => const TakingExamScreen(),
+      builder: (context, state) => TakingExamScreen(
+        attemptId: state.uri.queryParameters['attemptId'],
+      ),
     ),
     GoRoute(
       path: '/live_dashboard',

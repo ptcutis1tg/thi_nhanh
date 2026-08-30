@@ -69,6 +69,42 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // Primary, visible entry point for the connected practice flow.
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: .25)),
+                  ),
+                  child: Row(
+                    children: [
+                      const CircleAvatar(
+                        backgroundColor: AppTheme.primary,
+                        child: Icon(Icons.play_arrow_rounded, color: Colors.white),
+                      ),
+                      const SizedBox(width: 14),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Làm đề tự luyện', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                            SizedBox(height: 3),
+                            Text('Lưu đáp án tự động và tính giờ theo phiên làm bài.', style: TextStyle(color: AppTheme.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () => context.go('/exam/physics-12'),
+                        child: const Text('Bắt đầu'),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 32),
 
                 // Topic Chips

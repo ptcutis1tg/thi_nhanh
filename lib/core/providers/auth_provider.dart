@@ -19,6 +19,7 @@ class AuthProvider extends ChangeNotifier {
   String? _userName;
   String? _userEmail;
   String? _userAvatarUrl;
+  String _activeRole = 'student';
 
   // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
   Map<String, Map<String, String>> _registeredUsers = {};
@@ -38,6 +39,10 @@ class AuthProvider extends ChangeNotifier {
 
   String? get userAvatarUrl =>
       (_user?.userMetadata?['avatar_url'] as String?) ?? _userAvatarUrl;
+
+  String get activeRole => _activeRole;
+  bool get isTeacher => _activeRole == 'teacher';
+  String get activeRoleLabel => isTeacher ? 'Giáo viên' : 'Học sinh';
 
   bool _isPasswordRecoveryMode = false;
   bool get isPasswordRecoveryMode => _isPasswordRecoveryMode;
@@ -82,6 +87,9 @@ class AuthProvider extends ChangeNotifier {
       _userEmail = prefs.getString('active_user_email');
       _userName = prefs.getString('active_user_name');
       _userAvatarUrl = prefs.getString('active_user_avatar');
+      _activeRole = prefs.getString('active_user_role') == 'teacher'
+          ? 'teacher'
+          : 'student';
 
       // Restoring name and avatar from registered DB for active email
       if (_userEmail != null) {
@@ -122,6 +130,7 @@ class AuthProvider extends ChangeNotifier {
       } else {
         await prefs.remove('active_user_avatar');
       }
+      await prefs.setString('active_user_role', _activeRole);
     } catch (e) {
       debugPrint('Lỗi lưu dữ liệu tài khoản vào SharedPreferences: $e');
     }
@@ -410,6 +419,30 @@ class AuthProvider extends ChangeNotifier {
       }
     }
     await _saveState();
+    notifyListeners();
+  }
+
+  Future<void> updateActiveRole(String role) async {
+    if (role != 'student' && role != 'teacher') {
+      throw ArgumentError.value(role, 'role');
+    }
+    _activeRole = role;
+    await _saveState();
+
+    // The local value keeps the selector responsive until the profile
+    // migration is applied. Once available, Supabase becomes the shared copy.
+    final userId = _user?.id;
+    if (_supabaseClient != null && userId != null) {
+      try {
+        await _supabaseClient!.from('profiles').upsert({
+          'id': userId,
+          'active_role': role,
+          'display_name': userName,
+        });
+      } catch (error) {
+        debugPrint('Không thể đồng bộ vai trò lên Supabase: $error');
+      }
+    }
     notifyListeners();
   }
 
