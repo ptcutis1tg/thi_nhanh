@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/repositories/teacher_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/exam_card.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key});
@@ -11,39 +13,32 @@ class CreateRoomScreen extends StatefulWidget {
 }
 
 class _CreateRoomScreenState extends State<CreateRoomScreen> {
-  final TextEditingController _roomNameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _examCodeController = TextEditingController();
-  
+  final _roomNameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  List<TeacherExamSummary> _createdExams = [];
+  TeacherExamSummary? _selectedExam;
   bool _requirePassword = false;
-  bool _isLoadingPreview = false;
-  bool _hasPreview = false;
+  bool _isLoadingExams = true;
 
-  void _onExamCodeChanged(String value) {
-    if (value.length >= 8 && value.startsWith('DT')) {
-      setState(() {
-        _isLoadingPreview = true;
-        _hasPreview = false;
-      });
-      
-      // Giả lập gọi API lấy thông tin đề thi
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          setState(() {
-            _isLoadingPreview = false;
-            _hasPreview = true; // Tìm thấy đề thi
-          });
-        }
-      });
-    } else {
-      setState(() {
-        _hasPreview = false;
-      });
-    }
+  @override
+  void initState() {
+    super.initState();
+    _loadCreatedExams();
+  }
+
+  Future<void> _loadCreatedExams() async {
+    final exams = await context.read<TeacherExamRepository>().summaries();
+    if (mounted) setState(() {
+      _createdExams = exams.where((exam) => exam.status == 'published').toList();
+      _isLoadingExams = false;
+    });
   }
 
   void _createRoom() {
-    // Điều hướng sang màn hình Waiting Room (Giáo viên)
+    if (_roomNameController.text.trim().isEmpty || _selectedExam == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hãy đặt tên phòng và chọn đề thi.'), backgroundColor: AppTheme.error));
+      return;
+    }
     context.go('/teacher_waiting_room');
   }
 
@@ -51,180 +46,108 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   void dispose() {
     _roomNameController.dispose();
     _passwordController.dispose();
-    _examCodeController.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Tạo Phòng Thi',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                ),
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppTheme.background,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Tạo phòng thi', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                const Text(
-                  'Thiết lập phòng thi và gán đề thi để học sinh bắt đầu làm bài.',
-                  style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
-                ),
+                const Text('Chọn một đề bạn đã khởi tạo, sau đó mời học sinh vào phòng.', style: TextStyle(color: AppTheme.textSecondary, fontSize: 16)),
                 const SizedBox(height: 32),
-
-                // Card Cấu hình Phòng
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '1. Thông tin Phòng thi',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: _roomNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Tên Phòng Thi *',
-                          hintText: 'Ví dụ: Kiểm tra 15p Lý lớp 12A1',
-                          prefixIcon: const Icon(Icons.meeting_room_outlined),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Yêu cầu Mật khẩu (Bảo mật)',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                          ),
-                          Switch(
-                            value: _requirePassword,
-                            onChanged: (val) {
-                              setState(() => _requirePassword = val);
-                            },
-                            activeColor: AppTheme.primary,
-                          ),
-                        ],
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('1. Thông tin phòng thi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 20),
+                      TextField(controller: _roomNameController, decoration: const InputDecoration(labelText: 'Tên phòng thi *', prefixIcon: Icon(Icons.meeting_room_outlined))),
+                      const SizedBox(height: 18),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Yêu cầu mật khẩu'),
+                        subtitle: const Text('Học sinh cần nhập mật khẩu trước khi vào phòng.'),
+                        value: _requirePassword,
+                        onChanged: (value) => setState(() => _requirePassword = value),
                       ),
                       if (_requirePassword) ...[
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            labelText: 'Mật khẩu Phòng',
-                            hintText: 'Nhập mật khẩu...',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                          ),
-                        ),
+                        const SizedBox(height: 8),
+                        TextField(controller: _passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Mật khẩu phòng', prefixIcon: Icon(Icons.lock_outline))),
                       ],
-                      
-                      const Divider(height: 64, color: AppTheme.border, thickness: 1),
-                      
-                      const Text(
-                        '2. Chọn Đề Thi',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
+                      const Divider(height: 56),
+                      const Text('2. Chọn đề thi đã tạo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Nhập mã Đề thi (Bắt đầu bằng chữ DT) để hệ thống kiểm tra.',
-                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
-                      ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        controller: _examCodeController,
-                        onChanged: _onExamCodeChanged,
-                        decoration: InputDecoration(
-                          labelText: 'Mã Đề Thi *',
-                          hintText: 'DTxxxxxx',
-                          prefixIcon: const Icon(Icons.qr_code_2),
-                          suffixIcon: _isLoadingPreview 
-                              ? const Padding(
-                                  padding: EdgeInsets.all(12.0),
-                                  child: SizedBox(
-                                    width: 16, height: 16, 
-                                    child: CircularProgressIndicator(strokeWidth: 2)
-                                  ),
-                                )
-                              : null,
+                      const Text('Chỉ những đề bạn đã khởi tạo mới có thể dùng để mở phòng.', style: TextStyle(color: AppTheme.textSecondary)),
+                      const SizedBox(height: 18),
+                      if (_isLoadingExams)
+                        const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+                      else if (_createdExams.isEmpty)
+                        _EmptyExamState(onCreateExam: () => context.go('/teacher_exams'))
+                      else ...[
+                        DropdownButtonFormField<TeacherExamSummary>(
+                          value: _selectedExam,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Đề thi *', prefixIcon: Icon(Icons.menu_book_outlined)),
+                          items: _createdExams.map((exam) => DropdownMenuItem(value: exam, child: Text(exam.title, overflow: TextOverflow.ellipsis))).toList(),
+                          onChanged: (exam) => setState(() => _selectedExam = exam),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Preview Box
-                      if (_hasPreview)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.success.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.success.withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.check_circle, color: AppTheme.success, size: 20),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    'Đã tìm thấy đề thi!',
-                                    style: TextStyle(color: AppTheme.success, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Center(
-                                child: ExamCard(
-                                  title: 'Đề thi thử THPT Quốc gia môn Toán 2024',
-                                  authorName: 'Nguyễn Văn A',
-                                  type: ExamCardType.exam,
-                                  onTap: () {},
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                      const SizedBox(height: 48),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: _hasPreview ? _createRoom : null,
-                          icon: const Icon(Icons.play_arrow),
-                          label: const Text('Khởi tạo Phòng Thi (Tự động sinh mã PT)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                    ],
+                        if (_selectedExam != null) ...[
+                          const SizedBox(height: 16),
+                          _ExamPreview(exam: _selectedExam!),
+                        ],
+                      ],
+                      const SizedBox(height: 36),
+                      SizedBox(width: double.infinity, height: 54, child: ElevatedButton.icon(onPressed: _selectedExam == null ? null : _createRoom, icon: const Icon(Icons.play_arrow), label: const Text('Khởi tạo phòng thi'))),
+                    ]),
                   ),
                 ),
-              ],
+              ]),
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+}
+
+class _EmptyExamState extends StatelessWidget {
+  const _EmptyExamState({required this.onCreateExam});
+  final VoidCallback onCreateExam;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: AppTheme.primary.withValues(alpha: .06), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.primary.withValues(alpha: .2))),
+        child: Column(children: [
+          const Icon(Icons.note_add_outlined, size: 36, color: AppTheme.primary),
+          const SizedBox(height: 10),
+          const Text('Bạn chưa có đề nào để mở phòng.', style: TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          const Text('Hãy khởi tạo đề trước, rồi quay lại chọn đề cho phòng thi.', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.textSecondary)),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(onPressed: onCreateExam, icon: const Icon(Icons.add), label: const Text('Tạo đề mới')),
+        ]),
+      );
+}
+
+class _ExamPreview extends StatelessWidget {
+  const _ExamPreview({required this.exam});
+  final TeacherExamSummary exam;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(color: AppTheme.success.withValues(alpha: .06), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.success.withValues(alpha: .28))),
+        child: Row(children: [
+          const Icon(Icons.check_circle, color: AppTheme.success),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(exam.title, style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 4), Text('${exam.subject} • ${exam.questionCount} câu • ${exam.durationMinutes} phút', style: const TextStyle(color: AppTheme.textSecondary))])),
+        ]),
+      );
 }

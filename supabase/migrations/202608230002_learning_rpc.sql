@@ -9,7 +9,7 @@ returns boolean language sql security definer set search_path = public as $$
     where a.id = p_attempt_id
       and (a.user_id = auth.uid()
         or (a.user_id is null and p_guest_token is not null
-            and crypt(p_guest_token, a.guest_access_token_hash) = a.guest_access_token_hash))
+            and extensions.crypt(p_guest_token, a.guest_access_token_hash) = a.guest_access_token_hash))
   );
 $$;
 
@@ -48,9 +48,9 @@ begin
     return jsonb_build_object('attemptId', v_attempt.id, 'expiresAt', v_attempt.expires_at);
   end if;
 
-  v_token := encode(gen_random_bytes(32), 'hex');
+  v_token := encode(extensions.gen_random_bytes(32), 'hex');
   insert into public.attempts (exam_id, guest_name, guest_access_token_hash, expires_at)
-  values (v_exam.id, 'Khách', crypt(v_token, gen_salt('bf')),
+  values (v_exam.id, 'Khách', extensions.crypt(v_token, extensions.gen_salt('bf')),
           now() + make_interval(mins => v_exam.duration_minutes))
   returning * into v_attempt;
   return jsonb_build_object('attemptId', v_attempt.id, 'guestToken', v_token, 'expiresAt', v_attempt.expires_at);

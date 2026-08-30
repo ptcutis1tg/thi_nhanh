@@ -80,6 +80,8 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                 const SizedBox(width: 32),
                 _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
                 const SizedBox(width: 32),
+                _buildNavItem(context, 'Quản lý đề', '/teacher_exams', isActive: GoRouterState.of(context).matchedLocation == '/teacher_exams'),
+                const SizedBox(width: 32),
                 _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
               ],
             ],

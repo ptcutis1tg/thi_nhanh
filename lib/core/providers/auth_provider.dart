@@ -137,7 +137,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signInWithGoogle() async {
-    if (_supabaseClient == null) return;
+    if (_supabaseClient == null) {
+      throw StateError('Supabase is not initialized.');
+    }
     try {
       await _supabaseClient!.auth.signInWithOAuth(OAuthProvider.google);
     } catch (e) {
@@ -169,6 +171,10 @@ class AuthProvider extends ChangeNotifier {
         }
       } catch (e) {
         debugPrint('Lỗi đăng nhập Supabase Email: $e');
+        final str = e.toString();
+        if (str.contains('email_not_confirmed') || str.contains('Email not confirmed')) {
+          rethrow;
+        }
         if (!isLocalPasswordValid) {
           rethrow;
         }
@@ -235,15 +241,13 @@ class AuthProvider extends ChangeNotifier {
         }
         // Thử tự động đăng nhập luôn nếu session khả dụng
         if (response.session == null) {
-          try {
-            await _supabaseClient!.auth.signInWithPassword(
-              email: cleanEmail,
-              password: password,
-            );
-          } catch (_) {}
+          throw Exception('email_not_confirmed');
         }
       } catch (e) {
         final str = e.toString();
+        if (str.contains('email_not_confirmed')) {
+          rethrow;
+        }
         if (str.contains('User already registered') || str.contains('user_already_exists')) {
           _registeredUsers[key] = {
             'name': fullName.isNotEmpty ? fullName : cleanEmail.split('@').first,
