@@ -1202,7 +1202,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           OutlinedButton.icon(
             onPressed: () async {
               await authProvider.signOut();
-              if (context.mounted) {
+              if (mounted) {
                 context.go('/greeting');
               }
             },
@@ -1340,7 +1340,7 @@ class _ScoreChartPainter extends CustomPainter {
     final fillGradient = LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [fillColor, fillColor.withOpacity(0.0)],
+      colors: [fillColor, fillColor.withValues(alpha: 0.0)],
     );
 
     final fillPaint = Paint()
