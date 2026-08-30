@@ -179,22 +179,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // =============================================================
                 // 1. PROFILE HEADER CARD
-                // =============================================================
                 _buildProfileHeaderCard(authProvider, isMobile),
 
                 const SizedBox(height: 28),
 
-                // =============================================================
-                // 2. LEARNING OVERVIEW & ACHIEVEMENTS DASHBOARD
-                // =============================================================
+                // 2. DASHBOARD LAYOUT (2 COLUMNS) - Dynamic Student / Teacher Content
                 if (isMobile)
                   Column(
                     children: [
-                      _buildLearningOverviewCard(),
+                      _buildAnalyticsCard(),
                       const SizedBox(height: 24),
-                      _buildAchievementsCard(),
+                      _buildOverviewOrAchievementsCard(),
                     ],
                   )
                 else
@@ -203,42 +199,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Expanded(
                         flex: 65,
-                        child: _buildLearningOverviewCard(),
+                        child: _buildAnalyticsCard(),
                       ),
                       const SizedBox(width: 24),
                       Expanded(
                         flex: 35,
-                        child: _buildAchievementsCard(),
+                        child: _buildOverviewOrAchievementsCard(),
                       ),
                     ],
                   ),
 
                 const SizedBox(height: 28),
 
-                // =============================================================
-                // 3. RECENT TEST HISTORY CARD
-                // =============================================================
-                _buildRecentTestHistoryCard(),
+                // 3. RECENT ACTIVITY CARD (Student Recent Tests vs Teacher Recent Rooms)
+                if (_isStudentRole)
+                  _buildStudentRecentTestCard()
+                else
+                  _buildTeacherRecentRoomsCard(),
 
                 const SizedBox(height: 28),
 
-                // =============================================================
-                // 4. ACCOUNT SETTINGS CARD
-                // =============================================================
+                // 4. TEACHER EXAM SETS CARD (Teacher Only)
+                if (!_isStudentRole) ...[
+                  _buildTeacherExamSetsCard(),
+                  const SizedBox(height: 28),
+                ],
+
+                // 5. TEACHING INSIGHTS CARD (Teacher Only)
+                if (!_isStudentRole) ...[
+                  _buildTeacherInsightsCard(),
+                  const SizedBox(height: 28),
+                ],
+
+                // 6. PERSONAL INFORMATION CARD
                 _buildPersonalInformationCard(),
 
                 const SizedBox(height: 28),
 
-                // =============================================================
-                // 5. CHANGE PASSWORD CARD
-                // =============================================================
+                // 7. CHANGE PASSWORD CARD
                 _buildChangePasswordCard(),
 
                 const SizedBox(height: 28),
 
-                // =============================================================
-                // 6. ACCOUNT ACTIONS
-                // =============================================================
+                // 8. ACCOUNT ACTIONS
                 _buildAccountActionsCard(authProvider),
               ],
             ),
@@ -249,7 +252,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 1. PROFILE HEADER CARD WIDGET
+  // 1. PROFILE HEADER CARD
   // ---------------------------------------------------------------------------
   Widget _buildProfileHeaderCard(AuthProvider authProvider, bool isMobile) {
     return Container(
@@ -273,7 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 24),
                 const Divider(color: AppTheme.border),
                 const SizedBox(height: 16),
-                _buildHeaderStats(isMobile: true),
+                _buildHeaderStats(),
               ],
             )
           : Row(
@@ -290,7 +293,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 Expanded(
                   flex: 5,
-                  child: _buildHeaderStats(isMobile: false),
+                  child: _buildHeaderStats(),
                 ),
               ],
             ),
@@ -348,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Role badge with interactive toggle support
+              // Role badge with interactive toggle
               InkWell(
                 onTap: () {
                   setState(() => _isStudentRole = !_isStudentRole);
@@ -387,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHeaderStats({required bool isMobile}) {
+  Widget _buildHeaderStats() {
     if (_isStudentRole) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -408,6 +411,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildCompactStatItem('35', 'Phòng thi'),
           _buildVerticalSeparator(),
           _buildCompactStatItem('450', 'Lượt tham gia'),
+          _buildVerticalSeparator(),
+          _buildCompactStatItem('8.1', 'Điểm TB học sinh'),
         ],
       );
     }
@@ -420,7 +425,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           value,
           style: const TextStyle(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
             color: AppTheme.textMain,
           ),
@@ -428,8 +433,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 4),
         Text(
           label,
+          textAlign: TextAlign.center,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: 12,
             color: AppTheme.textSecondary,
             fontWeight: FontWeight.w500,
           ),
@@ -447,9 +453,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 2. LEARNING OVERVIEW CARD (LEFT COLUMN)
+  // 2. ANALYTICS CARD (LEFT COLUMN ~65%)
   // ---------------------------------------------------------------------------
-  Widget _buildLearningOverviewCard() {
+  Widget _buildAnalyticsCard() {
+    final titleText = _isStudentRole ? '📊 Tổng quan học tập' : '📊 Thống kê giảng dạy';
+    final subtitleText = _isStudentRole ? '6 bài gần nhất' : '6 phòng gần nhất';
+
+    final List<double> chartValues =
+        _isStudentRole ? const [7.0, 8.0, 7.5, 9.0, 8.5, 9.2] : const [32, 41, 28, 45, 38, 43];
+    final List<String> chartLabels = _isStudentRole
+        ? const ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Bài 6']
+        : const ['Phòng 1', 'Phòng 2', 'Phòng 3', 'Phòng 4', 'Phòng 5', 'Phòng 6'];
+
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -471,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _isStudentRole ? '📊 Tổng quan học tập' : '📊 Thống kê giảng dạy',
+                titleText,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -485,9 +500,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppTheme.border),
                 ),
-                child: const Text(
-                  '6 bài gần nhất',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                child: Text(
+                  subtitleText,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                 ),
               ),
             ],
@@ -499,9 +514,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             height: 180,
             width: double.infinity,
             child: CustomPaint(
-              painter: _ScoreChartPainter(
-                scores: const [7.0, 8.0, 7.5, 9.0, 8.5, 9.2],
-                labels: const ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Bài 6'],
+              painter: _LineChartPainter(
+                values: chartValues,
+                labels: chartLabels,
+                isStudentScore: _isStudentRole,
               ),
             ),
           ),
@@ -511,14 +527,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // X-Axis Labels
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text('Bài 1', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              Text('Bài 2', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              Text('Bài 3', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              Text('Bài 4', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              Text('Bài 5', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              Text('Bài 6', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-            ],
+            children: chartLabels
+                .map((lbl) =>
+                    Text(lbl, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)))
+                .toList(),
           ),
 
           const SizedBox(height: 24),
@@ -526,87 +538,266 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 16),
 
           // Secondary Metrics
-          Row(
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0ECFF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.star_rounded, color: AppTheme.primary, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Điểm cao nhất',
-                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          '9.5',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textMain,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+          if (_isStudentRole)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSecondaryMetricItem(
+                    icon: Icons.star_rounded,
+                    label: 'Điểm cao nhất',
+                    value: '9.5',
+                  ),
                 ),
-              ),
-              Container(height: 36, width: 1, color: AppTheme.border),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0ECFF),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.timer_outlined, color: AppTheme.primary, size: 20),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Tổng thời gian làm bài',
-                          style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          '6h 32m',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textMain,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                Container(height: 36, width: 1, color: AppTheme.border),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildSecondaryMetricItem(
+                    icon: Icons.timer_outlined,
+                    label: 'Tổng thời gian làm bài',
+                    value: '6h 32m',
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSecondaryMetricItem(
+                    icon: Icons.people_outline_rounded,
+                    label: 'Phòng đông nhất',
+                    value: '45 học sinh',
+                  ),
+                ),
+                Container(height: 36, width: 1, color: AppTheme.border),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSecondaryMetricItem(
+                    icon: Icons.check_circle_outline_rounded,
+                    label: 'Tỷ lệ hoàn thành',
+                    value: '92%',
+                  ),
+                ),
+                Container(height: 36, width: 1, color: AppTheme.border),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildSecondaryMetricItem(
+                    icon: Icons.trending_up_rounded,
+                    label: 'Điểm TB học sinh',
+                    value: '8.1',
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
 
+  Widget _buildSecondaryMetricItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0ECFF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppTheme.primary, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textMain,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // ---------------------------------------------------------------------------
-  // 3. ACHIEVEMENTS CARD (RIGHT COLUMN)
+  // 3. OVERVIEW OR ACHIEVEMENTS CARD (RIGHT COLUMN ~35%)
   // ---------------------------------------------------------------------------
-  Widget _buildAchievementsCard() {
+  Widget _buildOverviewOrAchievementsCard() {
+    if (_isStudentRole) {
+      return Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '🏆 Thành tích',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textMain,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildAchievementItem('🔥', 'Chuỗi 5 bài', 'Hoàn thành bài thi 5 lần liên tiếp', const Color(0xFFFFF7ED)),
+            const SizedBox(height: 14),
+            _buildAchievementItem('🎯', 'Điểm tuyệt đối', 'Đạt 10 điểm một bài thi', const Color(0xFFF0ECFF)),
+            const SizedBox(height: 14),
+            _buildAchievementItem('⚡', 'Phản xạ nhanh', 'Trả lời nhanh 10 câu', const Color(0xFFFEFCE8)),
+            const SizedBox(height: 14),
+            _buildAchievementItem('🥉', 'Top 3', 'Đạt Top 3 trong phòng thi', const Color(0xFFF3F4F6)),
+          ],
+        ),
+      );
+    } else {
+      // Teacher Exam Overview Card ("📌 Tổng quan đề thi")
+      return Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '📌 Tổng quan đề thi',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textMain,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildTeacherOverviewItem('📝', 'Tổng số câu hỏi', '240 câu', const Color(0xFFF0ECFF)),
+            const SizedBox(height: 14),
+            _buildTeacherOverviewItem('🎯', 'Tỷ lệ trả lời đúng', '76%', const Color(0xFFDCFCE7)),
+            const SizedBox(height: 14),
+            _buildTeacherOverviewItem('⚠️', 'Câu khó nhất', 'Câu 8 – Toán 12 (42% đúng)', const Color(0xFFFFEDD5)),
+            const SizedBox(height: 14),
+            _buildTeacherOverviewItem('🔥', 'Đề tham gia nhiều nhất', 'Ôn tập Toán HK1 (86 lượt)', const Color(0xFFFEFCE8)),
+          ],
+        ),
+      );
+    }
+  }
+
+  Widget _buildAchievementItem(String icon, String title, String description, Color bgColor) {
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(icon, style: const TextStyle(fontSize: 20)),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textMain,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTeacherOverviewItem(String icon, String title, String value, Color bgColor) {
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(icon, style: const TextStyle(fontSize: 20)),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textMain,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 4. STUDENT RECENT TEST CARD
+  // ---------------------------------------------------------------------------
+  Widget _buildStudentRecentTestCard() {
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
@@ -625,128 +816,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '🏆 Thành tích',
+            '🕘 Bài thi gần đây',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
               color: AppTheme.textMain,
             ),
-          ),
-          const SizedBox(height: 20),
-          _buildAchievementItem(
-            icon: '🔥',
-            title: 'Chuỗi 5 bài',
-            description: 'Hoàn thành bài thi 5 lần liên tiếp',
-            bgColor: const Color(0xFFFFF7ED),
-          ),
-          const SizedBox(height: 14),
-          _buildAchievementItem(
-            icon: '🎯',
-            title: 'Điểm tuyệt đối',
-            description: 'Đạt 10 điểm một bài thi',
-            bgColor: const Color(0xFFF0ECFF),
-          ),
-          const SizedBox(height: 14),
-          _buildAchievementItem(
-            icon: '⚡',
-            title: 'Phản xạ nhanh',
-            description: 'Trả lời nhanh 10 câu',
-            bgColor: const Color(0xFFFEFCE8),
-          ),
-          const SizedBox(height: 14),
-          _buildAchievementItem(
-            icon: '🥉',
-            title: 'Top 3',
-            description: 'Đạt Top 3 trong phòng thi',
-            bgColor: const Color(0xFFF3F4F6),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAchievementItem({
-    required String icon,
-    required String title,
-    required String description,
-    required Color bgColor,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            icon,
-            style: const TextStyle(fontSize: 20),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textMain,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // 4. RECENT TEST HISTORY CARD
-  // ---------------------------------------------------------------------------
-  Widget _buildRecentTestHistoryCard() {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                '🕘 Bài thi gần đây',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textMain,
-                ),
-              ),
-            ],
           ),
           const SizedBox(height: 20),
           _buildTestHistoryRow(
@@ -776,16 +851,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: () {
-                _showSnackBar('Tính năng xem toàn bộ lịch sử đang được phát triển');
-              },
+              onPressed: () => _showSnackBar('Xem lịch sử bài thi'),
               icon: const Text(
                 'Xem tất cả lịch sử',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.primary,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
               ),
               label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
             ),
@@ -847,10 +916,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 2),
               Text(
                 date,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
               ),
             ],
           ),
@@ -872,9 +938,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(width: 16),
         InkWell(
-          onTap: () {
-            _showSnackBar('Xem chi tiết bài thi: $title');
-          },
+          onTap: () => _showSnackBar('Xem chi tiết bài thi: $title'),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -899,7 +963,391 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 5. PERSONAL INFORMATION CARD
+  // 5. TEACHER RECENT ROOMS CARD ("🕘 Phòng thi gần đây")
+  // ---------------------------------------------------------------------------
+  Widget _buildTeacherRecentRoomsCard() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '🕘 Phòng thi gần đây',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textMain,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => context.go('/create_room'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text(
+                  'Tạo phòng thi',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildTeacherRoomRow(
+            title: 'Ôn tập Toán 12 – Hàm số',
+            roomCode: 'A8K21',
+            date: '25/08/2026',
+            studentsCount: 42,
+            statusLabel: 'Đã kết thúc',
+            statusType: _RoomStatusType.ended,
+          ),
+          const Divider(color: AppTheme.border, height: 24),
+          _buildTeacherRoomRow(
+            title: 'Tiếng Anh – Unit 4',
+            roomCode: 'ENG24',
+            date: '22/08/2026',
+            studentsCount: 35,
+            statusLabel: 'Đã kết thúc',
+            statusType: _RoomStatusType.ended,
+          ),
+          const Divider(color: AppTheme.border, height: 24),
+          _buildTeacherRoomRow(
+            title: 'Vật lý – Dao động điều hòa',
+            roomCode: 'PHY18',
+            date: '18/08/2026',
+            studentsCount: 38,
+            statusLabel: 'Đã kết thúc',
+            statusType: _RoomStatusType.ended,
+          ),
+          const SizedBox(height: 20),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _showSnackBar('Xem tất cả phòng thi đã tạo'),
+              icon: const Text(
+                'Xem tất cả phòng thi',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+              ),
+              label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeacherRoomRow({
+    required String title,
+    required String roomCode,
+    required String date,
+    required int studentsCount,
+    required String statusLabel,
+    required _RoomStatusType statusType,
+  }) {
+    Color badgeBg;
+    Color badgeText;
+    switch (statusType) {
+      case _RoomStatusType.live:
+        badgeBg = const Color(0xFFDCFCE7);
+        badgeText = const Color(0xFF166534);
+        break;
+      case _RoomStatusType.ended:
+        badgeBg = const Color(0xFFF3F4F6);
+        badgeText = const Color(0xFF6B7280);
+        break;
+      case _RoomStatusType.upcoming:
+        badgeBg = const Color(0xFFF0ECFF);
+        badgeText = AppTheme.primary;
+        break;
+    }
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0ECFF),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.meeting_room_outlined, color: AppTheme.primary, size: 20),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textMain,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Mã phòng: $roomCode • $date',
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        Text(
+          '$studentsCount học sinh',
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textMain),
+        ),
+        const SizedBox(width: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: badgeBg,
+            borderRadius: BorderRadius.circular(100),
+          ),
+          child: Text(
+            statusLabel,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: badgeText),
+          ),
+        ),
+        const SizedBox(width: 16),
+        InkWell(
+          onTap: () => _showSnackBar('Xem kết quả phòng thi: $roomCode'),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: const [
+                Text(
+                  'Xem kết quả',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primary),
+                ),
+                SizedBox(width: 4),
+                Icon(Icons.arrow_forward_rounded, size: 14, color: AppTheme.primary),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. TEACHER EXAM SETS CARD ("📝 Bộ đề của tôi")
+  // ---------------------------------------------------------------------------
+  Widget _buildTeacherExamSetsCard() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                '📝 Bộ đề của tôi',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textMain,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => context.go('/create_exam'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text(
+                  'Tạo đề thi',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildExamSetRow(
+            title: 'Toán 12 – Hàm số',
+            details: '20 câu • 30 phút • 86 lượt thi • Cập nhật 25/08/2026',
+          ),
+          const Divider(color: AppTheme.border, height: 24),
+          _buildExamSetRow(
+            title: 'Tiếng Anh – Unit 4',
+            details: '30 câu • 25 phút • 54 lượt thi • Cập nhật 22/08/2026',
+          ),
+          const Divider(color: AppTheme.border, height: 24),
+          _buildExamSetRow(
+            title: 'Vật lý – Dao động điều hòa',
+            details: '25 câu • 40 phút • 48 lượt thi • Cập nhật 18/08/2026',
+          ),
+          const SizedBox(height: 20),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _showSnackBar('Xem tất cả bộ đề đã tạo'),
+              icon: const Text(
+                'Xem tất cả bộ đề',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+              ),
+              label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExamSetRow({required String title, required String details}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEFCE8),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.assignment_outlined, color: Color(0xFFC2410C), size: 20),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textMain,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                details,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        OutlinedButton(
+          onPressed: () => _showSnackBar('Chỉnh sửa bộ đề: $title'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppTheme.textMain,
+            side: const BorderSide(color: AppTheme.border),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('Chỉnh sửa', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(width: 10),
+        ElevatedButton(
+          onPressed: () => context.go('/create_room'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('Tạo phòng →', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 7. TEACHING INSIGHTS CARD ("💡 Cần chú ý")
+  // ---------------------------------------------------------------------------
+  Widget _buildTeacherInsightsCard() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '💡 Cần chú ý',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textMain,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildInsightRow('⚠️ 42% học sinh trả lời sai câu 8 trong đề Toán 12 – Hàm số.'),
+          const SizedBox(height: 10),
+          _buildInsightRow('🎯 Câu hỏi về đạo hàm có tỷ lệ đúng thấp nhất: 58%.'),
+          const SizedBox(height: 10),
+          _buildInsightRow('📈 Điểm trung bình của phòng Toán 12 gần nhất tăng 0.6 điểm.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightRow(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textMain),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8. PERSONAL INFORMATION CARD
   // ---------------------------------------------------------------------------
   Widget _buildPersonalInformationCard() {
     return Container(
@@ -1014,7 +1462,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 6. CHANGE PASSWORD CARD
+  // 9. CHANGE PASSWORD CARD
   // ---------------------------------------------------------------------------
   Widget _buildChangePasswordCard() {
     return Container(
@@ -1179,7 +1627,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // 7. ACCOUNT ACTIONS CARD
+  // 10. ACCOUNT ACTIONS CARD
   // ---------------------------------------------------------------------------
   Widget _buildAccountActionsCard(AuthProvider authProvider) {
     return Container(
@@ -1272,17 +1720,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 enum _ScoreStatus { high, medium, low }
+enum _RoomStatusType { live, ended, upcoming }
 
-// Custom Painter for clean minimal score chart
-class _ScoreChartPainter extends CustomPainter {
-  final List<double> scores;
+// Custom Painter for clean minimal chart
+class _LineChartPainter extends CustomPainter {
+  final List<double> values;
   final List<String> labels;
+  final bool isStudentScore;
 
-  _ScoreChartPainter({required this.scores, required this.labels});
+  _LineChartPainter({
+    required this.values,
+    required this.labels,
+    required this.isStudentScore,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (scores.isEmpty) return;
+    if (values.isEmpty) return;
 
     const lineColor = AppTheme.primary;
     const fillColor = Color(0x206557E8);
@@ -1306,22 +1760,21 @@ class _ScoreChartPainter extends CustomPainter {
       ..color = const Color(0xFFF1F5F9)
       ..strokeWidth = 1.0;
 
-    // Draw horizontal grid lines
     for (int i = 0; i <= 4; i++) {
       final y = size.height - (i * size.height / 4);
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paintGrid);
     }
 
-    final double stepX = size.width / (scores.length - 1);
-    const minScore = 5.0;
-    const maxScore = 10.0;
+    final double stepX = size.width / (values.length - 1);
+    final double minVal = isStudentScore ? 5.0 : 20.0;
+    final double maxVal = isStudentScore ? 10.0 : 50.0;
 
     final Path path = Path();
     final List<Offset> points = [];
 
-    for (int i = 0; i < scores.length; i++) {
-      final score = scores[i].clamp(minScore, maxScore);
-      final normalized = (score - minScore) / (maxScore - minScore);
+    for (int i = 0; i < values.length; i++) {
+      final val = values[i].clamp(minVal, maxVal);
+      final normalized = (val - minVal) / (maxVal - minVal);
       final x = i * stepX;
       final y = size.height - (normalized * (size.height - 30)) - 15;
       points.add(Offset(x, y));
@@ -1357,8 +1810,9 @@ class _ScoreChartPainter extends CustomPainter {
       canvas.drawCircle(pt, 5, paintDot);
       canvas.drawCircle(pt, 2.5, paintDotInner);
 
+      final textVal = isStudentScore ? values[i].toStringAsFixed(1) : '${values[i].toInt()} hs';
       textPainter.text = TextSpan(
-        text: scores[i].toStringAsFixed(1),
+        text: textVal,
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
@@ -1374,5 +1828,5 @@ class _ScoreChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ScoreChartPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _LineChartPainter oldDelegate) => true;
 }
