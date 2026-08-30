@@ -26,8 +26,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isSavingInfo = false;
   bool _isSavingPassword = false;
 
-  // Role toggle: true = Học sinh, false = Giáo viên
-  bool _isStudentRole = true;
+  // Role toggle: false = Giáo viên (mặc định), true = Học sinh
+  bool _isStudentRole = false;
 
   @override
   void initState() {
