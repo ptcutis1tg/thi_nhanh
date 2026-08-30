@@ -26,6 +26,8 @@ jobs:
           channel: stable
       - name: Install packages
         run: flutter pub get
+      - name: Provide the optional runtime env asset
+        run: touch .env
       - name: Build web release
         run: flutter build web --release --base-href /thi_nhanh/
       - name: Upload Pages artifact
