@@ -9,7 +9,11 @@ import 'package:onthi_community/screens/profile/profile_screen.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('student profile renders the role controls instead of a blank body', (tester) async {
+  testWidgets('profile renders personal info, security, and dashboard sections', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
     final auth = AuthProvider(isSupabaseInitialized: false);
     await auth.init();
 
@@ -20,8 +24,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Vai trò sử dụng'), findsOneWidget);
-    expect(find.text('Học sinh'), findsOneWidget);
-    expect(find.text('Giáo viên'), findsOneWidget);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Phòng thi'), findsOneWidget);
+    expect(find.text('Lượt tham gia'), findsOneWidget);
+    expect(find.text('Đăng xuất'), findsOneWidget);
   });
 }

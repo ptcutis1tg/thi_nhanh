@@ -392,28 +392,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildHeaderStats() {
     if (_isStudentRole) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildCompactStatItem('24', 'Bài đã thi'),
-          _buildVerticalSeparator(),
-          _buildCompactStatItem('8.2', 'Điểm trung bình'),
-          _buildVerticalSeparator(),
-          _buildCompactStatItem('🔥 5', 'Chuỗi bài thi'),
-        ],
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildCompactStatItem('24', 'Bài đã thi'),
+            _buildVerticalSeparator(),
+            _buildCompactStatItem('8.2', 'Điểm trung bình'),
+            _buildVerticalSeparator(),
+            _buildCompactStatItem('🔥 5', 'Chuỗi bài thi'),
+          ],
+        ),
       );
     } else {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildCompactStatItem('12', 'Bộ đề đã tạo'),
-          _buildVerticalSeparator(),
-          _buildCompactStatItem('35', 'Phòng thi'),
-          _buildVerticalSeparator(),
-          _buildCompactStatItem('450', 'Lượt tham gia'),
-          _buildVerticalSeparator(),
-          _buildCompactStatItem('8.1', 'Điểm TB học sinh'),
-        ],
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildCompactStatItem('12', 'Bộ đề đã tạo'),
+            _buildVerticalSeparator(),
+            _buildCompactStatItem('35', 'Phòng thi'),
+            _buildVerticalSeparator(),
+            _buildCompactStatItem('450', 'Lượt tham gia'),
+            _buildVerticalSeparator(),
+            _buildCompactStatItem('8.1', 'Điểm TB học sinh'),
+          ],
+        ),
       );
     }
   }
