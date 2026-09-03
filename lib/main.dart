@@ -239,6 +239,7 @@ final GoRouter _router = GoRouter(
       path: '/taking_exam',
       builder: (context, state) => TakingExamScreen(
         attemptId: state.uri.queryParameters['attemptId'],
+        roomId: state.uri.queryParameters['roomId'],
       ),
     ),
     GoRoute(
@@ -247,7 +248,10 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/result',
-      builder: (context, state) => const ResultScreen(),
+      builder: (context, state) => ResultScreen(
+        attemptId: state.uri.queryParameters['attemptId'],
+        roomId: state.uri.queryParameters['roomId'],
+      ),
     ),
   ],
   errorBuilder: (context, state) => Scaffold(

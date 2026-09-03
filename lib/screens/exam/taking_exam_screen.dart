@@ -9,9 +9,10 @@ import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
 
 class TakingExamScreen extends StatefulWidget {
-  const TakingExamScreen({super.key, this.attemptId});
+  const TakingExamScreen({super.key, this.attemptId, this.roomId});
 
   final String? attemptId;
+  final String? roomId;
 
   @override
   State<TakingExamScreen> createState() => _TakingExamScreenState();
@@ -89,7 +90,11 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     setState(() => _isSubmitting = true);
     try {
       await context.read<AssessmentRepository>().submit(attempt.attemptId);
-      if (mounted) context.go('/result');
+      if (mounted) {
+        context.go(
+          '/result?attemptId=${attempt.attemptId}${widget.roomId != null ? '&roomId=${widget.roomId}' : ''}',
+        );
+      }
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Không thể nộp bài. Vui lòng thử lại.')));
     } finally {

@@ -26,6 +26,14 @@ class AssessmentRepository {
     return AttemptPayload.fromJson(_map(response));
   }
 
+  Future<AttemptReviewPayload> loadReview(String attemptId) async {
+    final response = await _client.rpc('attempt_review_payload', params: {
+      'p_attempt_id': attemptId,
+      'p_guest_token': await _guestToken(attemptId),
+    });
+    return AttemptReviewPayload.fromJson(_map(response));
+  }
+
   Future<void> saveAnswer({
     required String attemptId,
     required String questionId,
