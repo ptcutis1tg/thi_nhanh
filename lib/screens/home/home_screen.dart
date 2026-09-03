@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/repositories/room_repository.dart';
+import '../room/widgets/join_room_guest_dialog.dart';
 import '../../shared/widgets/exam_card.dart';
 import '../../shared/widgets/topic_chip.dart';
 
@@ -20,6 +22,85 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _joinRoomController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleJoinRoom(BuildContext context) async {
+    final code = _joinRoomController.text.trim().toUpperCase();
+    if (code.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập mã phòng')),
+      );
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    RoomRepository? roomRepo;
+    try {
+      roomRepo = context.read<RoomRepository>();
+    } catch (_) {
+      roomRepo = null;
+    }
+
+    if (roomRepo == null) {
+      context.go('/student_waiting_room?roomId=$code');
+      return;
+    }
+
+    if (!authProvider.isAuthenticated) {
+      showDialog(
+        context: context,
+        builder: (ctx) => JoinRoomGuestDialog(
+          roomCode: code,
+          onJoin: (guestName, password) async {
+            final result = await roomRepo!.joinRoom(
+              code: code,
+              password: password,
+              guestName: guestName,
+            );
+            if (context.mounted) {
+              context.go(
+                '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
+              );
+            }
+          },
+        ),
+      );
+    } else {
+      try {
+        final result = await roomRepo.joinRoom(code: code);
+        if (context.mounted) {
+          context.go(
+            '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        if (errorMsg.toLowerCase().contains('password') || errorMsg.toLowerCase().contains('mật khẩu')) {
+          showDialog(
+            context: context,
+            builder: (ctx) => JoinRoomGuestDialog(
+              roomCode: code,
+              onJoin: (guestName, password) async {
+                final result = await roomRepo!.joinRoom(
+                  code: code,
+                  password: password,
+                );
+                if (context.mounted) {
+                  context.go(
+                    '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
+                  );
+                }
+              },
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg), backgroundColor: AppTheme.error),
+          );
+        }
+      }
+    }
   }
 
   @override
@@ -182,28 +263,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _joinRoomController,
-                                onSubmitted: (value) {
-                                  if (value.isNotEmpty) {
-                                    context.go('/student_waiting_room');
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập mã phòng')));
-                                  }
-                                },
+                                textCapitalization: TextCapitalization.characters,
+                                onSubmitted: (_) => _handleJoinRoom(context),
                                 decoration: const InputDecoration(
                                   hintText: 'Nhập mã phòng (PT...)',
+                                  prefixIcon: Icon(Icons.pin_outlined),
                                   border: OutlineInputBorder(),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
                             ElevatedButton(
-                              onPressed: () {
-                                if (_joinRoomController.text.isNotEmpty) {
-                                  context.go('/student_waiting_room');
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập mã phòng')));
-                                }
-                              },
+                              onPressed: () => _handleJoinRoom(context),
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                               ),
