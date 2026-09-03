@@ -225,7 +225,11 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/student_waiting_room',
-      builder: (context, state) => const StudentWaitingRoomScreen(),
+      builder: (context, state) => StudentWaitingRoomScreen(
+        roomId: state.uri.queryParameters['roomId'],
+        participantId: state.uri.queryParameters['participantId'],
+        guestToken: state.uri.queryParameters['guestToken'],
+      ),
     ),
     GoRoute(
       path: '/room/password',

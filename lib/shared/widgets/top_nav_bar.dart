@@ -71,20 +71,28 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           
           // Menu items
-          Row(
-            children: [
-              _buildNavItem(context, 'Home', '/home', isActive: GoRouterState.of(context).matchedLocation == '/home'),
-              const SizedBox(width: 32),
-              _buildNavItem(context, 'Tìm kiếm', '/search', isActive: GoRouterState.of(context).matchedLocation == '/search'),
-              if (authProvider.isTeacher) ...[
-                const SizedBox(width: 32),
-                _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
-                const SizedBox(width: 32),
-                _buildNavItem(context, 'Quản lý đề', '/teacher_exams', isActive: GoRouterState.of(context).matchedLocation == '/teacher_exams'),
-                const SizedBox(width: 32),
-                _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
-              ],
-            ],
+          Builder(
+            builder: (context) {
+              String currentLocation = '';
+              try {
+                currentLocation = GoRouterState.of(context).matchedLocation;
+              } catch (_) {}
+              return Row(
+                children: [
+                  _buildNavItem(context, 'Home', '/home', isActive: currentLocation == '/home'),
+                  const SizedBox(width: 32),
+                  _buildNavItem(context, 'Tìm kiếm', '/search', isActive: currentLocation == '/search'),
+                  if (authProvider.isTeacher) ...[
+                    const SizedBox(width: 32),
+                    _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: currentLocation == '/create_exam'),
+                    const SizedBox(width: 32),
+                    _buildNavItem(context, 'Quản lý đề', '/teacher_exams', isActive: currentLocation == '/teacher_exams'),
+                    const SizedBox(width: 32),
+                    _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: currentLocation == '/create_room'),
+                  ],
+                ],
+              );
+            },
           ),
           
           // Right Profile Avatar Button
