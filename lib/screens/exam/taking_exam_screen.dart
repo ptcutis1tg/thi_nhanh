@@ -1,17 +1,137 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 
 class TakingExamScreen extends StatefulWidget {
-  const TakingExamScreen({super.key});
+  final String? examId;
+  const TakingExamScreen({super.key, this.examId});
 
   @override
   State<TakingExamScreen> createState() => _TakingExamScreenState();
 }
 
 class _TakingExamScreenState extends State<TakingExamScreen> {
-  int _currentQuestionIndex = 4; // Mocking question 5
-  String? _selectedOption;
+  bool _isLoading = true;
+  String _examTitle = 'Đang tải bài thi...';
+  int _durationMinutes = 45;
+
+  List<Map<String, dynamic>> _questions = [];
+  int _currentQuestionIndex = 0;
+  final Map<int, String> _selectedAnswers = {}; // questionIndex -> selectedOptionId / label
+  final Map<int, bool> _flaggedQuestions = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExamAndQuestions();
+  }
+
+  Future<void> _loadExamAndQuestions() async {
+    setState(() => _isLoading = true);
+    try {
+      final client = Supabase.instance.client;
+      Map<String, dynamic>? exam;
+
+      if (widget.examId != null && widget.examId!.isNotEmpty) {
+        exam = await client
+            .from('exams')
+            .select('id, title, subject, duration_minutes')
+            .eq('id', widget.examId!)
+            .maybeSingle();
+      }
+
+      // If no specific exam found or provided, pick the first published exam from Supabase
+      exam ??= await client
+          .from('exams')
+          .select('id, title, subject, duration_minutes')
+          .eq('status', 'published')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (exam != null) {
+        _examTitle = exam['title'] ?? 'Bài kiểm tra';
+        _durationMinutes = exam['duration_minutes'] ?? 45;
+
+        final examIdStr = exam['id'].toString();
+
+        // Query questions & question_options
+        final qRes = await client
+            .from('questions')
+            .select('id, position, body, explanation, points, question_options(id, position, body, is_correct)')
+            .eq('exam_id', examIdStr)
+            .order('position', ascending: true);
+
+        final qList = (qRes as List<dynamic>).cast<Map<String, dynamic>>();
+
+        if (qList.isNotEmpty) {
+          _questions = qList;
+        }
+      }
+    } catch (e) {
+      debugPrint('Lỗi tải câu hỏi từ Supabase: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _submitExam() async {
+    if (_questions.isEmpty) return;
+
+    int correctCount = 0;
+    int wrongCount = 0;
+    int skippedCount = 0;
+
+    for (int i = 0; i < _questions.length; i++) {
+      final q = _questions[i];
+      final selectedOptId = _selectedAnswers[i];
+      final options = (q['question_options'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+
+      if (selectedOptId == null) {
+        skippedCount++;
+      } else {
+        final selectedOpt = options.firstWhere(
+          (opt) => opt['id'].toString() == selectedOptId || opt['body'] == selectedOptId,
+          orElse: () => {},
+        );
+        if (selectedOpt['is_correct'] == true) {
+          correctCount++;
+        } else {
+          wrongCount++;
+        }
+      }
+    }
+
+    final double rawScore = (correctCount / _questions.length) * 10.0;
+    final double finalScore = double.parse(rawScore.toStringAsFixed(1));
+
+    // Save attempt to Supabase
+    try {
+      final client = Supabase.instance.client;
+      final user = client.auth.currentUser;
+      
+      await client.from('attempts').insert({
+        'exam_id': widget.examId ?? (_questions.isNotEmpty ? _questions.first['exam_id'] : null),
+        'user_id': user?.id,
+        'guest_name': user == null ? 'Học sinh' : null,
+        'status': 'submitted',
+        'started_at': DateTime.now().subtract(Duration(minutes: _durationMinutes)).toIso8601String(),
+        'submitted_at': DateTime.now().toIso8601String(),
+        'score': finalScore,
+      });
+    } catch (e) {
+      debugPrint('Lỗi lưu bài làm lên Supabase: $e');
+    }
+
+    if (mounted) {
+      context.go(
+        '/result?score=$finalScore&total=${_questions.length}&correct=$correctCount&wrong=$wrongCount&skipped=$skippedCount&title=${Uri.encodeComponent(_examTitle)}',
+      );
+    }
+  }
 
   Future<bool> _onWillPop() async {
     final shouldPop = await showDialog<bool>(
@@ -37,6 +157,22 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Đang tải dữ liệu bài thi từ Supabase...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -66,7 +202,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                   flex: 1,
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: _buildLeaderboardSidebar(),
+                    child: _buildSidebarNavigator(),
                   ),
                 ),
               ],
@@ -79,14 +215,14 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
 
   PreferredSizeWidget _buildMinimalAppBar() {
     return AppBar(
-      automaticallyImplyLeading: false, // Hide default back button
+      automaticallyImplyLeading: false,
       backgroundColor: Colors.white,
       elevation: 0,
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.edit_square, color: AppTheme.primary),
-          SizedBox(width: 8),
-          Text('Thi Nhanh', style: TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold)),
+          const Icon(Icons.edit_square, color: AppTheme.primary),
+          const SizedBox(width: 8),
+          Text(_examTitle, style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 16)),
         ],
       ),
       actions: [
@@ -97,11 +233,11 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
             color: AppTheme.primary,
             borderRadius: BorderRadius.circular(100),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.timer, color: Colors.white, size: 18),
-              SizedBox(width: 8),
-              Text('29:45', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+              const Icon(Icons.timer, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Text('$_durationMinutes:00', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             ],
           ),
         ),
@@ -126,6 +262,19 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   }
 
   Widget _buildQuestionArea() {
+    if (_questions.isEmpty) {
+      return const Center(
+        child: Text('Bài thi hiện chưa có câu hỏi trong cơ sở dữ liệu.'),
+      );
+    }
+
+    final q = _questions[_currentQuestionIndex];
+    final qBody = q['body']?.toString() ?? '';
+    final options = (q['question_options'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ?? [];
+    options.sort((a, b) => (a['position'] as int? ?? 0).compareTo(b['position'] as int? ?? 0));
+
+    final isFlagged = _flaggedQuestions[_currentQuestionIndex] == true;
+
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
@@ -148,35 +297,41 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
-                  'Câu hỏi ${_currentQuestionIndex + 1}/20',
+                  'Câu hỏi ${_currentQuestionIndex + 1}/${_questions.length}',
                   style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold),
                 ),
               ),
-              const Row(
-                children: [
-                  Icon(Icons.flag_outlined, size: 18, color: AppTheme.textSecondary),
-                  SizedBox(width: 4),
-                  Text('Đánh dấu để xem lại', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
-                ],
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _flaggedQuestions[_currentQuestionIndex] = !isFlagged;
+                  });
+                },
+                child: Row(
+                  children: [
+                    Icon(
+                      isFlagged ? Icons.flag : Icons.flag_outlined,
+                      size: 18,
+                      color: isFlagged ? AppTheme.warning : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      isFlagged ? 'Đã đánh dấu' : 'Đánh dấu xem lại',
+                      style: TextStyle(
+                        color: isFlagged ? AppTheme.warning : AppTheme.textSecondary,
+                        fontSize: 12,
+                        fontWeight: isFlagged ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Cho hàm số y = f(x) liên tục trên ℝ và có bảng biến thiên như hình dưới đây. Khẳng định nào sau đây là đúng?',
-            style: TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.border),
-            ),
-            alignment: Alignment.center,
-            child: const Text('Mock Image Placeholder', style: TextStyle(color: AppTheme.textSecondary)),
+          Text(
+            qBody,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 24),
           
@@ -186,12 +341,14 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
               childAspectRatio: 4,
-              children: [
-                _buildOptionTile('A', 'Hàm số đạt cực đại tại x = 0'),
-                _buildOptionTile('B', 'Hàm số có giá trị cực tiểu bằng -2'),
-                _buildOptionTile('C', 'Hàm số đồng biến trên khoảng (-∞; -1)'),
-                _buildOptionTile('D', 'Hàm số nghịch biến trên khoảng (-1; 1)'),
-              ],
+              children: List.generate(options.length, (optIdx) {
+                final opt = options[optIdx];
+                final optId = opt['id']?.toString() ?? opt['body']?.toString() ?? optIdx.toString();
+                final optLetter = String.fromCharCode(65 + optIdx);
+                final optBody = opt['body']?.toString() ?? '';
+
+                return _buildOptionTile(optId, optLetter, optBody);
+              }),
             ),
           ),
           
@@ -201,33 +358,19 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
             children: [
               OutlinedButton.icon(
                 onPressed: _currentQuestionIndex > 0
-                    ? () {
-                        setState(() {
-                          _currentQuestionIndex--;
-                          _selectedOption = null;
-                        });
-                      }
+                    ? () => setState(() => _currentQuestionIndex--)
                     : null,
                 icon: const Icon(Icons.chevron_left),
                 label: const Text('Câu trước'),
               ),
-              _buildPagination(),
               ElevatedButton.icon(
-                onPressed: _currentQuestionIndex < 19
-                    ? () {
-                        setState(() {
-                          _currentQuestionIndex++;
-                          _selectedOption = null;
-                        });
-                      }
-                    : () {
-                        // Giả lập nộp bài nếu đang ở câu cuối cùng
-                        context.go('/result');
-                      },
-                icon: Icon(_currentQuestionIndex < 19 ? Icons.chevron_right : Icons.send),
-                label: Text(_currentQuestionIndex < 19 ? 'Câu sau' : 'Nộp bài'),
+                onPressed: _currentQuestionIndex < _questions.length - 1
+                    ? () => setState(() => _currentQuestionIndex++)
+                    : _submitExam,
+                icon: Icon(_currentQuestionIndex < _questions.length - 1 ? Icons.chevron_right : Icons.send),
+                label: Text(_currentQuestionIndex < _questions.length - 1 ? 'Câu sau' : 'Nộp bài'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _currentQuestionIndex < 19 ? null : AppTheme.success,
+                  backgroundColor: _currentQuestionIndex < _questions.length - 1 ? null : AppTheme.success,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
@@ -238,12 +381,13 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     );
   }
 
-  Widget _buildOptionTile(String value, String text) {
-    final isSelected = _selectedOption == value;
+  Widget _buildOptionTile(String optId, String letter, String text) {
+    final isSelected = _selectedAnswers[_currentQuestionIndex] == optId;
+
     return InkWell(
       onTap: () {
         setState(() {
-          _selectedOption = value;
+          _selectedAnswers[_currentQuestionIndex] = optId;
         });
       },
       borderRadius: BorderRadius.circular(16),
@@ -269,7 +413,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
             ),
             const SizedBox(width: 12),
             Text(
-              '$value.',
+              '$letter.',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(width: 8),
@@ -280,135 +424,86 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     );
   }
 
-  Widget _buildPagination() {
-    return Row(
-      children: [
-        _buildPageNumber('1', isAnswered: true, isCurrent: _currentQuestionIndex == 0),
-        _buildPageNumber('2', isAnswered: true, isCurrent: _currentQuestionIndex == 1),
-        _buildPageNumber('3', isAnswered: true, isCurrent: _currentQuestionIndex == 2),
-        _buildPageNumber('4', isAnswered: true, isCurrent: _currentQuestionIndex == 3),
-        if (_currentQuestionIndex > 3 && _currentQuestionIndex < 19)
-          _buildPageNumber('${_currentQuestionIndex + 1}', isCurrent: true),
-        if (_currentQuestionIndex <= 3) _buildPageNumber('5', isCurrent: _currentQuestionIndex == 4),
-        if (_currentQuestionIndex <= 4) _buildPageNumber('6'),
-        const SizedBox(width: 8),
-        const Text('...'),
-      ],
-    );
-  }
-
-  Widget _buildPageNumber(String number, {bool isAnswered = false, bool isCurrent = false}) {
+  Widget _buildSidebarNavigator() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: isCurrent ? Colors.white : (isAnswered ? AppTheme.primary : Colors.transparent),
-        shape: BoxShape.circle,
-        border: Border.all(color: isCurrent ? AppTheme.primary : (isAnswered ? AppTheme.primary : AppTheme.border), width: isCurrent ? 2 : 1),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        number,
-        style: TextStyle(
-          color: isCurrent ? AppTheme.primary : (isAnswered ? Colors.white : AppTheme.textSecondary),
-          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLeaderboardSidebar() {
-    return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
+        border: Border.all(color: AppTheme.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.local_fire_department, color: Colors.orange),
-              const SizedBox(width: 8),
-              const Text('Bảng xếp hạng', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.error.withOpacity(0.1),
-                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                ),
-                child: const Text('LIVE', style: TextStyle(color: AppTheme.error, fontSize: 10, fontWeight: FontWeight.bold)),
+          const Text('Danh sách câu hỏi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 16),
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
               ),
-            ],
-          ),
-          const Divider(height: 32, color: AppTheme.border),
-          _buildRankItem(1, 'Nguyễn Văn A', 17, 20, color: Colors.amber),
-          _buildRankItem(2, 'Trần Thị B', 16, 20, color: Colors.blueGrey),
-          _buildRankItem(3, 'Lê Hoàng C', 15, 20, color: Colors.brown),
-          _buildRankItem(4, 'Phạm D', 14, 20),
-          _buildRankItem(5, 'Hoàng E', 13, 20),
-          const Divider(height: 32, color: AppTheme.border),
-          _buildRankItem(42, 'Bạn (Tôi)', 5, 20, color: AppTheme.primary, isSelf: true),
-        ],
-      ),
-    );
-  }
+              itemCount: _questions.length,
+              itemBuilder: (context, index) {
+                final isCurrent = index == _currentQuestionIndex;
+                final isAnswered = _selectedAnswers.containsKey(index);
+                final isFlagged = _flaggedQuestions[index] == true;
 
-  Widget _buildRankItem(int rank, String name, int score, int total, {Color color = AppTheme.border, bool isSelf = false}) {
-    final progress = score / total;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isSelf ? AppTheme.primary.withOpacity(0.05) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelf ? Border.all(color: AppTheme.primary.withOpacity(0.3)) : null,
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              child: Text(
-                '$rank',
-                style: TextStyle(fontWeight: FontWeight.bold, color: color != AppTheme.border ? color : AppTheme.textSecondary),
-              ),
-            ),
-            Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: color, width: 2),
-              ),
-              alignment: Alignment.center,
-              child: Text(name[0], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(name, style: TextStyle(fontWeight: isSelf ? FontWeight.bold : FontWeight.normal, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: AppTheme.surface,
-                    valueColor: AlwaysStoppedAnimation<Color>(color != AppTheme.border ? color : AppTheme.primary.withOpacity(0.5)),
+                Color bgColor = Colors.white;
+                Color textColor = AppTheme.textMain;
+                Border border = Border.all(color: AppTheme.border);
+
+                if (isCurrent) {
+                  bgColor = AppTheme.primary;
+                  textColor = Colors.white;
+                  border = Border.all(color: AppTheme.primary, width: 2);
+                } else if (isAnswered) {
+                  bgColor = const Color(0xFFF0ECFF);
+                  textColor = AppTheme.primary;
+                  border = Border.all(color: AppTheme.primaryLight);
+                }
+
+                return InkWell(
+                  onTap: () => setState(() => _currentQuestionIndex = index),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: border,
+                    ),
+                    alignment: Alignment.center,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Text(
+                          '${index + 1}',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: textColor),
+                        ),
+                        if (isFlagged)
+                          const Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Icon(Icons.flag, size: 10, color: AppTheme.warning),
+                          ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-            const SizedBox(width: 12),
-            Text('$score/$total', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _submitExam,
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
+              child: const Text('Nộp bài thi'),
+            ),
+          ),
+        ],
       ),
     );
   }

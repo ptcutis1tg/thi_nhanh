@@ -1,15 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
-import '../../shared/widgets/top_nav_bar.dart';
 
-class StudentWaitingRoomScreen extends StatelessWidget {
+class StudentWaitingRoomScreen extends StatefulWidget {
   const StudentWaitingRoomScreen({super.key});
 
   @override
+  State<StudentWaitingRoomScreen> createState() => _StudentWaitingRoomScreenState();
+}
+
+class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
+  bool _isLoading = true;
+  Map<String, dynamic>? _roomData;
+  List<Map<String, dynamic>> _participants = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRealRoom();
+  }
+
+  Future<void> _fetchRealRoom() async {
+    setState(() => _isLoading = true);
+    try {
+      final client = Supabase.instance.client;
+      // Fetch latest active room
+      final roomRes = await client.from('rooms').select('id, code, title, exam_id').order('created_at', ascending: false).limit(1).maybeSingle();
+      
+      if (roomRes != null) {
+        final roomId = roomRes['id'];
+        final attemptsRes = await client.from('attempts').select('guest_name, user_id, status').eq('room_id', roomId);
+        if (mounted) {
+          setState(() {
+            _roomData = roomRes;
+            _participants = List<Map<String, dynamic>>.from(attemptsRes as List);
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint('Lỗi tải dữ liệu phòng chờ học sinh: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final roomTitle = _roomData?['title'] as String? ?? 'Phòng thi trực tuyến';
+    final roomCode = _roomData?['code'] as String? ?? 'PT123456';
+    final participantsCount = _participants.length;
+
     return Scaffold(
-      appBar: const TopNavBar(),
       backgroundColor: AppTheme.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
@@ -18,16 +69,29 @@ class StudentWaitingRoomScreen extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 900),
             child: Column(
               children: [
+                // Top Header Navigation
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.go('/home'),
+                      icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('Phòng Chờ Thi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
                 // Hero Banner
-                _buildHeroBanner(),
+                _buildHeroBanner(roomTitle),
                 const SizedBox(height: 32),
-                
+
                 // Info Grid
-                _buildInfoGrid(),
+                _buildInfoGrid(roomCode),
                 const SizedBox(height: 32),
-                
+
                 // Participants Section
-                _buildParticipantsSection(),
+                _buildParticipantsSection(participantsCount),
               ],
             ),
           ),
@@ -39,33 +103,33 @@ class StudentWaitingRoomScreen extends StatelessWidget {
         },
         backgroundColor: AppTheme.success,
         icon: const Icon(Icons.play_arrow),
-        label: const Text('Mô phỏng: Bắt đầu thi'),
+        label: const Text('Bắt Đầu Bài Thi'),
       ),
     );
   }
 
-  Widget _buildHeroBanner() {
+  Widget _buildHeroBanner(String title) {
     return Column(
       children: [
         Container(
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: AppTheme.primary.withOpacity(0.1),
+            color: AppTheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
           child: const Icon(Icons.hourglass_bottom, color: AppTheme.primary, size: 32),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Kiểm tra giữa kỳ môn Toán Học 10',
-          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
         const Text(
-          'Đang chờ giáo viên mở phòng thi. Vui lòng giữ màn hình này và chuẩn bị sẵn sàng.',
+          'Đang chờ mở phòng thi. Vui lòng giữ màn hình này và chuẩn bị sẵn sàng.',
           style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
           textAlign: TextAlign.center,
         ),
@@ -73,7 +137,7 @@ class StudentWaitingRoomScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoGrid() {
+  Widget _buildInfoGrid(String code) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,7 +150,7 @@ class StudentWaitingRoomScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 8)),
               ],
             ),
             child: Column(
@@ -103,9 +167,9 @@ class StudentWaitingRoomScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppTheme.border),
                   ),
-                  child: const Text(
-                    'PT892341',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 2),
+                  child: Text(
+                    code,
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 2),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -122,7 +186,7 @@ class StudentWaitingRoomScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 24),
-        
+
         // Exam Details Card
         Expanded(
           flex: 2,
@@ -132,7 +196,7 @@ class StudentWaitingRoomScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 8)),
               ],
             ),
             child: Column(
@@ -142,14 +206,14 @@ class StudentWaitingRoomScreen extends StatelessWidget {
                 const Divider(height: 32, color: AppTheme.border),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoItem(Icons.schedule, 'Thời gian làm bài', '45 phút')),
-                    Expanded(child: _buildInfoItem(Icons.format_list_numbered, 'Số lượng câu hỏi', '40 câu trắc nghiệm')),
+                    Expanded(child: _buildInfoItem(Icons.schedule, 'Thời gian làm bài', '60 phút')),
+                    Expanded(child: _buildInfoItem(Icons.format_list_numbered, 'Số lượng câu hỏi', 'Tự động đồng bộ')),
                   ],
                 ),
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    Expanded(child: _buildInfoItem(Icons.school_outlined, 'Giáo viên coi thi', 'Cô Nguyễn Thị A')),
+                    Expanded(child: _buildInfoItem(Icons.school_outlined, 'Giáo viên', 'Hệ thống')),
                     Expanded(child: _buildInfoItem(Icons.rule, 'Quy chế', 'Không thoát màn hình', isError: true)),
                   ],
                 ),
@@ -177,7 +241,7 @@ class StudentWaitingRoomScreen extends StatelessWidget {
                   ? Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppTheme.error.withOpacity(0.1),
+                        color: AppTheme.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(value, style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.bold)),
@@ -190,14 +254,14 @@ class StudentWaitingRoomScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildParticipantsSection() {
+  Widget _buildParticipantsSection(int count) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -215,87 +279,53 @@ class StudentWaitingRoomScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
+                  color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
                 ),
-                child: const Text(
-                  '45/50 học sinh đã sẵn sàng',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 12),
+                child: Text(
+                  '$count học sinh trong phòng',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 12),
                 ),
               ),
             ],
           ),
           const Divider(height: 32, color: AppTheme.border),
-          Wrap(
-            spacing: 24,
-            runSpacing: 24,
-            children: [
-              _buildAvatarItem('Bạn', 'B', isSelf: true),
-              _buildAvatarItem('Minh Anh', 'MA'),
-              _buildAvatarItem('Hải Bình', 'HB'),
-              _buildAvatarItem('Tiến Cường', 'TC'),
-              _buildAvatarItem('Đang vào...', '?', isConnecting: true),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Divider(height: 32, color: AppTheme.border),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Xem tất cả danh sách'),
-          ),
+          if (_participants.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Hiện tại bạn là học sinh đầu tiên trong phòng thi này.', style: TextStyle(color: AppTheme.textSecondary)),
+            )
+          else
+            Wrap(
+              spacing: 24,
+              runSpacing: 24,
+              children: _participants.map((p) {
+                final name = (p['guest_name'] as String?) ?? 'Học sinh';
+                final initials = name.isNotEmpty ? name[0].toUpperCase() : 'H';
+                return _buildAvatarItem(name, initials);
+              }).toList(),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildAvatarItem(String name, String initials, {bool isSelf = false, bool isConnecting = false}) {
+  Widget _buildAvatarItem(String name, String initials) {
     return Column(
       children: [
-        Stack(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isConnecting ? AppTheme.background : (isSelf ? AppTheme.primary.withOpacity(0.2) : AppTheme.surface),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isConnecting ? AppTheme.border : (isSelf ? AppTheme.primary : AppTheme.border),
-                  width: 2,
-                  style: isConnecting ? BorderStyle.solid : BorderStyle.solid,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: isConnecting 
-                  ? const Icon(Icons.person_outline, color: AppTheme.textSecondary)
-                  : Text(initials, style: TextStyle(fontWeight: FontWeight.bold, color: isSelf ? AppTheme.primary : AppTheme.textSecondary)),
-            ),
-            if (!isConnecting)
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppTheme.success,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-          ],
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+            border: Border.all(color: AppTheme.primary, width: 2),
+          ),
+          alignment: Alignment.center,
+          child: Text(initials, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary)),
         ),
         const SizedBox(height: 8),
-        Text(
-          name,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelf ? FontWeight.bold : FontWeight.normal,
-            fontStyle: isConnecting ? FontStyle.italic : FontStyle.normal,
-            color: isConnecting ? AppTheme.textSecondary : AppTheme.textMain,
-          ),
-        ),
+        Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
       ],
     );
   }

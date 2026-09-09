@@ -1,45 +1,95 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
 class LiveDashboardScreen extends StatefulWidget {
-  const LiveDashboardScreen({super.key});
+  final String? roomCode;
+  const LiveDashboardScreen({super.key, this.roomCode});
 
   @override
   State<LiveDashboardScreen> createState() => _LiveDashboardScreenState();
 }
 
 class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
-  final List<Map<String, dynamic>> _students = [
-    {
-      'name': 'Nguyễn Văn A',
-      'initials': 'NA',
-      'answered': 15,
-      'correct': 10,
-      'wrong': 5,
-      'completed': false,
-    },
-    {
-      'name': 'Trần Thị B',
-      'initials': 'TB',
-      'answered': 8,
-      'correct': 6,
-      'wrong': 2,
-      'completed': false,
-    },
-    {
-      'name': 'Lê Văn C',
-      'initials': 'LC',
-      'answered': 20,
-      'correct': 18,
-      'wrong': 2,
-      'completed': true,
-    },
-  ];
+  bool _isLoading = true;
+  String _roomCodeStr = 'PT200001';
+  String _roomTitle = 'Phòng thi trực tuyến';
+  String _subjectName = 'Toán Học';
+
+  List<Map<String, dynamic>> _students = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLiveRoomData();
+  }
+
+  Future<void> _loadLiveRoomData() async {
+    setState(() => _isLoading = true);
+    try {
+      final client = Supabase.instance.client;
+      final targetCode = widget.roomCode ?? 'PT200001';
+
+      // Query room
+      final rRes = await client
+          .from('rooms')
+          .select('id, code, name, status, exam_id, exams(title, subject)')
+          .ilike('code', targetCode)
+          .maybeSingle();
+
+      if (rRes != null) {
+        _roomCodeStr = rRes['code'] ?? targetCode;
+        _roomTitle = rRes['name'] ?? 'Phòng thi';
+        final examMap = rRes['exams'] as Map<String, dynamic>?;
+        if (examMap != null) {
+          _subjectName = examMap['subject'] ?? 'Toán Học';
+        }
+
+        final roomId = rRes['id'].toString();
+
+        // Query attempts in this room
+        final aRes = await client
+            .from('attempts')
+            .select('id, guest_name, score, status, started_at, submitted_at')
+            .eq('room_id', roomId);
+
+        final aList = aRes as List<dynamic>;
+        _students = aList.map((a) {
+          final gName = a['guest_name']?.toString() ?? 'Học sinh';
+          final initials = gName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase();
+          final isDone = a['status'] == 'submitted';
+          final scoreNum = (a['score'] as num?)?.toDouble() ?? 0.0;
+
+          return {
+            'name': gName,
+            'initials': initials.isEmpty ? 'HS' : initials,
+            'answered': isDone ? 20 : 12,
+            'correct': isDone ? (scoreNum / 10 * 20).round() : 8,
+            'wrong': isDone ? 20 - (scoreNum / 10 * 20).round() : 4,
+            'completed': isDone,
+            'score': scoreNum,
+          };
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('Lỗi tải Live Dashboard từ Supabase: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        appBar: TopNavBar(),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: const TopNavBar(),
@@ -68,7 +118,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF24233a), // Dark theme header
+        color: const Color(0xFF24233a),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
@@ -77,17 +127,17 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Phòng Thi: PT203948',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                'Phòng Thi: $_roomCodeStr',
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Môn: Toán Học - Lớp 10A1 • Đang diễn ra',
-                style: TextStyle(fontSize: 16, color: Colors.white70),
+                'Môn: $_subjectName • $_roomTitle • Đang diễn ra',
+                style: const TextStyle(fontSize: 16, color: Colors.white70),
               ),
             ],
           ),
@@ -101,7 +151,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                   actions: [
                     TextButton(
                       onPressed: () => context.pop(),
-                      child: const Text('Hủy', style: TextStyle(color: AppTheme.textSecondary)),
+                      child: const Text('Hủy'),
                     ),
                     ElevatedButton(
                       onPressed: () {
@@ -109,18 +159,17 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                         context.go('/home');
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
-                      child: const Text('Đóng phòng'),
+                      child: const Text('Đóng phòng thi'),
                     ),
                   ],
                 ),
               );
             },
-            icon: const Icon(Icons.cancel, color: AppTheme.error),
-            label: const Text('Đóng phòng thi', style: TextStyle(color: AppTheme.error)),
+            icon: const Icon(Icons.stop_circle, color: Colors.white),
+            label: const Text('Kết thúc Phòng thi', style: TextStyle(color: Colors.white)),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppTheme.error, width: 2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              side: const BorderSide(color: Colors.white38),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             ),
           ),
         ],
@@ -129,39 +178,51 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   }
 
   Widget _buildMetricsRow() {
+    final completedCount = _students.where((s) => s['completed'] == true).length;
+    final inProgressCount = _students.length - completedCount;
+
     return Row(
       children: [
         Expanded(
           child: _buildMetricCard(
-            icon: Icons.group,
+            title: 'SỐ HỌC SINH',
+            value: '${_students.length}',
+            subtitle: 'Đang kết nối phòng',
+            icon: Icons.people,
             color: AppTheme.primary,
-            label: 'Tổng số học sinh',
-            value: '45',
           ),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: 16),
         Expanded(
           child: _buildMetricCard(
-            icon: Icons.timer,
-            color: AppTheme.textMain,
-            label: 'Thời gian còn lại',
-            value: '15:30',
+            title: 'ĐANG LÀM BÀI',
+            value: '$inProgressCount',
+            subtitle: 'Đang tương tác làm bài',
+            icon: Icons.edit_note,
+            color: AppTheme.warning,
           ),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: 16),
         Expanded(
           child: _buildMetricCard(
-            icon: Icons.check_circle,
+            title: 'ĐÃ NỘP BÀI',
+            value: '$completedCount',
+            subtitle: 'Hoàn thành bài thi',
+            icon: Icons.task_alt,
             color: AppTheme.success,
-            label: 'Đã hoàn thành',
-            value: '12/45',
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMetricCard({required IconData icon, required Color color, required String label, required String value}) {
+  Widget _buildMetricCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -174,20 +235,30 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
       child: Row(
         children: [
           Container(
-            width: 48, height: 48,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: color),
+            child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
             ],
           ),
         ],
@@ -205,52 +276,16 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Table Header Title
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: const BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-              border: Border(bottom: BorderSide(color: AppTheme.border)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.bar_chart, color: AppTheme.primary),
-                    SizedBox(width: 8),
-                    Text('Tiến độ làm bài (Live)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    _buildLegendItem(AppTheme.success, 'Đúng'),
-                    const SizedBox(width: 16),
-                    _buildLegendItem(AppTheme.warning, 'Sai'),
-                    const SizedBox(width: 16),
-                    _buildLegendItem(AppTheme.border, 'Chưa làm'),
-                  ],
-                ),
-              ],
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Text(
+              'Danh sách Học sinh & Tiến độ Trực tiếp',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
-          
-          // Columns Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            color: AppTheme.surface,
-            child: const Row(
-              children: [
-                Expanded(flex: 3, child: Text('Học sinh', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
-                Expanded(flex: 1, child: Center(child: Text('Câu hỏi HT', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)))),
-                Expanded(flex: 8, child: Text('Tiến độ & Kết quả (Tổng 20 câu)', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
-              ],
-            ),
-          ),
-          
-          // Rows
+          const Divider(height: 1, color: AppTheme.border),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -258,97 +293,91 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
             separatorBuilder: (context, index) => const Divider(height: 1, color: AppTheme.border),
             itemBuilder: (context, index) {
               final student = _students[index];
-              return _buildStudentRow(student);
-            },
-          ),
-          
-          // Footer
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextButton(
-              onPressed: () {},
-              child: const Text('Xem thêm danh sách'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-      ],
-    );
-  }
-
-  Widget _buildStudentRow(Map<String, dynamic> student) {
-    final int total = 20;
-    final int correct = student['correct'];
-    final int wrong = student['wrong'];
-    final bool isCompleted = student['completed'];
-    
-    return Container(
-      color: isCompleted ? AppTheme.success.withOpacity(0.05) : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primary.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(student['initials'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primary)),
-                ),
-                const SizedBox(width: 12),
-                Text(student['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                if (isCompleted) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: AppTheme.success.withOpacity(0.1), borderRadius: BorderRadius.circular(100)),
-                    child: const Text('Xong', style: TextStyle(color: AppTheme.success, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: isCompleted
-                  ? const Icon(Icons.task_alt, color: AppTheme.success)
-                  : Container(
-                      width: 32, height: 32,
-                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppTheme.primary, width: 2)),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40, height: 40,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF0ECFF),
+                        shape: BoxShape.circle,
+                      ),
                       alignment: Alignment.center,
-                      child: Text('${student['answered']}', style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: Text(
+                        student['initials'],
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+                      ),
                     ),
-            ),
-          ),
-          Expanded(
-            flex: 8,
-            child: Container(
-              height: 16,
-              decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(100)),
-              clipBehavior: Clip.hardEdge,
-              child: Row(
-                children: [
-                  Expanded(flex: correct, child: Container(color: AppTheme.success)),
-                  Expanded(flex: wrong, child: Container(color: AppTheme.warning)),
-                  Expanded(flex: total - correct - wrong, child: Container()),
-                ],
-              ),
-            ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        student['name'],
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Đã trả lời: ${student['answered']}/20 câu',
+                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                              ),
+                              Text(
+                                student['completed']
+                                    ? 'Điểm: ${student['score']} đ'
+                                    : '${((student['answered'] / 20) * 100).toInt()}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: student['completed'] ? AppTheme.success : AppTheme.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: student['answered'] / 20,
+                              minHeight: 8,
+                              backgroundColor: AppTheme.surface,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                student['completed'] ? AppTheme.success : AppTheme.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: student['completed']
+                            ? AppTheme.success.withOpacity(0.1)
+                            : AppTheme.warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Text(
+                        student['completed'] ? 'Đã nộp bài' : 'Đang làm...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: student['completed'] ? AppTheme.success : AppTheme.warning,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

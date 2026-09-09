@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -26,8 +28,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isSavingInfo = false;
   bool _isSavingPassword = false;
 
-  // Role toggle: true = Học sinh, false = Giáo viên
-  bool _isStudentRole = true;
+  bool _isRoleAutoDetected = false;
+  bool _isLoadingData = true;
+
+  bool get _isStudentRole => context.read<AuthProvider>().isStudent;
+
+  StudentProfileData _studentData = StudentProfileData.empty();
+  TeacherProfileData _teacherData = TeacherProfileData.empty();
 
   @override
   void initState() {
@@ -35,6 +42,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = context.read<AuthProvider>();
     _nameController = TextEditingController(text: authProvider.userName);
     _emailController = TextEditingController(text: authProvider.userEmail);
+
+    _loadProfileData();
+  }
+
+  Future<void> _loadProfileData() async {
+    if (!mounted) return;
+    setState(() => _isLoadingData = true);
+
+    final authProvider = context.read<AuthProvider>();
+    final userId = authProvider.user?.id;
+    final userEmail = authProvider.userEmail;
+    final userName = authProvider.userName;
+
+    // Detect initial role if not manually toggled yet
+    if (!_isRoleAutoDetected) {
+      final isTeacher = await ProfileService.isUserTeacher(
+        userId: userId,
+        userEmail: userEmail,
+        userName: userName,
+      );
+      if (mounted && isTeacher) {
+        await authProvider.setRole(UserRole.teacher);
+      }
+      _isRoleAutoDetected = true;
+    }
+
+    // Fetch both student and teacher data concurrently
+    final studentDataFuture = ProfileService.fetchStudentData(
+      userId: userId,
+      userEmail: userEmail,
+      userName: userName,
+    );
+
+    final teacherDataFuture = ProfileService.fetchTeacherData(
+      userId: userId,
+      userEmail: userEmail,
+      userName: userName,
+    );
+
+    final results = await Future.wait([studentDataFuture, teacherDataFuture]);
+
+    if (mounted) {
+      setState(() {
+        _studentData = results[0] as StudentProfileData;
+        _teacherData = results[1] as TeacherProfileData;
+        _isLoadingData = false;
+      });
+    }
   }
 
   @override
@@ -58,6 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       setState(() => _isSavingInfo = false);
       _showSnackBar('Cập nhật thông tin cá nhân thành công!');
+      _loadProfileData();
     }
   }
 
@@ -149,6 +205,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         color: AppTheme.primary,
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    if (duration.inMinutes == 0) return '0m';
+    final hours = duration.inHours;
+    final mins = duration.inMinutes.remainder(60);
+    if (hours > 0) {
+      return '${hours}h ${mins}m';
+    }
+    return '${mins}m';
   }
 
   @override
@@ -335,7 +401,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                authProvider.userName.isNotEmpty ? authProvider.userName : 'Ly Khánh',
+                authProvider.userName.isNotEmpty ? authProvider.userName : 'Người dùng',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -353,10 +419,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 10),
               // Role badge with interactive toggle
               InkWell(
-                onTap: () {
-                  setState(() => _isStudentRole = !_isStudentRole);
-                  _showSnackBar(
-                      'Đã chuyển góc nhìn sang ${_isStudentRole ? 'Học sinh' : 'Giáo viên'}');
+                onTap: () async {
+                  await authProvider.toggleRole();
+                  if (mounted) {
+                    _showSnackBar(
+                        'Đã chuyển góc nhìn sang ${authProvider.isStudent ? 'Học sinh' : 'Giáo viên'}');
+                  }
                 },
                 borderRadius: BorderRadius.circular(100),
                 child: Container(
@@ -370,7 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _isStudentRole ? '🎓 Học sinh' : '👨‍🏫 Giáo viên',
+                        authProvider.isStudent ? '🎓 Học sinh' : '👨‍🏫 Giáo viên',
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -391,28 +459,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildHeaderStats() {
+    if (_isLoadingData) {
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+        ),
+      );
+    }
+
     if (_isStudentRole) {
+      final avgScoreStr = _studentData.completedTestsCount > 0
+          ? _studentData.averageScore.toStringAsFixed(1)
+          : '0.0';
+
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildCompactStatItem('24', 'Bài đã thi'),
+          _buildCompactStatItem('${_studentData.completedTestsCount}', 'Bài đã thi'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem('8.2', 'Điểm trung bình'),
+          _buildCompactStatItem(avgScoreStr, 'Điểm trung bình'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem('🔥 5', 'Chuỗi bài thi'),
+          _buildCompactStatItem('🔥 ${_studentData.streakDays}', 'Chuỗi bài thi'),
         ],
       );
     } else {
+      final avgStudentScoreStr = _teacherData.studentAverageScore > 0
+          ? _teacherData.studentAverageScore.toStringAsFixed(1)
+          : '0.0';
+
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildCompactStatItem('12', 'Bộ đề đã tạo'),
+          _buildCompactStatItem('${_teacherData.createdExamsCount}', 'Bộ đề đã tạo'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem('35', 'Phòng thi'),
+          _buildCompactStatItem('${_teacherData.createdRoomsCount}', 'Phòng thi'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem('450', 'Lượt tham gia'),
+          _buildCompactStatItem('${_teacherData.totalParticipants}', 'Lượt tham gia'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem('8.1', 'Điểm TB học sinh'),
+          _buildCompactStatItem(avgStudentScoreStr, 'Điểm TB học sinh'),
         ],
       );
     }
@@ -459,11 +545,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final titleText = _isStudentRole ? '📊 Tổng quan học tập' : '📊 Thống kê giảng dạy';
     final subtitleText = _isStudentRole ? '6 bài gần nhất' : '6 phòng gần nhất';
 
-    final List<double> chartValues =
-        _isStudentRole ? const [7.0, 8.0, 7.5, 9.0, 8.5, 9.2] : const [32, 41, 28, 45, 38, 43];
-    final List<String> chartLabels = _isStudentRole
-        ? const ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Bài 6']
-        : const ['Phòng 1', 'Phòng 2', 'Phòng 3', 'Phòng 4', 'Phòng 5', 'Phòng 6'];
+    List<double> chartValues;
+    List<String> chartLabels;
+
+    if (_isStudentRole) {
+      chartValues = _studentData.chartValues;
+      chartLabels = _studentData.chartLabels;
+    } else {
+      chartValues = _teacherData.chartValues;
+      chartLabels = _teacherData.chartLabels;
+    }
+
+    if (chartValues.isEmpty) {
+      chartValues = [0, 0, 0, 0, 0, 0];
+      chartLabels = _isStudentRole
+          ? ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Bài 6']
+          : ['Phòng 1', 'Phòng 2', 'Phòng 3', 'Phòng 4', 'Phòng 5', 'Phòng 6'];
+    }
 
     return Container(
       padding: const EdgeInsets.all(28),
@@ -513,13 +611,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(
             height: 180,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _LineChartPainter(
-                values: chartValues,
-                labels: chartLabels,
-                isStudentScore: _isStudentRole,
-              ),
-            ),
+            child: _isLoadingData
+                ? const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+                  )
+                : CustomPaint(
+                    painter: _LineChartPainter(
+                      values: chartValues,
+                      labels: chartLabels,
+                      isStudentScore: _isStudentRole,
+                    ),
+                  ),
           ),
 
           const SizedBox(height: 16),
@@ -545,7 +647,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: _buildSecondaryMetricItem(
                     icon: Icons.star_rounded,
                     label: 'Điểm cao nhất',
-                    value: '9.5',
+                    value: _studentData.highestScore > 0
+                        ? _studentData.highestScore.toStringAsFixed(1)
+                        : '--',
                   ),
                 ),
                 Container(height: 36, width: 1, color: AppTheme.border),
@@ -554,7 +658,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: _buildSecondaryMetricItem(
                     icon: Icons.timer_outlined,
                     label: 'Tổng thời gian làm bài',
-                    value: '6h 32m',
+                    value: _formatDuration(_studentData.totalTimeSpent),
                   ),
                 ),
               ],
@@ -566,7 +670,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: _buildSecondaryMetricItem(
                     icon: Icons.people_outline_rounded,
                     label: 'Phòng đông nhất',
-                    value: '45 học sinh',
+                    value: _teacherData.busiestRoomCount > 0
+                        ? '${_teacherData.busiestRoomCount} học sinh'
+                        : '0 học sinh',
                   ),
                 ),
                 Container(height: 36, width: 1, color: AppTheme.border),
@@ -575,7 +681,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: _buildSecondaryMetricItem(
                     icon: Icons.check_circle_outline_rounded,
                     label: 'Tỷ lệ hoàn thành',
-                    value: '92%',
+                    value: '${_teacherData.completionRate.toStringAsFixed(0)}%',
                   ),
                 ),
                 Container(height: 36, width: 1, color: AppTheme.border),
@@ -584,7 +690,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: _buildSecondaryMetricItem(
                     icon: Icons.trending_up_rounded,
                     label: 'Điểm TB học sinh',
-                    value: '8.1',
+                    value: _teacherData.studentAverageScore > 0
+                        ? _teacherData.studentAverageScore.toStringAsFixed(1)
+                        : '--',
                   ),
                 ),
               ],
@@ -667,13 +775,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildAchievementItem('🔥', 'Chuỗi 5 bài', 'Hoàn thành bài thi 5 lần liên tiếp', const Color(0xFFFFF7ED)),
-            const SizedBox(height: 14),
-            _buildAchievementItem('🎯', 'Điểm tuyệt đối', 'Đạt 10 điểm một bài thi', const Color(0xFFF0ECFF)),
-            const SizedBox(height: 14),
-            _buildAchievementItem('⚡', 'Phản xạ nhanh', 'Trả lời nhanh 10 câu', const Color(0xFFFEFCE8)),
-            const SizedBox(height: 14),
-            _buildAchievementItem('🥉', 'Top 3', 'Đạt Top 3 trong phòng thi', const Color(0xFFF3F4F6)),
+            if (_isLoadingData)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+                ),
+              )
+            else
+              Column(
+                children: _studentData.achievements.map((item) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 14.0),
+                    child: _buildAchievementItem(
+                      item.icon,
+                      item.title,
+                      item.description,
+                      Color(item.bgColorHex),
+                      isUnlocked: item.isUnlocked,
+                    ),
+                  );
+                }).toList(),
+              ),
           ],
         ),
       );
@@ -705,54 +828,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _buildTeacherOverviewItem('📝', 'Tổng số câu hỏi', '240 câu', const Color(0xFFF0ECFF)),
-            const SizedBox(height: 14),
-            _buildTeacherOverviewItem('🎯', 'Tỷ lệ trả lời đúng', '76%', const Color(0xFFDCFCE7)),
-            const SizedBox(height: 14),
-            _buildTeacherOverviewItem('⚠️', 'Câu khó nhất', 'Câu 8 – Toán 12 (42% đúng)', const Color(0xFFFFEDD5)),
-            const SizedBox(height: 14),
-            _buildTeacherOverviewItem('🔥', 'Đề tham gia nhiều nhất', 'Ôn tập Toán HK1 (86 lượt)', const Color(0xFFFEFCE8)),
+            if (_isLoadingData)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+                ),
+              )
+            else ...[
+              _buildTeacherOverviewItem(
+                '📝',
+                'Tổng số câu hỏi',
+                '${_teacherData.totalQuestionsCount} câu',
+                const Color(0xFFF0ECFF),
+              ),
+              const SizedBox(height: 14),
+              _buildTeacherOverviewItem(
+                '🎯',
+                'Tỷ lệ trả lời đúng',
+                '${_teacherData.overallCorrectRate.toStringAsFixed(0)}%',
+                const Color(0xFFDCFCE7),
+              ),
+              const SizedBox(height: 14),
+              _buildTeacherOverviewItem(
+                '⚠️',
+                'Câu khó nhất',
+                _teacherData.hardestQuestionInfo,
+                const Color(0xFFFFEDD5),
+              ),
+              const SizedBox(height: 14),
+              _buildTeacherOverviewItem(
+                '🔥',
+                'Đề tham gia nhiều nhất',
+                _teacherData.mostPopularExamInfo,
+                const Color(0xFFFEFCE8),
+              ),
+            ],
           ],
         ),
       );
     }
   }
 
-  Widget _buildAchievementItem(String icon, String title, String description, Color bgColor) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(14),
+  Widget _buildAchievementItem(
+    String icon,
+    String title,
+    String description,
+    Color bgColor, {
+    bool isUnlocked = true,
+  }) {
+    return Opacity(
+      opacity: isUnlocked ? 1.0 : 0.45,
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(icon, style: const TextStyle(fontSize: 20)),
           ),
-          child: Text(icon, style: const TextStyle(fontSize: 20)),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textMain,
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textMain,
+                      ),
+                    ),
+                    if (!isUnlocked) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.lock_outline_rounded, size: 12, color: AppTheme.textSecondary),
+                    ],
+                  ],
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -781,6 +950,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 2),
               Text(
                 value,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -824,41 +995,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _buildTestHistoryRow(
-            subjectIcon: '📐',
-            title: 'Toán 12 – Hàm số',
-            date: '25/08/2026',
-            score: '8.5 điểm',
-            scoreStatus: _ScoreStatus.medium,
-          ),
-          const Divider(color: AppTheme.border, height: 24),
-          _buildTestHistoryRow(
-            subjectIcon: '🔤',
-            title: 'Tiếng Anh – Unit 4',
-            date: '22/08/2026',
-            score: '9.0 điểm',
-            scoreStatus: _ScoreStatus.high,
-          ),
-          const Divider(color: AppTheme.border, height: 24),
-          _buildTestHistoryRow(
-            subjectIcon: '⚡',
-            title: 'Vật lý – Dao động điều hòa',
-            date: '18/08/2026',
-            score: '7.5 điểm',
-            scoreStatus: _ScoreStatus.low,
-          ),
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => _showSnackBar('Xem lịch sử bài thi'),
-              icon: const Text(
-                'Xem tất cả lịch sử',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+          if (_isLoadingData)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
               ),
-              label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+            )
+          else if (_studentData.recentTests.isEmpty)
+            _buildEmptyStateWidget(
+              icon: Icons.history_edu_outlined,
+              message: 'Chưa có lịch sử bài thi nào',
+              actionLabel: 'Tham gia thi ngay',
+              onAction: () => context.go('/home'),
+            )
+          else ...[
+            for (int i = 0; i < _studentData.recentTests.length; i++) ...[
+              if (i > 0) const Divider(color: AppTheme.border, height: 24),
+              _buildTestHistoryRow(
+                subjectIcon: _studentData.recentTests[i].subjectIcon,
+                title: _studentData.recentTests[i].title,
+                date: _studentData.recentTests[i].date,
+                score: _studentData.recentTests[i].score,
+                scoreStatus: _studentData.recentTests[i].scoreValue >= 8.0
+                    ? _ScoreStatus.high
+                    : (_studentData.recentTests[i].scoreValue >= 5.0
+                        ? _ScoreStatus.medium
+                        : _ScoreStatus.low),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _showSnackBar('Tất cả lịch sử bài thi đã được hiển thị'),
+                icon: const Text(
+                  'Xem tất cả lịch sử',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+                ),
+                label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1011,44 +1189,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildTeacherRoomRow(
-            title: 'Ôn tập Toán 12 – Hàm số',
-            roomCode: 'A8K21',
-            date: '25/08/2026',
-            studentsCount: 42,
-            statusLabel: 'Đã kết thúc',
-            statusType: _RoomStatusType.ended,
-          ),
-          const Divider(color: AppTheme.border, height: 24),
-          _buildTeacherRoomRow(
-            title: 'Tiếng Anh – Unit 4',
-            roomCode: 'ENG24',
-            date: '22/08/2026',
-            studentsCount: 35,
-            statusLabel: 'Đã kết thúc',
-            statusType: _RoomStatusType.ended,
-          ),
-          const Divider(color: AppTheme.border, height: 24),
-          _buildTeacherRoomRow(
-            title: 'Vật lý – Dao động điều hòa',
-            roomCode: 'PHY18',
-            date: '18/08/2026',
-            studentsCount: 38,
-            statusLabel: 'Đã kết thúc',
-            statusType: _RoomStatusType.ended,
-          ),
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => _showSnackBar('Xem tất cả phòng thi đã tạo'),
-              icon: const Text(
-                'Xem tất cả phòng thi',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+          if (_isLoadingData)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
               ),
-              label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+            )
+          else if (_teacherData.recentRooms.isEmpty)
+            _buildEmptyStateWidget(
+              icon: Icons.meeting_room_outlined,
+              message: 'Chưa có phòng thi nào được tạo',
+              actionLabel: 'Tạo phòng ngay',
+              onAction: () => context.go('/create_room'),
+            )
+          else ...[
+            for (int i = 0; i < _teacherData.recentRooms.length; i++) ...[
+              if (i > 0) const Divider(color: AppTheme.border, height: 24),
+              _buildTeacherRoomRow(
+                title: _teacherData.recentRooms[i].title,
+                roomCode: _teacherData.recentRooms[i].roomCode,
+                date: _teacherData.recentRooms[i].date,
+                studentsCount: _teacherData.recentRooms[i].studentsCount,
+                statusLabel: _teacherData.recentRooms[i].statusLabel,
+                statusType: _teacherData.recentRooms[i].statusType == 'live'
+                    ? _RoomStatusType.live
+                    : (_teacherData.recentRooms[i].statusType == 'ended'
+                        ? _RoomStatusType.ended
+                        : _RoomStatusType.upcoming),
+              ),
+            ],
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _showSnackBar('Tất cả phòng thi đã được hiển thị'),
+                icon: const Text(
+                  'Xem tất cả phòng thi',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+                ),
+                label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1197,32 +1380,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          _buildExamSetRow(
-            title: 'Toán 12 – Hàm số',
-            details: '20 câu • 30 phút • 86 lượt thi • Cập nhật 25/08/2026',
-          ),
-          const Divider(color: AppTheme.border, height: 24),
-          _buildExamSetRow(
-            title: 'Tiếng Anh – Unit 4',
-            details: '30 câu • 25 phút • 54 lượt thi • Cập nhật 22/08/2026',
-          ),
-          const Divider(color: AppTheme.border, height: 24),
-          _buildExamSetRow(
-            title: 'Vật lý – Dao động điều hòa',
-            details: '25 câu • 40 phút • 48 lượt thi • Cập nhật 18/08/2026',
-          ),
-          const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: () => _showSnackBar('Xem tất cả bộ đề đã tạo'),
-              icon: const Text(
-                'Xem tất cả bộ đề',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+          if (_isLoadingData)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
               ),
-              label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+            )
+          else if (_teacherData.recentExams.isEmpty)
+            _buildEmptyStateWidget(
+              icon: Icons.assignment_outlined,
+              message: 'Chưa có bộ đề nào được tạo',
+              actionLabel: 'Tạo đề ngay',
+              onAction: () => context.go('/create_exam'),
+            )
+          else ...[
+            for (int i = 0; i < _teacherData.recentExams.length; i++) ...[
+              if (i > 0) const Divider(color: AppTheme.border, height: 24),
+              _buildExamSetRow(
+                title: _teacherData.recentExams[i].title,
+                details: _teacherData.recentExams[i].details,
+              ),
+            ],
+            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _showSnackBar('Tất cả bộ đề đã được hiển thị'),
+                icon: const Text(
+                  'Xem tất cả bộ đề',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
+                ),
+                label: const Icon(Icons.arrow_forward_rounded, size: 16, color: AppTheme.primary),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1315,11 +1507,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildInsightRow('⚠️ 42% học sinh trả lời sai câu 8 trong đề Toán 12 – Hàm số.'),
-          const SizedBox(height: 10),
-          _buildInsightRow('🎯 Câu hỏi về đạo hàm có tỷ lệ đúng thấp nhất: 58%.'),
-          const SizedBox(height: 10),
-          _buildInsightRow('📈 Điểm trung bình của phòng Toán 12 gần nhất tăng 0.6 điểm.'),
+          if (_isLoadingData)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primary),
+              ),
+            )
+          else if (_teacherData.teachingInsights.isEmpty)
+            _buildEmptyStateWidget(
+              icon: Icons.lightbulb_outline,
+              message: 'Chưa có chú ý nào đặc biệt từ dữ liệu bài thi',
+            )
+          else ...[
+            for (var insight in _teacherData.teachingInsights) ...[
+              _buildInsightRow(insight),
+              const SizedBox(height: 10),
+            ],
+          ],
         ],
       ),
     );
@@ -1342,6 +1547,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateWidget({
+    required IconData icon,
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20.0),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, size: 36, color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: onAction,
+                child: Text(
+                  actionLabel,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.primary,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1765,17 +2007,24 @@ class _LineChartPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paintGrid);
     }
 
-    final double stepX = size.width / (values.length - 1);
-    final double minVal = isStudentScore ? 5.0 : 20.0;
-    final double maxVal = isStudentScore ? 10.0 : 50.0;
+    final double stepX = values.length > 1 ? size.width / (values.length - 1) : size.width / 2;
+    
+    // Compute dynamic min/max values based on data
+    double maxInValues = values.reduce((a, b) => a > b ? a : b);
+    double minInValues = values.reduce((a, b) => a < b ? a : b);
+
+    final double minVal = isStudentScore ? 0.0 : (minInValues > 0 ? 0.0 : 0.0);
+    final double maxVal = isStudentScore
+        ? 10.0
+        : (maxInValues > 50.0 ? maxInValues * 1.1 : 50.0);
 
     final Path path = Path();
     final List<Offset> points = [];
 
     for (int i = 0; i < values.length; i++) {
       final val = values[i].clamp(minVal, maxVal);
-      final normalized = (val - minVal) / (maxVal - minVal);
-      final x = i * stepX;
+      final normalized = (maxVal - minVal) > 0 ? (val - minVal) / (maxVal - minVal) : 0.5;
+      final x = values.length > 1 ? i * stepX : size.width / 2;
       final y = size.height - (normalized * (size.height - 30)) - 15;
       points.add(Offset(x, y));
       if (i == 0) {

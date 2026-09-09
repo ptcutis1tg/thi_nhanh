@@ -1,13 +1,104 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
-class ResultScreen extends StatelessWidget {
-  const ResultScreen({super.key});
+class ResultScreen extends StatefulWidget {
+  final double? score;
+  final int? total;
+  final int? correct;
+  final int? wrong;
+  final int? skipped;
+  final String? title;
+
+  const ResultScreen({
+    super.key,
+    this.score,
+    this.total,
+    this.correct,
+    this.wrong,
+    this.skipped,
+    this.title,
+  });
+
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  bool _isLoading = false;
+
+  double _finalScore = 0.0;
+  int _totalQuestions = 0;
+  int _correctCount = 0;
+  int _wrongCount = 0;
+  int _skippedCount = 0;
+  String _examTitle = 'Bài thi vừa hoàn thành';
+  int _rank = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    if (widget.score != null) {
+      setState(() {
+        _finalScore = widget.score!;
+        _totalQuestions = widget.total ?? 10;
+        _correctCount = widget.correct ?? (_finalScore / 10 * _totalQuestions).round();
+        _wrongCount = widget.wrong ?? (_totalQuestions - _correctCount);
+        _skippedCount = widget.skipped ?? 0;
+        _examTitle = widget.title ?? 'Bài thi vừa hoàn thành';
+      });
+    } else {
+      // Query latest submitted attempt from Supabase
+      setState(() => _isLoading = true);
+      try {
+        final client = Supabase.instance.client;
+        final res = await client
+            .from('attempts')
+            .select('score, started_at, submitted_at, exams(title)')
+            .eq('status', 'submitted')
+            .order('submitted_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        if (mounted && res != null) {
+          final scoreVal = (res['score'] as num?)?.toDouble() ?? 8.5;
+          final examMap = res['exams'] as Map<String, dynamic>?;
+          final titleStr = examMap?['title'] as String? ?? 'Bài thi vừa hoàn thành';
+
+          setState(() {
+            _finalScore = scoreVal;
+            _examTitle = titleStr;
+            _totalQuestions = 10;
+            _correctCount = (scoreVal / 10 * 10).round();
+            _wrongCount = 10 - _correctCount;
+            _skippedCount = 0;
+            _isLoading = false;
+          });
+        } else {
+          if (mounted) setState(() => _isLoading = false);
+        }
+      } catch (e) {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        appBar: TopNavBar(),
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: const TopNavBar(),
       backgroundColor: AppTheme.background,
@@ -61,9 +152,9 @@ class ResultScreen extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Kiểm tra giữa kì Môn Toán Học 10',
-            style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
+          Text(
+            _examTitle,
+            style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -76,12 +167,15 @@ class ResultScreen extends StatelessWidget {
               border: Border.all(color: AppTheme.primary, width: 8),
             ),
             alignment: Alignment.center,
-            child: const Column(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Điểm số', style: TextStyle(color: AppTheme.textSecondary)),
-                Text('8.5', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: AppTheme.primary, height: 1.2)),
-                Text('/10', style: TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
+                const Text('Điểm số', style: TextStyle(color: AppTheme.textSecondary)),
+                Text(
+                  _finalScore.toStringAsFixed(1),
+                  style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: AppTheme.primary, height: 1.2),
+                ),
+                const Text('/10', style: TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -93,13 +187,13 @@ class ResultScreen extends StatelessWidget {
   Widget _buildDetailedStats() {
     return Row(
       children: [
-        Expanded(child: _buildStatCard(Icons.check_circle, AppTheme.success, 'Câu đúng', '17', 'câu')),
+        Expanded(child: _buildStatCard(Icons.check_circle, AppTheme.success, 'Câu đúng', '$_correctCount', 'câu')),
         const SizedBox(width: 16),
-        Expanded(child: _buildStatCard(Icons.cancel, AppTheme.warning, 'Câu sai', '2', 'câu')),
+        Expanded(child: _buildStatCard(Icons.cancel, AppTheme.warning, 'Câu sai', '$_wrongCount', 'câu')),
         const SizedBox(width: 16),
-        Expanded(child: _buildStatCard(Icons.help, AppTheme.textSecondary, 'Bỏ qua', '1', 'câu')),
+        Expanded(child: _buildStatCard(Icons.help, AppTheme.textSecondary, 'Bỏ qua', '$_skippedCount', 'câu')),
         const SizedBox(width: 16),
-        Expanded(child: _buildStatCard(Icons.leaderboard, AppTheme.primary, 'Xếp hạng', '5', '/45')),
+        Expanded(child: _buildStatCard(Icons.leaderboard, AppTheme.primary, 'Xếp hạng', '#$_rank', '')),
       ],
     );
   }
@@ -126,8 +220,10 @@ class ResultScreen extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 4),
-              Text(unit, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 4),
+                Text(unit, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+              ],
             ],
           ),
         ],
@@ -141,12 +237,10 @@ class ResultScreen extends StatelessWidget {
       children: [
         OutlinedButton.icon(
           onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Tính năng xem lại bài làm đang được phát triển.')),
-            );
+            context.go('/student/history');
           },
-          icon: const Icon(Icons.remove_red_eye),
-          label: const Text('Xem lại bài làm'),
+          icon: const Icon(Icons.history),
+          label: const Text('Xem lịch sử thi'),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
@@ -168,3 +262,4 @@ class ResultScreen extends StatelessWidget {
     );
   }
 }
+

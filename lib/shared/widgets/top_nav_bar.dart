@@ -76,53 +76,29 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
               _buildNavItem(context, 'Home', '/home', isActive: GoRouterState.of(context).matchedLocation == '/home'),
               const SizedBox(width: 32),
               _buildNavItem(context, 'Tìm kiếm', '/search', isActive: GoRouterState.of(context).matchedLocation == '/search'),
-              const SizedBox(width: 32),
-              _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
-              const SizedBox(width: 32),
-              _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
+              if (authProvider.isTeacher) ...[
+                const SizedBox(width: 32),
+                _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: GoRouterState.of(context).matchedLocation == '/create_exam'),
+                const SizedBox(width: 32),
+                _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: GoRouterState.of(context).matchedLocation == '/create_room'),
+              ],
             ],
           ),
           
           // Right Profile Avatar Button
-          Row(
-            children: [
-              SizedBox(
-                width: 180,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Nhập mã PT...',
-                    hintStyle: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    filled: true,
-                    fillColor: AppTheme.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(100),
-                      borderSide: const BorderSide(color: AppTheme.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(100),
-                      borderSide: const BorderSide(color: AppTheme.border),
-                    ),
-                    suffixIcon: const Icon(Icons.arrow_forward, size: 18),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              InkWell(
-                onTap: () {
-                  context.go('/profile');
-                },
-                borderRadius: BorderRadius.circular(100),
-                child: CircleAvatar(
-                  radius: 21,
-                  backgroundColor: AppTheme.border,
-                  backgroundImage: avatarImage,
-                  child: avatarImage == null
-                      ? const Icon(Icons.person, color: AppTheme.textSecondary)
-                      : null,
-                ),
-              ),
-            ],
+          InkWell(
+            onTap: () {
+              context.go('/profile');
+            },
+            borderRadius: BorderRadius.circular(100),
+            child: CircleAvatar(
+              radius: 21,
+              backgroundColor: AppTheme.border,
+              backgroundImage: avatarImage,
+              child: avatarImage == null
+                  ? const Icon(Icons.person, color: AppTheme.textSecondary)
+                  : null,
+            ),
           ),
         ],
       ),

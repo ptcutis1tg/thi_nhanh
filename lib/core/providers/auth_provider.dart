@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
 import '../utils/otp_mailer.dart';
 
+enum UserRole { student, teacher }
+
 class _OTPRecord {
   final String code;
   final DateTime expiresAt;
@@ -18,6 +20,23 @@ class AuthProvider extends ChangeNotifier {
   String? _userName;
   String? _userEmail;
   String? _userAvatarUrl;
+  UserRole _currentRole = UserRole.student;
+
+  UserRole get currentRole => _currentRole;
+  bool get isStudent => _currentRole == UserRole.student;
+  bool get isTeacher => _currentRole == UserRole.teacher;
+
+  Future<void> setRole(UserRole role) async {
+    _currentRole = role;
+    await _saveState();
+    notifyListeners();
+  }
+
+  Future<void> toggleRole() async {
+    _currentRole = _currentRole == UserRole.student ? UserRole.teacher : UserRole.student;
+    await _saveState();
+    notifyListeners();
+  }
 
   // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
   Map<String, Map<String, String>> _registeredUsers = {};
@@ -83,6 +102,13 @@ class AuthProvider extends ChangeNotifier {
       _userName = prefs.getString('active_user_name');
       _userAvatarUrl = prefs.getString('active_user_avatar');
 
+      final savedRole = prefs.getString('active_user_role');
+      if (savedRole == 'teacher') {
+        _currentRole = UserRole.teacher;
+      } else if (savedRole == 'student') {
+        _currentRole = UserRole.student;
+      }
+
       // Restoring name and avatar from registered DB for active email
       if (_userEmail != null) {
         final key = _userEmail!.trim().toLowerCase();
@@ -107,6 +133,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('local_registered_users', jsonEncode(_registeredUsers));
+      await prefs.setString('active_user_role', _currentRole == UserRole.teacher ? 'teacher' : 'student');
       if (_userEmail != null) {
         await prefs.setString('active_user_email', _userEmail!);
       } else {

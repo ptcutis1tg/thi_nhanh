@@ -1,4 +1,7 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 
 class CreateExamScreen extends StatefulWidget {
@@ -8,22 +11,151 @@ class CreateExamScreen extends StatefulWidget {
   State<CreateExamScreen> createState() => _CreateExamScreenState();
 }
 
+class QuestionDraft {
+  String title;
+  List<String> options;
+  int correctOptionIndex;
+
+  QuestionDraft({
+    required this.title,
+    required this.options,
+    this.correctOptionIndex = 0,
+  });
+}
+
 class _CreateExamScreenState extends State<CreateExamScreen> {
-  final TextEditingController _examNameController = TextEditingController();
-  String? _selectedSubject;
-  
+  final TextEditingController _examNameController = TextEditingController(text: 'Đề thi trắc nghiệm mới');
+  final TextEditingController _durationController = TextEditingController(text: '45');
+  String _selectedSubject = 'Toán học';
+  String _selectedDifficulty = 'medium';
+
   int _activeQuestionIndex = 0;
-  final List<String> _questions = ['Câu hỏi số 1', 'Câu hỏi số 2', 'Câu hỏi số 3'];
+  bool _isSaving = false;
+
+  final List<QuestionDraft> _questions = [
+    QuestionDraft(
+      title: 'Câu hỏi số 1: Nhập nội dung câu hỏi tại đây...',
+      options: ['Phương án A', 'Phương án B', 'Phương án C', 'Phương án D'],
+      correctOptionIndex: 0,
+    ),
+    QuestionDraft(
+      title: 'Câu hỏi số 2: Nhập nội dung câu hỏi...',
+      options: ['Đáp án 1', 'Đáp án 2', 'Đáp án 3', 'Đáp án 4'],
+      correctOptionIndex: 1,
+    ),
+  ];
 
   @override
   void dispose() {
     _examNameController.dispose();
+    _durationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveExam({bool isPublished = true}) async {
+    final title = _examNameController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tên đề thi!'), backgroundColor: AppTheme.warning),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final client = Supabase.instance.client;
+      
+      // Get teacher ID or default
+      final teacherRes = await client.from('teachers').select('id').limit(1).maybeSingle();
+      final teacherId = teacherRes?['id']?.toString() ?? '00000000-0000-4000-8000-000000000001';
+
+      final examCode = 'DT${(100000 + Random().nextInt(899999)).toString()}';
+      final duration = int.tryParse(_durationController.text) ?? 45;
+
+      // 1. Insert Exam
+      final examRes = await client.from('exams').insert({
+        'code': examCode,
+        'teacher_id': teacherId,
+        'title': title,
+        'description': 'Đề thi được khởi tạo từ hệ thống Thi Nhanh.',
+        'subject': _selectedSubject,
+        'difficulty': _selectedDifficulty,
+        'duration_minutes': duration,
+        'status': isPublished ? 'published' : 'draft',
+        'published_at': isPublished ? DateTime.now().toIso8601String() : null,
+      }).select('id').single();
+
+      final examId = examRes['id'].toString();
+
+      // 2. Insert Questions & Options
+      for (int i = 0; i < _questions.length; i++) {
+        final qDraft = _questions[i];
+        final qRes = await client.from('questions').insert({
+          'exam_id': examId,
+          'position': i + 1,
+          'body': qDraft.title,
+          'explanation': 'Đáp án đúng dựa trên quy tắc tính toán.',
+          'points': 1.0,
+        }).select('id').single();
+
+        final qId = qRes['id'].toString();
+
+        for (int optIdx = 0; optIdx < qDraft.options.length; optIdx++) {
+          await client.from('question_options').insert({
+            'question_id': qId,
+            'position': optIdx + 1,
+            'body': qDraft.options[optIdx],
+            'is_correct': optIdx == qDraft.correctOptionIndex,
+          });
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã khởi tạo bộ đề thi thành công với mã $examCode!'),
+            backgroundColor: AppTheme.success,
+          ),
+        );
+        context.go('/teacher/exams');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi tạo đề thi lên Supabase: $e'), backgroundColor: AppTheme.error),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _addQuestion() {
+    setState(() {
+      _questions.add(
+        QuestionDraft(
+          title: 'Câu hỏi số ${_questions.length + 1}...',
+          options: ['Đáp án A', 'Đáp án B', 'Đáp án C', 'Đáp án D'],
+          correctOptionIndex: 0,
+        ),
+      );
+      _activeQuestionIndex = _questions.length - 1;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tạo Đề Thi Trắc Nghiệm'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => context.go('/home'),
+          ),
+        ],
+      ),
       body: Row(
         children: [
           _buildSidebar(),
@@ -35,35 +167,39 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   Widget _buildSidebar() {
     return Container(
-      width: 256,
+      width: 280,
       decoration: const BoxDecoration(
         color: AppTheme.surface,
         border: Border(right: BorderSide(color: AppTheme.border)),
       ),
       child: Column(
         children: [
-          // Sidebar Header
           Container(
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: AppTheme.border)),
             ),
-            child: const Row(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'DANH SÁCH CÂU HỎI',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     color: AppTheme.textSecondary,
                     letterSpacing: 1.2,
                   ),
+                ),
+                IconButton(
+                  onPressed: _addQuestion,
+                  icon: const Icon(Icons.add_circle, color: AppTheme.primary),
+                  tooltip: 'Thêm câu hỏi',
                 ),
               ],
             ),
           ),
           
-          // Question List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -76,17 +212,17 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isActive ? AppTheme.primary.withOpacity(0.1) : AppTheme.surface,
+                      color: isActive ? AppTheme.primary.withOpacity(0.1) : Colors.white,
                       border: Border.all(
-                        color: isActive ? AppTheme.primaryLight : Colors.transparent,
+                        color: isActive ? AppTheme.primary : AppTheme.border,
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             color: isActive ? AppTheme.primary : AppTheme.border,
                             shape: BoxShape.circle,
@@ -102,21 +238,14 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _questions[index],
-                                style: TextStyle(
-                                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                                  color: isActive ? AppTheme.primary : AppTheme.textMain,
-                                ),
-                              ),
-                              const Text(
-                                'Trắc nghiệm',
-                                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                              ),
-                            ],
+                          child: Text(
+                            _questions[index].title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                              color: isActive ? AppTheme.primary : AppTheme.textMain,
+                            ),
                           ),
                         ),
                       ],
@@ -126,325 +255,193 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
               },
             ),
           ),
-          
-          // Add Question Button
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppTheme.border)),
-            ),
-            child: OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _questions.add('Câu hỏi số ${_questions.length + 1}');
-                  _activeQuestionIndex = _questions.length - 1;
-                });
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Thêm câu hỏi'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                side: const BorderSide(color: AppTheme.border, style: BorderStyle.solid),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildMainCanvas() {
-    return Container(
-      color: AppTheme.background,
-      child: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(32).copyWith(bottom: 100),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // General Settings (NEW)
-                      const Text(
-                        'Thông tin chung',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextField(
-                              controller: _examNameController,
-                              decoration: InputDecoration(
-                                hintText: 'Nhập tên đề thi (vd: Đề thi thử Toán 12...)',
-                                labelText: 'Tên Đề Thi *',
-                                fillColor: AppTheme.background,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: AppTheme.border),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 1,
-                            child: DropdownButtonFormField<String>(
-                              decoration: InputDecoration(
-                                labelText: 'Môn học',
-                                fillColor: AppTheme.background,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: AppTheme.border),
-                                ),
-                              ),
-                              hint: const Text('Chọn môn'),
-                              value: _selectedSubject,
-                              items: const [
-                                DropdownMenuItem(value: 'Toán', child: Text('Toán')),
-                                DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
-                                DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
-                                DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
-                              ],
-                              onChanged: (val) {
-                                setState(() => _selectedSubject = val);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Divider(height: 64, color: AppTheme.border, thickness: 2),
+    if (_questions.isEmpty) return const SizedBox.shrink();
+    final currentQ = _questions[_activeQuestionIndex];
 
-                      // Header for Question
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppTheme.primary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    child: Text(
-                                      'CÂU ${_activeQuestionIndex + 1}',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.primary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Chỉnh sửa nội dung',
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.delete_outline, color: AppTheme.textSecondary),
-                          ),
-                        ],
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          padding: const EdgeInsets.only(left: 32, right: 32, top: 32, bottom: 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Thông tin chung Đề thi
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Thông tin bộ đề', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _examNameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Tên bộ đề thi *',
+                        border: OutlineInputBorder(),
                       ),
-                      const Divider(height: 48, color: AppTheme.border),
-                      
-                      // Question Input
-                      const Text(
-                        'Nội dung câu hỏi *',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: 'Nhập nội dung câu hỏi tại đây...',
-                          fillColor: AppTheme.background,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.border),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedSubject,
+                            decoration: const InputDecoration(labelText: 'Môn học', border: OutlineInputBorder()),
+                            items: ['Toán học', 'Vật lý', 'Tiếng Anh', 'Hóa học', 'Tin học', 'Ngữ văn']
+                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                .toList(),
+                            onChanged: (v) => setState(() => _selectedSubject = v!),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
-                      
-                      // Answers
-                      const Text(
-                        'Các đáp án (Chọn 1 đáp án đúng)',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildAnswerOption('A', true),
-                      const SizedBox(height: 12),
-                      _buildAnswerOption('B', false),
-                      const SizedBox(height: 12),
-                      _buildAnswerOption('C', false),
-                      const SizedBox(height: 12),
-                      _buildAnswerOption('D', false),
-                      
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('Thêm lựa chọn'),
-                      ),
-                      
-                      const Divider(height: 64, color: AppTheme.border),
-                      const Text(
-                        'Cài đặt bổ sung (Tùy chọn)',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              decoration: const InputDecoration(
-                                fillColor: AppTheme.background,
-                              ),
-                              hint: const Text('Mức độ khó...'),
-                              items: const [
-                                DropdownMenuItem(value: 'easy', child: Text('Dễ')),
-                                DropdownMenuItem(value: 'medium', child: Text('Trung bình')),
-                                DropdownMenuItem(value: 'hard', child: Text('Khó')),
-                              ],
-                              onChanged: (val) {},
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextField(
+                            controller: _durationController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Thời gian làm bài (Phút)',
+                              border: OutlineInputBorder(),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              decoration: const InputDecoration(
-                                hintText: 'Điểm số (VD: 10)',
-                                fillColor: AppTheme.background,
-                              ),
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
-          
-          // Bottom Action Bar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                border: const Border(top: BorderSide(color: AppTheme.border)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Đã lưu tự động lúc 10:42 AM',
-                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                  ),
-                  Row(
-                    children: [
-                      OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                        ),
-                        child: const Text('Lưu nháp'),
-                      ),
-                      const SizedBox(width: 16),
-                      ElevatedButton.icon(
-                        onPressed: () {},
-                        icon: const Text('Lưu & Khởi tạo Đề'),
-                        label: const Icon(Icons.arrow_forward, size: 18),
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAnswerOption(String label, bool isCorrect) {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppTheme.background,
-        border: Border.all(color: isCorrect ? AppTheme.primary : AppTheme.border, width: isCorrect ? 2 : 1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Radio<bool>(
-            value: true,
-            groupValue: isCorrect,
-            onChanged: (val) {},
-            activeColor: AppTheme.primary,
-          ),
-          Text(
-            '$label.',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isCorrect ? AppTheme.primary : AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Nhập đáp án...',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                fillColor: Colors.transparent,
-                filled: false,
-                contentPadding: EdgeInsets.zero,
+              const SizedBox(height: 32),
+
+              // Soạn thảo câu hỏi hiện tại
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Câu hỏi số ${_activeQuestionIndex + 1}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      initialValue: currentQ.title,
+                      onChanged: (val) {
+                        setState(() {
+                          currentQ.title = val;
+                        });
+                      },
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Nội dung câu hỏi',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text('Các phương án lựa chọn (Đánh dấu phương án đúng):', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    ...List.generate(currentQ.options.length, (optIdx) {
+                      final isCorrect = currentQ.correctOptionIndex == optIdx;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isCorrect ? AppTheme.success.withOpacity(0.05) : AppTheme.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isCorrect ? AppTheme.success : AppTheme.border),
+                        ),
+                        child: Row(
+                          children: [
+                            Radio<int>(
+                              value: optIdx,
+                              groupValue: currentQ.correctOptionIndex,
+                              onChanged: (val) {
+                                setState(() {
+                                  currentQ.correctOptionIndex = val!;
+                                });
+                              },
+                              activeColor: AppTheme.success,
+                            ),
+                            Text(
+                              '${String.fromCharCode(65 + optIdx)}.',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: currentQ.options[optIdx],
+                                onChanged: (val) {
+                                  currentQ.options[optIdx] = val;
+                                },
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Nhập phương án...',
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ),
+            ],
+          ),
+        ),
+
+        // Bottom Action Bar
+        Positioned(
+          bottom: 0, left: 0, right: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: const Border(top: BorderSide(color: AppTheme.border)),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4)),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Tự động kết nối Supabase Database', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                Row(
+                  children: [
+                    OutlinedButton(
+                      onPressed: _isSaving ? null : () => _saveExam(isPublished: false),
+                      child: const Text('Lưu nháp'),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: _isSaving ? null : () => _saveExam(isPublished: true),
+                      icon: _isSaving
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.check),
+                      label: Text(_isSaving ? 'Đang tạo đề...' : 'Lưu & Khởi tạo Đề'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.close, size: 20, color: AppTheme.textSecondary),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

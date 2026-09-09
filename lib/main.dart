@@ -20,6 +20,12 @@ import 'screens/exam/live_dashboard_screen.dart';
 import 'screens/exam/result_screen.dart';
 import 'screens/exam/exam_detail_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'screens/student/student_history_screen.dart';
+import 'screens/student/student_achievements_screen.dart';
+import 'screens/student/student_leaderboard_screen.dart';
+import 'screens/teacher/teacher_exams_screen.dart';
+import 'screens/teacher/teacher_student_results_screen.dart';
+import 'screens/teacher/teacher_analytics_screen.dart';
 import 'screens/main_layout_screen.dart';
 import 'screens/room/room_password_screen.dart';
 
@@ -189,6 +195,54 @@ final GoRouter _router = GoRouter(
             child: const ProfileScreen(),
           ),
         ),
+        GoRoute(
+          path: '/student/history',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const StudentHistoryScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/student/achievements',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const StudentAchievementsScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/student/leaderboard',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const StudentLeaderboardScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/teacher/exams',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const TeacherExamsScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/teacher/student_results',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const TeacherStudentResultsScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/teacher/analytics',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const TeacherAnalyticsScreen(),
+          ),
+        ),
       ],
     ),
     // Các màn hình không có TopNavBar
@@ -206,15 +260,38 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/taking_exam',
-      builder: (context, state) => const TakingExamScreen(),
+      builder: (context, state) {
+        final examId = state.uri.queryParameters['examId'];
+        return TakingExamScreen(examId: examId);
+      },
     ),
     GoRoute(
       path: '/live_dashboard',
-      builder: (context, state) => const LiveDashboardScreen(),
+      builder: (context, state) {
+        final roomCode = state.uri.queryParameters['code'];
+        return LiveDashboardScreen(roomCode: roomCode);
+      },
     ),
     GoRoute(
       path: '/result',
-      builder: (context, state) => const ResultScreen(),
+      builder: (context, state) {
+        final params = state.uri.queryParameters;
+        final score = double.tryParse(params['score'] ?? '');
+        final total = int.tryParse(params['total'] ?? '');
+        final correct = int.tryParse(params['correct'] ?? '');
+        final wrong = int.tryParse(params['wrong'] ?? '');
+        final skipped = int.tryParse(params['skipped'] ?? '');
+        final title = params['title'];
+
+        return ResultScreen(
+          score: score,
+          total: total,
+          correct: correct,
+          wrong: wrong,
+          skipped: skipped,
+          title: title,
+        );
+      },
     ),
   ],
   errorBuilder: (context, state) => Scaffold(
