@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
 import '../utils/otp_mailer.dart';
 
+enum UserRole { student, teacher }
+
 class _OTPRecord {
   final String code;
   final DateTime expiresAt;
@@ -20,6 +22,18 @@ class AuthProvider extends ChangeNotifier {
   String? _userAvatarUrl;
   String _activeRole = 'student';
 
+  UserRole get currentRole => _activeRole == 'teacher' ? UserRole.teacher : UserRole.student;
+  bool get isStudent => _activeRole == 'student';
+  bool get isTeacher => _activeRole == 'teacher';
+
+  Future<void> setRole(UserRole role) async {
+    await updateActiveRole(role == UserRole.teacher ? 'teacher' : 'student');
+  }
+
+  Future<void> toggleRole() async {
+    await setRole(isStudent ? UserRole.teacher : UserRole.student);
+  }
+
   // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
   Map<String, Map<String, String>> _registeredUsers = {};
   final Map<String, _OTPRecord> _localOTPs = {};
@@ -30,7 +44,6 @@ class AuthProvider extends ChangeNotifier {
       _user != null || (_supabaseClient == null && _userEmail != null);
   bool get hasSupabaseSession => _supabaseClient?.auth.currentSession != null;
   String get activeRole => _activeRole;
-  bool get isTeacher => _activeRole == 'teacher';
   String get activeRoleLabel => isTeacher ? 'Giáo viên' : 'Học sinh';
 
   String get userName =>
@@ -92,6 +105,13 @@ class AuthProvider extends ChangeNotifier {
           ? 'teacher'
           : 'student';
 
+      final savedRole = prefs.getString('active_user_role');
+      if (savedRole == 'teacher') {
+        _activeRole = 'teacher';
+      } else if (savedRole == 'student') {
+        _activeRole = 'student';
+      }
+
       // Restoring name and avatar from registered DB for active email
       if (_userEmail != null) {
         final key = _userEmail!.trim().toLowerCase();
@@ -116,6 +136,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('local_registered_users', jsonEncode(_registeredUsers));
+      await prefs.setString('active_user_role', _activeRole);
       if (_userEmail != null) {
         await prefs.setString('active_user_email', _userEmail!);
       } else {
