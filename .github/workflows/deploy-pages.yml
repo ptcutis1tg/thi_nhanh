@@ -29,7 +29,9 @@ jobs:
       - name: Provide the optional runtime env asset
         run: touch .env
       - name: Build web release
-        run: flutter build web --release --base-href /thi_nhanh/
+        run: |
+          flutter build web --release --base-href /thi_nhanh/
+          cp build/web/index.html build/web/404.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -102,5 +102,27 @@ void main() {
 
       expect(authProvider.hasSupabaseSession, isFalse);
     });
+
+    test('getWebRedirectUrl constructs proper base redirect URL for subpath and root deployments', () {
+      // Subpath deployment (e.g. GitHub Pages /thi_nhanh/)
+      final ghPagesUri = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh/');
+      expect(AuthProvider.getWebRedirectUrl(ghPagesUri), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
+
+      // Subpath with deep hash route
+      final ghPagesHashUri = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh/#/greeting');
+      expect(AuthProvider.getWebRedirectUrl(ghPagesHashUri), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
+
+      // Subpath without trailing slash
+      final ghPagesNoSlash = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh');
+      expect(AuthProvider.getWebRedirectUrl(ghPagesNoSlash), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
+
+      // Subpath with index.html
+      final ghPagesIndex = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh/index.html');
+      expect(AuthProvider.getWebRedirectUrl(ghPagesIndex), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
+
+      // Localhost root
+      final localhostUri = Uri.parse('http://localhost:5000/');
+      expect(AuthProvider.getWebRedirectUrl(localhostUri), equals('http://localhost:5000/'));
+    });
   });
 }

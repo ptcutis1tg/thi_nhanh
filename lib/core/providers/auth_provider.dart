@@ -158,11 +158,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Calculates the full redirect URL for web OAuth and auth callbacks,
+  /// ensuring subdirectory paths (such as GitHub Pages /thi_nhanh/) are preserved
+  /// instead of redirecting to the root domain and causing 404 errors.
+  static String? getWebRedirectUrl([Uri? customUri]) {
+    if (!kIsWeb && customUri == null) return null;
+    final uri = customUri ?? Uri.base;
+    final origin = uri.origin;
+    var path = uri.path;
+    if (path.endsWith('index.html')) {
+      path = path.substring(0, path.length - 'index.html'.length);
+    }
+    if (!path.endsWith('/')) {
+      path = '$path/';
+    }
+    return '$origin$path';
+  }
+
   Future<void> signInWithGoogle() async {
     if (_supabaseClient != null) {
       await _supabaseClient!.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? Uri.base.origin : null,
+        redirectTo: getWebRedirectUrl(),
       );
     } else {
       _userEmail = 'demo_google_user@gmail.com';
@@ -347,7 +364,7 @@ class AuthProvider extends ChangeNotifier {
       try {
         await _supabaseClient!.auth.resetPasswordForEmail(
           cleanEmail,
-          redirectTo: kIsWeb ? Uri.base.origin : null,
+          redirectTo: getWebRedirectUrl(),
         );
       } catch (e) {
         try {

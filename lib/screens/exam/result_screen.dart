@@ -165,22 +165,28 @@ class _ResultScreenState extends State<ResultScreen> {
           
           // Score Circle
           Container(
-            width: 160, height: 160,
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppTheme.primary, width: 8),
             ),
             alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Điểm số', style: TextStyle(color: AppTheme.textSecondary)),
-                Text(
-                  _finalScore.toStringAsFixed(1),
-                  style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: AppTheme.primary, height: 1.2),
-                ),
-                const Text('/10', style: TextStyle(fontSize: 16, color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
-              ],
+            padding: const EdgeInsets.all(8),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Điểm số', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
+                  Text(
+                    _finalScore.toStringAsFixed(1),
+                    style: const TextStyle(fontSize: 44, fontWeight: FontWeight.bold, color: AppTheme.primary, height: 1.1),
+                  ),
+                  const Text('/10', style: TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
           ),
         ],

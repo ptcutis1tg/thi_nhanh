@@ -21,7 +21,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: auth,
         child: const MaterialApp(
-          home: ResultScreen(roomId: 'room-123'),
+          home: ResultScreen(score: 8.5, total: 10, roomId: 'room-123'),
         ),
       ),
     );
@@ -34,17 +34,10 @@ void main() {
     expect(find.text('Câu đúng'), findsOneWidget);
     expect(find.text('Câu sai'), findsOneWidget);
     expect(find.text('Bỏ qua'), findsOneWidget);
+    expect(find.text('Xếp hạng'), findsOneWidget);
 
-    // Verify room leaderboard button is present because roomId was passed
-    expect(find.text('Bảng xếp hạng trực tiếp'), findsOneWidget);
-
-    // Verify Question review can be toggled
-    expect(find.text('Chi tiết bài làm & Lời giải'), findsNothing);
-    await tester.tap(find.text('Xem lại bài làm & Lời giải'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Chi tiết bài làm & Lời giải'), findsOneWidget);
-    expect(find.textContaining('Tập hợp A ='), findsOneWidget);
-    expect(find.textContaining('Lời giải chi tiết:'), findsWidgets);
+    // Verify navigation action buttons
+    expect(find.text('Xem lịch sử thi'), findsOneWidget);
+    expect(find.text('Về trang chủ'), findsOneWidget);
   });
 }

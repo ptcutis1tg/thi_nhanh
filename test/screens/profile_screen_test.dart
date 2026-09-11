@@ -26,8 +26,8 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Phòng thi'), findsOneWidget);
-    expect(find.text('Lượt tham gia'), findsOneWidget);
-    expect(find.text('Đăng xuất'), findsOneWidget);
+    expect(find.text('Thông tin cá nhân'), findsOneWidget);
+    expect(find.text('Thay đổi mật khẩu'), findsOneWidget);
+    expect(find.text('Lưu thay đổi'), findsOneWidget);
   });
 }

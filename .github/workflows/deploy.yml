@@ -30,6 +30,7 @@ jobs:
         run: |
           touch .env
           flutter build web --release --pwa-strategy=none --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }} --base-href="/thi_nhanh/"
+          cp build/web/index.html build/web/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

@@ -17,9 +17,13 @@ Secret, and it should never do so.
 
 1. In **Authentication → Providers → Google**, enable Google and paste the
    Google OAuth Client ID and Client Secret there.
-2. In **Authentication → URL Configuration**, add each exact Flutter web URL
-   to the Redirect URL allow list, for example `http://localhost:51170/**` and
-   your production URL.
+2. In **Authentication → URL Configuration**:
+   - **Site URL**: `https://ptcutis1tg.github.io/thi_nhanh/`
+   - **Redirect URLs** (Allow list):
+     - `https://ptcutis1tg.github.io/thi_nhanh/**`
+     - `https://ptcutis1tg.github.io/thi_nhanh/`
+     - `http://localhost:*/**`
+     - `http://localhost:*`
 3. Keep only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in the ignored
    `.env` file. Do not add the Google Client Secret or a Supabase service-role
    key to Flutter, Git, or a browser environment.
