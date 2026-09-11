@@ -6,7 +6,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/repositories/assessment_repository.dart';
 
 class ExamDetailScreen extends StatefulWidget {
-  const ExamDetailScreen({super.key});
+  final String? examId;
+  const ExamDetailScreen({super.key, this.examId});
 
   @override
   State<ExamDetailScreen> createState() => _ExamDetailScreenState();
@@ -30,7 +31,21 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
     setState(() => _isLoading = true);
     try {
       final client = Supabase.instance.client;
-      final res = await client.from('exams').select().order('created_at', ascending: false).limit(1).maybeSingle();
+      Map<String, dynamic>? res;
+      if (widget.examId != null && widget.examId!.isNotEmpty) {
+        res = await client
+            .from('exams')
+            .select('id, code, title, subject, duration_minutes, created_at, snapshot_payload, teachers(display_name)')
+            .eq('id', widget.examId!)
+            .maybeSingle();
+      }
+      res ??= await client
+          .from('exams')
+          .select('id, code, title, subject, duration_minutes, created_at, snapshot_payload, teachers(display_name)')
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
       if (mounted) {
         setState(() {
           _examData = res;
@@ -39,8 +54,38 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
       }
     } catch (e) {
       debugPrint('Lỗi tải thông tin đề thi: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showNetworkErrorDialog();
+      }
     }
+  }
+
+  void _showNetworkErrorDialog() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Lỗi kết nối mạng: Không thể tải chi tiết đề thi.'),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Thử lại',
+            textColor: Colors.white,
+            onPressed: _fetchRealExam,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    });
   }
 
   @override
@@ -55,17 +100,18 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
       return;
     }
     setState(() => _isStarting = true);
+    final currentExamId = _examData?['id']?.toString() ?? widget.examId ?? _demoExamId;
     try {
       final repo = context.read<AssessmentRepository?>();
       if (repo != null) {
-        final attempt = await repo.beginPractice(_examData?['id']?.toString() ?? _demoExamId);
-        if (mounted) context.go('/taking_exam?attemptId=${attempt.attemptId}');
+        final attempt = await repo.beginPractice(currentExamId);
+        if (mounted) context.go('/taking_exam?attemptId=${attempt.attemptId}&examId=$currentExamId');
       } else {
-        if (mounted) context.go('/taking_exam?examId=${_examData?['id'] ?? _demoExamId}');
+        if (mounted) context.go('/taking_exam?examId=$currentExamId');
       }
     } catch (_) {
       if (mounted) {
-        context.go('/taking_exam?examId=${_examData?['id'] ?? _demoExamId}');
+        context.go('/taking_exam?examId=$currentExamId');
       }
     } finally {
       if (mounted) setState(() => _isStarting = false);
@@ -82,7 +128,10 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
 
     final title = _examData?['title'] as String? ?? 'Đề thi trắc nghiệm môn Vật Lý 12';
     final subject = _examData?['subject'] as String? ?? 'Vật Lý';
-    final totalQuestions = (_examData?['total_questions'] as num?)?.toInt() ?? 40;
+    final snapshot = _examData?['snapshot_payload'] as Map<String, dynamic>?;
+    final questionsList = snapshot?['questions'] as List<dynamic>?;
+    final totalQuestions = (snapshot?['total_questions'] as num?)?.toInt() ?? questionsList?.length ?? 40;
+    final durationMinutes = (_examData?['duration_minutes'] as num?)?.toInt() ?? 60;
     final examCode = _examData?['code'] as String? ?? 'VL12';
 
     return Scaffold(
@@ -111,6 +160,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                     title: title,
                     subject: subject,
                     questionsCount: totalQuestions,
+                    durationMinutes: durationMinutes,
                     code: examCode,
                   );
                   final action = _ActionPanel(
@@ -153,12 +203,14 @@ class _ExamSummaryCard extends StatelessWidget {
     required this.title,
     required this.subject,
     required this.questionsCount,
+    required this.durationMinutes,
     required this.code,
   });
 
   final String title;
   final String subject;
   final int questionsCount;
+  final int durationMinutes;
   final String code;
 
   @override
@@ -192,7 +244,7 @@ class _ExamSummaryCard extends StatelessWidget {
                 runSpacing: 16,
                 children: [
                   _Fact(Icons.format_list_numbered, '$questionsCount câu hỏi'),
-                  const _Fact(Icons.schedule_outlined, '60 phút'),
+                  _Fact(Icons.schedule_outlined, '$durationMinutes phút'),
                   const _Fact(Icons.bar_chart_rounded, 'Độ khó: Chuẩn kiến thức'),
                 ],
               ),

@@ -204,6 +204,14 @@ final GoRouter _router = GoRouter(
           ),
         ),
         GoRoute(
+          path: '/exam_detail',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: ExamDetailScreen(examId: state.uri.queryParameters['examId']),
+          ),
+        ),
+        GoRoute(
           path: '/exam/physics-12',
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
