@@ -26,8 +26,10 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     try {
       final client = Supabase.instance.client;
       
-      var query = client.from('exams').select('id, title, subject, total_questions, created_at, code');
-      final res = await query.order('created_at', ascending: false);
+      final res = await client
+          .from('exams')
+          .select('id, title, subject, duration_minutes, created_at, code, snapshot_payload')
+          .order('created_at', ascending: false);
       
       if (mounted) {
         setState(() {
@@ -37,8 +39,38 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       }
     } catch (e) {
       debugPrint('Lỗi tải danh sách đề thi của giáo viên: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showNetworkErrorDialog();
+      }
     }
+  }
+
+  void _showNetworkErrorDialog() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text('Lỗi kết nối mạng: Không thể tải danh sách đề thi của giáo viên.'),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Thử lại',
+            textColor: Colors.white,
+            onPressed: _loadExams,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    });
   }
 
   @override
@@ -136,9 +168,14 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final exam = filtered[index];
+                      final snapshot = exam['snapshot_payload'] as Map<String, dynamic>?;
+                      final questionsList = snapshot?['questions'] as List<dynamic>?;
+                      final qCount = (snapshot?['total_questions'] as num?)?.toInt() ?? questionsList?.length ?? 10;
+                      final duration = (exam['duration_minutes'] as num?)?.toInt() ?? 45;
+                      final examId = exam['id']?.toString() ?? '';
+
                       return Container(
                         margin: const EdgeInsets.only(bottom: 14),
-                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
@@ -146,49 +183,70 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                             BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 2)),
                           ],
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF0ECFF),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Icon(Icons.assignment_outlined, color: AppTheme.primary),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              if (examId.isNotEmpty) {
+                                context.go('/exam_detail?examId=$examId');
+                              }
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Row(
                                 children: [
-                                  Text(
-                                    exam['title'] as String? ?? 'Đề thi trắc nghiệm',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF0ECFF),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Icon(Icons.assignment_outlined, color: AppTheme.primary),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Môn: ${exam['subject'] ?? 'Tổng hợp'} • ${exam['total_questions'] ?? 40} câu hỏi • Mã đề: ${exam['code'] ?? 'DT001'}',
-                                    style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          exam['title'] as String? ?? 'Đề thi trắc nghiệm',
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Môn: ${exam['subject'] ?? 'Tổng hợp'} • $qCount câu hỏi • $duration phút • Mã đề: ${exam['code'] ?? 'DT001'}',
+                                          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      OutlinedButton.icon(
+                                        onPressed: () => context.go(examId.isNotEmpty ? '/create_room?examId=$examId' : '/create_room'),
+                                        icon: const Icon(Icons.meeting_room_outlined, size: 16),
+                                        label: const Text('Tạo Phòng Thi'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        tooltip: 'Chỉnh sửa đề thi',
+                                        onPressed: () => context.go(examId.isNotEmpty ? '/create_exam?examId=$examId' : '/create_exam'),
+                                        icon: const Icon(Icons.edit_outlined, color: AppTheme.primary),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      IconButton(
+                                        tooltip: 'Xem chi tiết đề',
+                                        onPressed: () => context.go(examId.isNotEmpty ? '/exam_detail?examId=$examId' : '/exam_detail'),
+                                        icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.textSecondary),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                            Row(
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: () => context.go('/create_room'),
-                                  icon: const Icon(Icons.meeting_room_outlined, size: 16),
-                                  label: const Text('Tạo Phòng Thi'),
-                                ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () => context.go('/create_exam'),
-                                  icon: const Icon(Icons.edit_outlined, color: AppTheme.primary),
-                                ),
-                              ],
-                            ),
-                          ],
+                          ),
                         ),
                       );
                     },
