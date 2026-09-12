@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/supabase_retry_helper.dart';
 
 class AchievementItemData {
   final String icon;
@@ -209,24 +210,27 @@ class ProfileService {
     if (client == null || userId == null) return false;
 
     try {
-      // Check `teachers` table by owner_user_id
-      final teacherRes = await client
-          .from('teachers')
-          .select('id')
-          .eq('owner_user_id', userId)
-          .maybeSingle();
+      return await SupabaseRetryHelper.run(() async {
+        // Check `teachers` table by owner_user_id
+        final teacherRes = await client
+            .from('teachers')
+            .select('id')
+            .eq('owner_user_id', userId)
+            .maybeSingle();
 
-      if (teacherRes != null) {
-        return true;
-      }
+        if (teacherRes != null) {
+          return true;
+        }
 
-      // Check if user has created any exams or rooms
-      final examRes = await client
-          .from('teachers')
-          .select('id')
-          .ilike('display_name', userName ?? '')
-          .maybeSingle();
-      if (examRes != null) return true;
+        // Check if user has created any exams or rooms
+        final examRes = await client
+            .from('teachers')
+            .select('id')
+            .ilike('display_name', userName ?? '')
+            .maybeSingle();
+        if (examRes != null) return true;
+        return false;
+      });
     } catch (e) {
       debugPrint('Lỗi kiểm tra vai trò Giáo viên từ Supabase: $e');
     }
@@ -280,8 +284,10 @@ class ProfileService {
         query = query.eq('guest_name', userEmail);
       }
 
-      final attemptsRes = await query.order('started_at', ascending: false);
-      final List<dynamic> attemptsList = attemptsRes as List<dynamic>;
+      final List<dynamic> attemptsList = await SupabaseRetryHelper.run(() async {
+        final attemptsRes = await query.order('started_at', ascending: false);
+        return attemptsRes as List<dynamic>;
+      });
 
       if (attemptsList.isEmpty) {
         return StudentProfileData.empty();
@@ -465,259 +471,261 @@ class ProfileService {
     }
 
     try {
-      // 1. Get teacher id
-      String? teacherId;
-      if (userId != null) {
-        final tRes = await client
-            .from('teachers')
-            .select('id')
-            .eq('owner_user_id', userId)
-            .maybeSingle();
-        if (tRes != null) {
-          teacherId = tRes['id'].toString();
-        }
-      }
-
-      if (teacherId == null && userName != null && userName.isNotEmpty) {
-        final tRes = await client
-            .from('teachers')
-            .select('id')
-            .ilike('display_name', userName)
-            .maybeSingle();
-        if (tRes != null) {
-          teacherId = tRes['id'].toString();
-        }
-      }
-
-      // If teacherId still null, check first available teacher or return empty
-      if (teacherId == null) {
-        final firstTeacher = await client.from('teachers').select('id').limit(1).maybeSingle();
-        if (firstTeacher != null) {
-          teacherId = firstTeacher['id'].toString();
-        } else {
-          return TeacherProfileData.empty();
-        }
-      }
-
-      // 2. Fetch Exams created by Teacher
-      final examsRes = await client
-          .from('exams')
-          .select('id, code, title, duration_minutes, created_at, updated_at')
-          .eq('teacher_id', teacherId)
-          .order('created_at', ascending: false);
-
-      final List<dynamic> examsList = examsRes as List<dynamic>;
-
-      // 3. Fetch Rooms created by Teacher
-      final roomsRes = await client
-          .from('rooms')
-          .select('id, code, name, status, created_at, scheduled_start_at')
-          .eq('teacher_id', teacherId)
-          .order('created_at', ascending: false);
-
-      final List<dynamic> roomsList = roomsRes as List<dynamic>;
-
-      final roomIds = roomsList.map((r) => r['id'].toString()).toList();
-      final examIds = examsList.map((e) => e['id'].toString()).toList();
-
-      // 4. Fetch Attempts across rooms/exams of Teacher
-      List<dynamic> teacherAttempts = [];
-      if (roomIds.isNotEmpty || examIds.isNotEmpty) {
-        var aQuery = client.from('attempts').select('id, room_id, exam_id, score, status');
-        if (roomIds.isNotEmpty) {
-          aQuery = aQuery.inFilter('room_id', roomIds);
-        } else {
-          aQuery = aQuery.inFilter('exam_id', examIds);
-        }
-        final aRes = await aQuery;
-        teacherAttempts = aRes as List<dynamic>;
-      }
-
-      final totalParticipants = teacherAttempts.length;
-
-      final submittedStudentAttempts = teacherAttempts
-          .where((a) => a['status'] == 'submitted' && a['score'] != null)
-          .toList();
-
-      double sumStudentScore = 0.0;
-      for (var a in submittedStudentAttempts) {
-        sumStudentScore += (a['score'] as num).toDouble();
-      }
-
-      final studentAverageScore = submittedStudentAttempts.isNotEmpty
-          ? sumStudentScore / submittedStudentAttempts.length
-          : 0.0;
-
-      final completionRate = totalParticipants > 0
-          ? (submittedStudentAttempts.length / totalParticipants) * 100
-          : 0.0;
-
-      // Calculate participant count per room for chart and busiest room
-      Map<String, int> roomParticipantCounts = {};
-      for (var a in teacherAttempts) {
-        final rId = a['room_id']?.toString();
-        if (rId != null) {
-          roomParticipantCounts[rId] = (roomParticipantCounts[rId] ?? 0) + 1;
-        }
-      }
-
-      int busiestRoomCount = 0;
-      for (var count in roomParticipantCounts.values) {
-        if (count > busiestRoomCount) {
-          busiestRoomCount = count;
-        }
-      }
-
-      // Chart Values & Labels (6 recent rooms)
-      final List<double> chartValues = [];
-      final List<String> chartLabels = [];
-      final recent6Rooms = roomsList.take(6).toList().reversed.toList();
-
-      for (int i = 0; i < recent6Rooms.length; i++) {
-        final r = recent6Rooms[i];
-        final rId = r['id'].toString();
-        final pCount = (roomParticipantCounts[rId] ?? 0).toDouble();
-        chartValues.add(pCount);
-        chartLabels.add('Phòng ${i + 1}');
-      }
-
-      // Fetch questions count across teacher's exams
-      int totalQuestionsCount = 0;
-      if (examIds.isNotEmpty) {
-        final qRes = await client
-            .from('questions')
-            .select('id, exam_id, body')
-            .inFilter('exam_id', examIds);
-        final qList = qRes as List<dynamic>;
-        totalQuestionsCount = qList.length;
-      }
-
-      // 5. Recent Rooms List
-      final List<TeacherRoomData> recentRooms = [];
-      for (var r in roomsList) {
-        final rId = r['id'].toString();
-        final code = r['code']?.toString() ?? '';
-        final name = r['name']?.toString() ?? 'Phòng thi';
-        final status = r['status']?.toString() ?? 'waiting';
-        final pCount = roomParticipantCounts[rId] ?? 0;
-
-        String dateStr = 'Mới tạo';
-        if (r['created_at'] != null) {
-          final dt = DateTime.tryParse(r['created_at'].toString())?.toLocal();
-          if (dt != null) {
-            dateStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-          }
-        }
-
-        String statusLabel = 'Đang chờ';
-        String statusType = 'upcoming';
-        if (status == 'live') {
-          statusLabel = 'Đang diễn ra';
-          statusType = 'live';
-        } else if (status == 'closed') {
-          statusLabel = 'Đã kết thúc';
-          statusType = 'ended';
-        }
-
-        recentRooms.add(
-          TeacherRoomData(
-            id: rId,
-            title: name,
-            roomCode: code,
-            date: dateStr,
-            studentsCount: pCount,
-            statusLabel: statusLabel,
-            statusType: statusType,
-          ),
-        );
-      }
-
-      // 6. Recent Exam Sets List
-      final List<TeacherExamSetData> recentExams = [];
-      for (var e in examsList) {
-        final eId = e['id'].toString();
-        final title = e['title']?.toString() ?? 'Đề thi';
-        final duration = e['duration_minutes'] ?? 45;
-
-        // count questions in this exam
-        int qCount = 0;
-        if (examIds.isNotEmpty) {
-          final qInExam = await client
-              .from('questions')
+      return await SupabaseRetryHelper.run(() async {
+        // 1. Get teacher id
+        String? teacherId;
+        if (userId != null) {
+          final tRes = await client
+              .from('teachers')
               .select('id')
-              .eq('exam_id', eId);
-          qCount = (qInExam as List<dynamic>).length;
-        }
-
-        // count attempts in this exam
-        final eAttempts = teacherAttempts.where((a) => a['exam_id']?.toString() == eId).length;
-
-        String updatedStr = 'Vừa xong';
-        if (e['updated_at'] != null || e['created_at'] != null) {
-          final dt = DateTime.tryParse((e['updated_at'] ?? e['created_at']).toString())?.toLocal();
-          if (dt != null) {
-            updatedStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+              .eq('owner_user_id', userId)
+              .maybeSingle();
+          if (tRes != null) {
+            teacherId = tRes['id'].toString();
           }
         }
 
-        recentExams.add(
-          TeacherExamSetData(
-            id: eId,
-            title: title,
-            details: '$qCount câu • $duration phút • $eAttempts lượt thi • Cập nhật $updatedStr',
-          ),
+        if (teacherId == null && userName != null && userName.isNotEmpty) {
+          final tRes = await client
+              .from('teachers')
+              .select('id')
+              .ilike('display_name', userName)
+              .maybeSingle();
+          if (tRes != null) {
+            teacherId = tRes['id'].toString();
+          }
+        }
+
+        // If teacherId still null, check first available teacher or return empty
+        if (teacherId == null) {
+          final firstTeacher = await client.from('teachers').select('id').limit(1).maybeSingle();
+          if (firstTeacher != null) {
+            teacherId = firstTeacher['id'].toString();
+          } else {
+            return TeacherProfileData.empty();
+          }
+        }
+
+        // 2. Fetch Exams created by Teacher
+        final examsRes = await client
+            .from('exams')
+            .select('id, code, title, duration_minutes, created_at, updated_at')
+            .eq('teacher_id', teacherId)
+            .order('created_at', ascending: false);
+
+        final List<dynamic> examsList = examsRes as List<dynamic>;
+
+        // 3. Fetch Rooms created by Teacher
+        final roomsRes = await client
+            .from('rooms')
+            .select('id, code, name, status, created_at, scheduled_start_at')
+            .eq('teacher_id', teacherId)
+            .order('created_at', ascending: false);
+
+        final List<dynamic> roomsList = roomsRes as List<dynamic>;
+
+        final roomIds = roomsList.map((r) => r['id'].toString()).toList();
+        final examIds = examsList.map((e) => e['id'].toString()).toList();
+
+        // 4. Fetch Attempts across rooms/exams of Teacher
+        List<dynamic> teacherAttempts = [];
+        if (roomIds.isNotEmpty || examIds.isNotEmpty) {
+          var aQuery = client.from('attempts').select('id, room_id, exam_id, score, status');
+          if (roomIds.isNotEmpty) {
+            aQuery = aQuery.inFilter('room_id', roomIds);
+          } else {
+            aQuery = aQuery.inFilter('exam_id', examIds);
+          }
+          final aRes = await aQuery;
+          teacherAttempts = aRes as List<dynamic>;
+        }
+
+        final totalParticipants = teacherAttempts.length;
+
+        final submittedStudentAttempts = teacherAttempts
+            .where((a) => a['status'] == 'submitted' && a['score'] != null)
+            .toList();
+
+        double sumStudentScore = 0.0;
+        for (var a in submittedStudentAttempts) {
+          sumStudentScore += (a['score'] as num).toDouble();
+        }
+
+        final studentAverageScore = submittedStudentAttempts.isNotEmpty
+            ? sumStudentScore / submittedStudentAttempts.length
+            : 0.0;
+
+        final completionRate = totalParticipants > 0
+            ? (submittedStudentAttempts.length / totalParticipants) * 100
+            : 0.0;
+
+        // Calculate participant count per room for chart and busiest room
+        Map<String, int> roomParticipantCounts = {};
+        for (var a in teacherAttempts) {
+          final rId = a['room_id']?.toString();
+          if (rId != null) {
+            roomParticipantCounts[rId] = (roomParticipantCounts[rId] ?? 0) + 1;
+          }
+        }
+
+        int busiestRoomCount = 0;
+        for (var count in roomParticipantCounts.values) {
+          if (count > busiestRoomCount) {
+            busiestRoomCount = count;
+          }
+        }
+
+        // Chart Values & Labels (6 recent rooms)
+        final List<double> chartValues = [];
+        final List<String> chartLabels = [];
+        final recent6Rooms = roomsList.take(6).toList().reversed.toList();
+
+        for (int i = 0; i < recent6Rooms.length; i++) {
+          final r = recent6Rooms[i];
+          final rId = r['id'].toString();
+          final pCount = (roomParticipantCounts[rId] ?? 0).toDouble();
+          chartValues.add(pCount);
+          chartLabels.add('Phòng ${i + 1}');
+        }
+
+        // Fetch questions count across teacher's exams
+        int totalQuestionsCount = 0;
+        if (examIds.isNotEmpty) {
+          final qRes = await client
+              .from('questions')
+              .select('id, exam_id, body')
+              .inFilter('exam_id', examIds);
+          final qList = qRes as List<dynamic>;
+          totalQuestionsCount = qList.length;
+        }
+
+        // 5. Recent Rooms List
+        final List<TeacherRoomData> recentRooms = [];
+        for (var r in roomsList) {
+          final rId = r['id'].toString();
+          final code = r['code']?.toString() ?? '';
+          final name = r['name']?.toString() ?? 'Phòng thi';
+          final status = r['status']?.toString() ?? 'waiting';
+          final pCount = roomParticipantCounts[rId] ?? 0;
+
+          String dateStr = 'Mới tạo';
+          if (r['created_at'] != null) {
+            final dt = DateTime.tryParse(r['created_at'].toString())?.toLocal();
+            if (dt != null) {
+              dateStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+            }
+          }
+
+          String statusLabel = 'Đang chờ';
+          String statusType = 'upcoming';
+          if (status == 'live') {
+            statusLabel = 'Đang diễn ra';
+            statusType = 'live';
+          } else if (status == 'closed') {
+            statusLabel = 'Đã kết thúc';
+            statusType = 'ended';
+          }
+
+          recentRooms.add(
+            TeacherRoomData(
+              id: rId,
+              title: name,
+              roomCode: code,
+              date: dateStr,
+              studentsCount: pCount,
+              statusLabel: statusLabel,
+              statusType: statusType,
+            ),
+          );
+        }
+
+        // 6. Recent Exam Sets List
+        final List<TeacherExamSetData> recentExams = [];
+        for (var e in examsList) {
+          final eId = e['id'].toString();
+          final title = e['title']?.toString() ?? 'Đề thi';
+          final duration = e['duration_minutes'] ?? 45;
+
+          // count questions in this exam
+          int qCount = 0;
+          if (examIds.isNotEmpty) {
+            final qInExam = await client
+                .from('questions')
+                .select('id')
+                .eq('exam_id', eId);
+            qCount = (qInExam as List<dynamic>).length;
+          }
+
+          // count attempts in this exam
+          final eAttempts = teacherAttempts.where((a) => a['exam_id']?.toString() == eId).length;
+
+          String updatedStr = 'Vừa xong';
+          if (e['updated_at'] != null || e['created_at'] != null) {
+            final dt = DateTime.tryParse((e['updated_at'] ?? e['created_at']).toString())?.toLocal();
+            if (dt != null) {
+              updatedStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+            }
+          }
+
+          recentExams.add(
+            TeacherExamSetData(
+              id: eId,
+              title: title,
+              details: '$qCount câu • $duration phút • $eAttempts lượt thi • Cập nhật $updatedStr',
+            ),
+          );
+        }
+
+        // Overall correct rate & popular exam info
+        double overallCorrectRate = studentAverageScore > 0 ? (studentAverageScore / 10.0) * 100 : 0.0;
+
+        String hardestQuestionInfo = totalQuestionsCount > 0
+            ? 'Chưa ghi nhận câu hỏi có tỷ lệ sai cao đặc biệt'
+            : 'Chưa có câu hỏi';
+        if (studentAverageScore > 0 && studentAverageScore < 6.0) {
+          hardestQuestionInfo = 'Các câu hỏi nâng cao (tỷ lệ đúng < 50%)';
+        }
+
+        String mostPopularExamInfo = recentExams.isNotEmpty
+            ? recentExams.first.title
+            : 'Chưa có lượt thi';
+
+        // Teaching insights
+        final List<String> teachingInsights = [];
+        if (studentAverageScore > 0) {
+          teachingInsights.add(
+            '📈 Điểm trung bình của các phòng thi hiện đạt ${studentAverageScore.toStringAsFixed(1)} điểm.',
+          );
+        }
+        if (completionRate > 0) {
+          teachingInsights.add(
+            '🎯 Tỷ lệ học sinh hoàn thành bài thi đạt ${completionRate.toStringAsFixed(0)}%.',
+          );
+        }
+        if (busiestRoomCount > 0) {
+          teachingInsights.add(
+            '👥 Phòng thi đông nhất của bạn thu hút $busiestRoomCount học sinh tham gia.',
+          );
+        }
+
+        return TeacherProfileData(
+          createdExamsCount: examsList.length,
+          createdRoomsCount: roomsList.length,
+          totalParticipants: totalParticipants,
+          studentAverageScore: studentAverageScore,
+          chartValues: chartValues,
+          chartLabels: chartLabels,
+          busiestRoomCount: busiestRoomCount,
+          completionRate: completionRate,
+          totalQuestionsCount: totalQuestionsCount,
+          overallCorrectRate: overallCorrectRate,
+          hardestQuestionInfo: hardestQuestionInfo,
+          mostPopularExamInfo: mostPopularExamInfo,
+          recentRooms: recentRooms,
+          recentExams: recentExams,
+          teachingInsights: teachingInsights,
         );
-      }
-
-      // Overall correct rate & popular exam info
-      double overallCorrectRate = studentAverageScore > 0 ? (studentAverageScore / 10.0) * 100 : 0.0;
-
-      String hardestQuestionInfo = totalQuestionsCount > 0
-          ? 'Chưa ghi nhận câu hỏi có tỷ lệ sai cao đặc biệt'
-          : 'Chưa có câu hỏi';
-      if (studentAverageScore > 0 && studentAverageScore < 6.0) {
-        hardestQuestionInfo = 'Các câu hỏi nâng cao (tỷ lệ đúng < 50%)';
-      }
-
-      String mostPopularExamInfo = recentExams.isNotEmpty
-          ? recentExams.first.title
-          : 'Chưa có lượt thi';
-
-      // Teaching insights
-      final List<String> teachingInsights = [];
-      if (studentAverageScore > 0) {
-        teachingInsights.add(
-          '📈 Điểm trung bình của các phòng thi hiện đạt ${studentAverageScore.toStringAsFixed(1)} điểm.',
-        );
-      }
-      if (completionRate > 0) {
-        teachingInsights.add(
-          '🎯 Tỷ lệ học sinh hoàn thành bài thi đạt ${completionRate.toStringAsFixed(0)}%.',
-        );
-      }
-      if (busiestRoomCount > 0) {
-        teachingInsights.add(
-          '👥 Phòng thi đông nhất của bạn thu hút $busiestRoomCount học sinh tham gia.',
-        );
-      }
-
-      return TeacherProfileData(
-        createdExamsCount: examsList.length,
-        createdRoomsCount: roomsList.length,
-        totalParticipants: totalParticipants,
-        studentAverageScore: studentAverageScore,
-        chartValues: chartValues,
-        chartLabels: chartLabels,
-        busiestRoomCount: busiestRoomCount,
-        completionRate: completionRate,
-        totalQuestionsCount: totalQuestionsCount,
-        overallCorrectRate: overallCorrectRate,
-        hardestQuestionInfo: hardestQuestionInfo,
-        mostPopularExamInfo: mostPopularExamInfo,
-        recentRooms: recentRooms,
-        recentExams: recentExams,
-        teachingInsights: teachingInsights,
-      );
+      });
     } catch (e) {
       debugPrint('Lỗi tải dữ liệu Hồ sơ Giáo viên từ Supabase: $e');
       return TeacherProfileData.empty();
