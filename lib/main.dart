@@ -10,6 +10,8 @@ import 'core/providers/auth_provider.dart';
 import 'core/repositories/assessment_repository.dart';
 import 'core/repositories/teacher_exam_repository.dart';
 import 'core/repositories/room_repository.dart';
+import 'core/services/developer_mode_service.dart';
+import 'shared/widgets/developer_log_overlay.dart';
 import 'screens/auth/greeting_screen.dart';
 import 'screens/auth/reset_password_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -34,6 +36,36 @@ import 'screens/room/room_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final developerModeService = DeveloperModeService();
+  await developerModeService.init();
+
+  final originalOnError = FlutterError.onError;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    developerModeService.recordError(
+      details.exceptionAsString(),
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+    originalOnError?.call(details);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    developerModeService.recordError(
+      'Ngoại lệ runtime: $error',
+      error: error,
+      stackTrace: stack,
+    );
+    return false;
+  };
+
+  final originalDebugPrint = debugPrint;
+  debugPrint = (String? message, {int? wrapWidth}) {
+    if (message != null && message.isNotEmpty) {
+      developerModeService.recordDebug(message);
+    }
+    originalDebugPrint(message, wrapWidth: wrapWidth);
+  };
   
   // Tải biến môi trường từ file .env nếu có
   try {
@@ -82,6 +114,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: developerModeService),
         if (isSupabaseInitialized)
           Provider.value(value: Supabase.instance.client),
         if (isSupabaseInitialized)
@@ -356,6 +389,14 @@ class ThiNhanhApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
+      builder: (context, child) {
+        return Overlay(
+          initialEntries: [
+            if (child != null) OverlayEntry(builder: (context) => child),
+            OverlayEntry(builder: (context) => const DeveloperLogOverlay()),
+          ],
+        );
+      },
     );
   }
 }
