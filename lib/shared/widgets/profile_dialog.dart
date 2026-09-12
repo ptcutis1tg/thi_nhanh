@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/avatar_helper.dart';
 
 class ProfileDialog extends StatefulWidget {
   const ProfileDialog({super.key});
@@ -175,19 +175,12 @@ class _ProfileDialogState extends State<ProfileDialog> {
               // Avatar & Profile Header
               () {
                 final avatarUrl = authProvider.userAvatarUrl;
-                ImageProvider? avatarImg;
-                if (avatarUrl != null && avatarUrl.isNotEmpty) {
-                  try {
-                    final base64Str = avatarUrl.contains(',') ? avatarUrl.split(',').last : avatarUrl;
-                    avatarImg = MemoryImage(base64Decode(base64Str));
-                  } catch (e) {
-                    debugPrint('Lỗi giải mã avatar ProfileDialog: $e');
-                  }
-                }
+                final avatarImg = parseAvatarImage(avatarUrl);
                 return CircleAvatar(
                   radius: 38,
                   backgroundColor: AppTheme.primaryLight.withValues(alpha: 0.2),
                   backgroundImage: avatarImg,
+                  onBackgroundImageError: avatarImg != null ? (e, s) {} : null,
                   child: avatarImg == null
                       ? const Icon(
                           Icons.person,

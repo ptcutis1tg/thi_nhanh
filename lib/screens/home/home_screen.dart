@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +7,7 @@ import '../../core/repositories/room_repository.dart';
 import '../room/widgets/join_room_guest_dialog.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/developer_mode_service.dart';
+import '../../core/utils/avatar_helper.dart';
 import '../../shared/widgets/exam_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -163,15 +163,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final isStudent = authProvider.isStudent;
     final avatarUrl = authProvider.userAvatarUrl;
 
-    ImageProvider? avatarImage;
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      try {
-        final base64Str = avatarUrl.contains(',') ? avatarUrl.split(',').last : avatarUrl;
-        avatarImage = MemoryImage(base64Decode(base64Str));
-      } catch (e) {
-        debugPrint('Lỗi giải mã avatar HomeScreen: $e');
-      }
-    }
+    final avatarImage = parseAvatarImage(avatarUrl);
 
     final isMobile = MediaQuery.of(context).size.width < 768;
 
@@ -293,6 +285,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           radius: 28,
           backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
           backgroundImage: avatarImage,
+          onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
           child: avatarImage == null
               ? const Icon(Icons.person, size: 28, color: AppTheme.primary)
               : null,

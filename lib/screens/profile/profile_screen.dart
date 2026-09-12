@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/profile_service.dart';
+import '../../core/utils/avatar_helper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -183,18 +184,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAvatarWidget(String? avatarUrl) {
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      try {
-        final base64Str = avatarUrl.contains(',') ? avatarUrl.split(',').last : avatarUrl;
-        final bytes = base64Decode(base64Str);
-        return CircleAvatar(
-          radius: 44,
-          backgroundColor: const Color(0xFFF0ECFF),
-          backgroundImage: MemoryImage(bytes),
-        );
-      } catch (e) {
-        debugPrint('Lỗi giải mã avatar base64: $e');
-      }
+    final imageProvider = parseAvatarImage(avatarUrl);
+    if (imageProvider != null) {
+      return CircleAvatar(
+        radius: 44,
+        backgroundColor: const Color(0xFFF0ECFF),
+        backgroundImage: imageProvider,
+        onBackgroundImageError: (e, s) {},
+      );
     }
     return const CircleAvatar(
       radius: 44,

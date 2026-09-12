@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/utils/avatar_helper.dart';
 
 class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   const TopNavBar({super.key});
@@ -16,15 +16,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     final authProvider = context.watch<AuthProvider>();
     final avatarUrl = authProvider.userAvatarUrl;
 
-    ImageProvider? avatarImage;
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      try {
-        final base64Str = avatarUrl.contains(',') ? avatarUrl.split(',').last : avatarUrl;
-        avatarImage = MemoryImage(base64Decode(base64Str));
-      } catch (e) {
-        debugPrint('Lỗi giải mã avatar TopNavBar: $e');
-      }
-    }
+    final avatarImage = parseAvatarImage(avatarUrl);
 
     return Container(
       height: 72,
@@ -135,6 +127,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                   radius: 21,
                   backgroundColor: AppTheme.border,
                   backgroundImage: avatarImage,
+                  onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
                   child: avatarImage == null
                       ? const Icon(Icons.person, color: AppTheme.textSecondary)
                       : null,
