@@ -1,21 +1,23 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/google_pagination_bar.dart';
 
 enum SearchItemType { exam, room }
 
-class _SearchItem {
-  const _SearchItem({
+class SearchExamItem {
+  const SearchExamItem({
     required this.id,
     required this.code,
     required this.title,
     required this.teacher,
     required this.subject,
-    required this.type,
-    required this.questions,
-    required this.duration,
-    required this.activity,
+    this.type = SearchItemType.exam,
+    this.questions = 10,
+    this.duration = 45,
+    this.activity = 'Mới tạo',
     this.isOpen = false,
   });
 
@@ -32,25 +34,36 @@ class _SearchItem {
 }
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  const SearchScreen({super.key, this.initialItems});
+
+  final List<SearchExamItem>? initialItems;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  static const int _pageSize = 15;
+  int _currentPage = 1;
+  final ScrollController _scrollController = ScrollController();
+
   final _controller = TextEditingController();
   final Set<String> _subjects = {};
   SearchItemType? _type;
   String _sort = 'Mới nhất';
 
-  List<_SearchItem> _realItems = [];
+  List<SearchExamItem> _realItems = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchRealSearchData();
+    if (widget.initialItems != null) {
+      _realItems = List.of(widget.initialItems!);
+      _isLoading = false;
+    } else {
+      _fetchRealSearchData();
+    }
   }
 
   Future<void> _fetchRealSearchData() async {
@@ -64,7 +77,7 @@ class _SearchScreenState extends State<SearchScreen> {
           .order('created_at', ascending: false);
 
       final list = res as List<dynamic>;
-      final List<_SearchItem> items = [];
+      final List<SearchExamItem> items = [];
 
       for (var item in list) {
         final teacherMap = item['teachers'] as Map<String, dynamic>?;
@@ -76,7 +89,7 @@ class _SearchScreenState extends State<SearchScreen> {
         final qCount = (countFromDb != null && countFromDb > 0) ? countFromDb : 10;
         final duration = (item['duration_minutes'] as num?)?.toInt() ?? 45;
 
-        items.add(_SearchItem(
+        items.add(SearchExamItem(
           id: item['id']?.toString() ?? '',
           code: item['code']?.toString() ?? '',
           title: (item['title'] as String?) ?? 'Đề thi trắc nghiệm',
@@ -102,7 +115,7 @@ class _SearchScreenState extends State<SearchScreen> {
           // Provide standard initial subjects items for offline/testing compatibility
           if (_realItems.isEmpty) {
             _realItems = [
-              const _SearchItem(
+              const SearchExamItem(
                 id: '10000000-0000-4000-8000-000000000001',
                 code: 'DT100001',
                 title: 'Đề thi thử THPT Quốc gia môn Toán 2024',
@@ -113,7 +126,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 duration: 90,
                 activity: 'Mới tạo',
               ),
-              const _SearchItem(
+              const SearchExamItem(
                 id: '10000000-0000-4000-8000-000000000002',
                 code: 'DT100002',
                 title: 'Ôn tập Dao động cơ học - Vật lý 12',
@@ -165,10 +178,11 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  List<_SearchItem> get _filteredItems {
+  List<SearchExamItem> get _filteredItems {
     final query = _controller.text.trim().toLowerCase();
     final results = _realItems.where((item) {
       final matchesQuery = query.isEmpty ||
@@ -192,17 +206,28 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final results = _filteredItems;
+    final totalPages = (results.length / _pageSize).ceil().clamp(1, 99999);
+    if (_currentPage > totalPages) {
+      _currentPage = totalPages;
+    }
+    final startIndex = (_currentPage - 1) * _pageSize;
+    final pageItems = results.skip(startIndex).take(_pageSize).toList();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 850;
         return SingleChildScrollView(
+          controller: _scrollController,
           padding: const EdgeInsets.all(32),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1200),
               child: Column(
                 children: [
-                  _SearchBox(controller: _controller, onChanged: () => setState(() {})),
+                  _SearchBox(
+                    controller: _controller,
+                    onChanged: () => setState(() => _currentPage = 1),
+                  ),
                   const SizedBox(height: 32),
                   Flex(
                     direction: compact ? Axis.vertical : Axis.horizontal,
@@ -214,18 +239,75 @@ class _SearchScreenState extends State<SearchScreen> {
                           subjects: _subjects,
                           type: _type,
                           sort: _sort,
-                          onSubjectChanged: (subject, selected) => setState(
-                            () => selected ? _subjects.add(subject) : _subjects.remove(subject),
-                          ),
-                          onTypeChanged: (type) => setState(() => _type = type),
-                          onSortChanged: (sort) => setState(() => _sort = sort),
+                          onSubjectChanged: (subject, selected) => setState(() {
+                            selected ? _subjects.add(subject) : _subjects.remove(subject);
+                            _currentPage = 1;
+                          }),
+                          onTypeChanged: (type) => setState(() {
+                            _type = type;
+                            _currentPage = 1;
+                          }),
+                          onSortChanged: (sort) => setState(() {
+                            _sort = sort;
+                            _currentPage = 1;
+                          }),
                         ),
                       ),
                       SizedBox(width: compact ? 0 : 32, height: compact ? 24 : 0),
                       Expanded(
                         child: _isLoading
-                            ? const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
-                            : _ResultsGrid(items: results),
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(32),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (results.isNotEmpty) ...[
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.find_in_page_outlined,
+                                            size: 18,
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Tìm thấy khoảng ${results.length} đề thi • Đang hiện ${startIndex + 1} - ${math.min(startIndex + _pageSize, results.length)} (Trang $_currentPage / $totalPages)',
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppTheme.textSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  _ResultsGrid(items: pageItems),
+                                  if (totalPages > 1) ...[
+                                    const SizedBox(height: 16),
+                                    GooglePaginationBar(
+                                      currentPage: _currentPage,
+                                      totalPages: totalPages,
+                                      onPageChanged: (page) {
+                                        setState(() => _currentPage = page);
+                                        _scrollController.animateTo(
+                                          0,
+                                          duration: const Duration(milliseconds: 350),
+                                          curve: Curves.easeOutCubic,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
+                              ),
                       ),
                     ],
                   ),
@@ -336,7 +418,7 @@ class _FilterPanel extends StatelessWidget {
 
 class _ResultsGrid extends StatelessWidget {
   const _ResultsGrid({required this.items});
-  final List<_SearchItem> items;
+  final List<SearchExamItem> items;
 
   @override
   Widget build(BuildContext context) {
