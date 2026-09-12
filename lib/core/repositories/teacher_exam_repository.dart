@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/supabase_retry_helper.dart';
 
 class TeacherExamSummary {
   const TeacherExamSummary({required this.id, required this.title, required this.subject, required this.durationMinutes, required this.questionCount, required this.status});
@@ -26,28 +27,36 @@ class TeacherExamRepository {
   final SupabaseClient _client;
 
   Future<String> saveDraft({String? examId, required String title, required String subject, required int durationMinutes, required List<Map<String, dynamic>> questions}) async {
-    final value = await _client.rpc('save_teacher_exam_draft', params: {
-      'p_exam_id': examId,
-      'p_title': title,
-      'p_subject': subject,
-      'p_duration_minutes': durationMinutes,
-      'p_questions': questions,
-    });
+    final value = await SupabaseRetryHelper.run(
+      () => _client.rpc('save_teacher_exam_draft', params: {
+        'p_exam_id': examId,
+        'p_title': title,
+        'p_subject': subject,
+        'p_duration_minutes': durationMinutes,
+        'p_questions': questions,
+      }),
+    );
     return _map(value)['id'] as String;
   }
 
   Future<List<TeacherExamSummary>> summaries() async {
-    final value = await _client.rpc('teacher_exam_summaries');
+    final value = await SupabaseRetryHelper.run(
+      () => _client.rpc('teacher_exam_summaries'),
+    );
     return (_list(value)).map((item) => TeacherExamSummary.fromJson(item)).toList();
   }
 
   Future<Map<String, dynamic>?> draft(String examId) async {
-    final value = await _client.rpc('teacher_exam_draft', params: {'p_exam_id': examId});
+    final value = await SupabaseRetryHelper.run(
+      () => _client.rpc('teacher_exam_draft', params: {'p_exam_id': examId}),
+    );
     if (value == null) return null;
     return _map(value);
   }
 
-  Future<void> publish(String examId) => _client.rpc('publish_teacher_exam', params: {'p_exam_id': examId});
+  Future<void> publish(String examId) => SupabaseRetryHelper.run(
+        () => _client.rpc('publish_teacher_exam', params: {'p_exam_id': examId}),
+      );
 
   Map<String, dynamic> _map(dynamic value) {
     if (value is Map<String, dynamic>) return value;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../utils/supabase_retry_helper.dart';
 
 class RoomParticipant {
   const RoomParticipant({
@@ -221,21 +222,27 @@ class RoomRepository {
     String? password,
     int maxParticipants = 50,
   }) async {
-    final result = await _client.rpc('create_teacher_room', params: {
-      'p_exam_id': examId,
-      'p_name': name,
-      'p_password': password,
-      'p_max_participants': maxParticipants,
-    });
+    final result = await SupabaseRetryHelper.run(
+      () => _client.rpc('create_teacher_room', params: {
+        'p_exam_id': examId,
+        'p_name': name,
+        'p_password': password,
+        'p_max_participants': maxParticipants,
+      }),
+    );
     return dashboard(_map(result)['id'] as String);
   }
 
   Future<TeacherRoomDashboard> dashboard(String roomId) async => TeacherRoomDashboard.fromJson(
-        _map(await _client.rpc('teacher_room_dashboard', params: {'p_room_id': roomId})),
+        _map(await SupabaseRetryHelper.run(
+          () => _client.rpc('teacher_room_dashboard', params: {'p_room_id': roomId}),
+        )),
       );
 
   Future<TeacherRoomDashboard> start(String roomId) async => TeacherRoomDashboard.fromJson(
-        _map(await _client.rpc('start_teacher_room', params: {'p_room_id': roomId})),
+        _map(await SupabaseRetryHelper.run(
+          () => _client.rpc('start_teacher_room', params: {'p_room_id': roomId}),
+        )),
       );
 
   Future<StudentJoinResult> joinRoom({
@@ -243,11 +250,13 @@ class RoomRepository {
     String? password,
     String? guestName,
   }) async {
-    final result = await _client.rpc('join_student_room', params: {
-      'p_code': code,
-      'p_password': password,
-      'p_guest_name': guestName,
-    });
+    final result = await SupabaseRetryHelper.run(
+      () => _client.rpc('join_student_room', params: {
+        'p_code': code,
+        'p_password': password,
+        'p_guest_name': guestName,
+      }),
+    );
     return StudentJoinResult.fromJson(_map(result));
   }
 
@@ -256,18 +265,22 @@ class RoomRepository {
     required String participantId,
     String? guestToken,
   }) async {
-    final result = await _client.rpc('get_student_room_state', params: {
-      'p_room_id': roomId,
-      'p_participant_id': participantId,
-      'p_guest_token': guestToken,
-    });
+    final result = await SupabaseRetryHelper.run(
+      () => _client.rpc('get_student_room_state', params: {
+        'p_room_id': roomId,
+        'p_participant_id': participantId,
+        'p_guest_token': guestToken,
+      }),
+    );
     return StudentRoomState.fromJson(_map(result));
   }
 
   Future<List<RoomLeaderboardEntry>> getRoomLeaderboard(String roomId) async {
-    final result = await _client.rpc('get_room_leaderboard', params: {
-      'p_room_id': roomId,
-    });
+    final result = await SupabaseRetryHelper.run(
+      () => _client.rpc('get_room_leaderboard', params: {
+        'p_room_id': roomId,
+      }),
+    );
     final list = (result as List<dynamic>?) ?? const [];
     return list
         .map((item) => RoomLeaderboardEntry.fromJson(Map<String, dynamic>.from(item as Map)))
