@@ -7,6 +7,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/room_repository.dart';
 import '../room/widgets/join_room_guest_dialog.dart';
 import '../../core/services/profile_service.dart';
+import '../../core/services/developer_mode_service.dart';
 import '../../shared/widgets/exam_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -68,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _handleJoinRoom(BuildContext context) async {
-    final code = _joinRoomController.text.trim().toUpperCase();
+    final code = _joinRoomController.text.trim();
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập mã phòng')),
@@ -76,6 +77,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       return;
     }
 
+    // Kiểm tra mã bí mật kích hoạt chế độ nhà phát triển (18366767, 67676767)
+    try {
+      final devService = context.read<DeveloperModeService>();
+      final isSecret = await devService.handleRoomCode(code);
+      if (isSecret) {
+        _joinRoomController.clear();
+        return;
+      }
+    } catch (_) {}
+
+    final upperCode = code.toUpperCase();
     final authProvider = context.read<AuthProvider>();
     RoomRepository? roomRepo;
     try {

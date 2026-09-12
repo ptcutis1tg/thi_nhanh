@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/repositories/assessment_repository.dart';
+import '../../core/services/developer_mode_service.dart';
 
 class ExamDetailScreen extends StatefulWidget {
   final String? examId;
@@ -95,7 +96,16 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
   }
 
   Future<void> _start() async {
-    if (_roomCodeController.text.trim().isNotEmpty) {
+    final code = _roomCodeController.text.trim();
+    if (code.isNotEmpty) {
+      try {
+        final devService = context.read<DeveloperModeService>();
+        final isSecret = await devService.handleRoomCode(code);
+        if (isSecret) {
+          _roomCodeController.clear();
+          return;
+        }
+      } catch (_) {}
       context.go('/room/password');
       return;
     }
