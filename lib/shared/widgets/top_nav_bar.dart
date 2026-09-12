@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/repositories/room_repository.dart';
 import '../../core/utils/avatar_helper.dart';
 
 class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
@@ -107,6 +108,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                     ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: isCompact ? 130 : 160),
                       child: TextField(
+                        onSubmitted: (code) => _handleQuickJoinRoom(context, code),
                         decoration: InputDecoration(
                           hintText: 'Nhập mã PT...',
                           hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
@@ -227,6 +229,33 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleQuickJoinRoom(BuildContext context, String rawCode) async {
+    final code = rawCode.trim();
+    if (code.isEmpty) return;
+
+    final authProvider = context.read<AuthProvider>();
+    RoomRepository? roomRepo;
+    try {
+      roomRepo = context.read<RoomRepository>();
+    } catch (_) {
+      roomRepo = null;
+    }
+
+    if (roomRepo != null && authProvider.isAuthenticated) {
+      try {
+        final hostedRoomId = await roomRepo.findHostedRoomId(code);
+        if (hostedRoomId != null && context.mounted) {
+          context.go('/teacher_waiting_room?roomId=$hostedRoomId');
+          return;
+        }
+      } catch (_) {}
+    }
+
+    if (context.mounted) {
+      context.go('/student_waiting_room?roomId=$code');
+    }
   }
 }
 

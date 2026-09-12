@@ -245,6 +245,19 @@ class RoomRepository {
         )),
       );
 
+  Future<String?> findHostedRoomId(String code) async {
+    try {
+      final result = await SupabaseRetryHelper.run(
+        () => _client.rpc('find_hosted_room', params: {'p_code': code}),
+      );
+      if (result != null) {
+        final map = _map(result);
+        return map['id'] as String?;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<StudentJoinResult> joinRoom({
     required String code,
     String? password,

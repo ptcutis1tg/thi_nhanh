@@ -122,6 +122,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       return;
     }
 
+    // Kiểm tra thông minh: Nếu tài khoản hiện tại là chủ tạo phòng -> điều hướng vào TeacherWaitingRoom
+    try {
+      final hostedRoomId = await roomRepo.findHostedRoomId(code);
+      if (hostedRoomId != null && context.mounted) {
+        context.go('/teacher_waiting_room?roomId=$hostedRoomId');
+        return;
+      }
+    } catch (_) {}
+
     if (!authProvider.isAuthenticated) {
       showDialog(
         context: context,
