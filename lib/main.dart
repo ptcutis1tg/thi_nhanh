@@ -391,10 +391,10 @@ class ThiNhanhApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       builder: (context, child) {
-        return Overlay(
-          initialEntries: [
-            if (child != null) OverlayEntry(builder: (context) => child),
-            OverlayEntry(builder: (context) => const DeveloperLogOverlay()),
+        return Stack(
+          children: [
+            ?child,
+            const DeveloperLogOverlay(),
           ],
         );
       },

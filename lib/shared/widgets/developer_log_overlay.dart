@@ -15,16 +15,28 @@ class DeveloperLogOverlay extends StatelessWidget {
       service = null;
     }
 
-    if (service == null || !service.isDevModeActive) {
-      return const SizedBox.shrink();
+    final isVisible = service != null && service.isDevModeActive;
+
+    if (!isVisible) {
+      return const Positioned(
+        width: 0,
+        height: 0,
+        child: SizedBox.shrink(),
+      );
     }
 
     return Positioned(
       bottom: 20,
       right: 20,
-      child: Material(
-        type: MaterialType.transparency,
-        child: service.isExpanded ? _buildExpandedConsole(context, service) : _buildCollapsedBadge(context, service),
+      child: ExcludeFocus(
+        excluding: true,
+        child: FocusScope(
+          canRequestFocus: false,
+          child: Material(
+            type: MaterialType.transparency,
+            child: service.isExpanded ? _buildExpandedConsole(context, service) : _buildCollapsedBadge(context, service),
+          ),
+        ),
       ),
     );
   }
@@ -34,6 +46,8 @@ class DeveloperLogOverlay extends StatelessWidget {
     final isVerbose = service.level == DevModeLevel.verbose;
 
     return InkWell(
+      key: const Key('dev_collapsed_badge'),
+      canRequestFocus: false,
       onTap: () => service.setExpanded(true),
       borderRadius: BorderRadius.circular(100),
       child: Container(
@@ -160,6 +174,7 @@ class DeveloperLogOverlay extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildActionBtn(
+                        key: const Key('dev_copy_all_btn'),
                         icon: Icons.copy_all,
                         tooltip: 'Sao chép tất cả log',
                         onPressed: () {
@@ -175,12 +190,14 @@ class DeveloperLogOverlay extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       _buildActionBtn(
+                        key: const Key('dev_clear_logs_btn'),
                         icon: Icons.delete_outline,
                         tooltip: 'Xóa tất cả log',
                         onPressed: () => service.clearLogs(),
                       ),
                       const SizedBox(width: 4),
                       _buildActionBtn(
+                        key: const Key('dev_minimize_btn'),
                         icon: Icons.remove,
                         tooltip: 'Thu nhỏ',
                         onPressed: () => service.setExpanded(false),
@@ -219,6 +236,7 @@ class DeveloperLogOverlay extends StatelessWidget {
   }
 
   Widget _buildActionBtn({
+    required Key key,
     required IconData icon,
     required String tooltip,
     required VoidCallback onPressed,
@@ -226,9 +244,12 @@ class DeveloperLogOverlay extends StatelessWidget {
     return SizedBox(
       width: 28,
       height: 28,
-      child: Tooltip(
-        message: tooltip,
+      child: Semantics(
+        label: tooltip,
+        button: true,
         child: InkWell(
+          key: key,
+          canRequestFocus: false,
           onTap: onPressed,
           borderRadius: BorderRadius.circular(4),
           child: Center(
@@ -287,9 +308,12 @@ class DeveloperLogOverlay extends StatelessWidget {
                 child: SizedBox(
                   width: 24,
                   height: 24,
-                  child: Tooltip(
-                    message: 'Sao chép log này',
+                  child: Semantics(
+                    label: 'Sao chép log này',
+                    button: true,
                     child: InkWell(
+                      key: const Key('dev_copy_single_log_btn'),
+                      canRequestFocus: false,
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: log.formattedText));
                         ScaffoldMessenger.maybeOf(context)?.showSnackBar(

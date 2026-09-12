@@ -70,9 +70,9 @@ void main() {
 
       expect(find.text('Dev Console'), findsOneWidget);
       expect(find.text('Chưa có log lỗi nào được ghi nhận.'), findsOneWidget);
-      expect(find.byTooltip('Sao chép tất cả log'), findsOneWidget);
-      expect(find.byTooltip('Xóa tất cả log'), findsOneWidget);
-      expect(find.byTooltip('Thu nhỏ'), findsOneWidget);
+      expect(find.byKey(const Key('dev_copy_all_btn')), findsOneWidget);
+      expect(find.byKey(const Key('dev_clear_logs_btn')), findsOneWidget);
+      expect(find.byKey(const Key('dev_minimize_btn')), findsOneWidget);
     });
 
     testWidgets('renders log entries with details, copy action, clear action, and minimize action', (tester) async {
@@ -110,7 +110,7 @@ void main() {
       expect(find.textContaining('RoomRepository.dashboard'), findsOneWidget);
 
       // Test single item copy
-      final singleCopyBtn = find.byTooltip('Sao chép log này');
+      final singleCopyBtn = find.byKey(const Key('dev_copy_single_log_btn'));
       expect(singleCopyBtn, findsOneWidget);
       await tester.tap(singleCopyBtn);
       await tester.pump();
@@ -121,21 +121,62 @@ void main() {
 
       // Test copy all
       copiedClipboardText = null;
-      await tester.tap(find.byTooltip('Sao chép tất cả log'));
+      await tester.tap(find.byKey(const Key('dev_copy_all_btn')));
       await tester.pump();
       expect(copiedClipboardText, contains('Lỗi tải phòng thi'));
 
       // Test clear logs
-      await tester.tap(find.byTooltip('Xóa tất cả log'));
+      await tester.tap(find.byKey(const Key('dev_clear_logs_btn')));
       await tester.pumpAndSettle();
       expect(find.text('Lỗi tải phòng thi'), findsNothing);
       expect(find.text('Chưa có log lỗi nào được ghi nhận.'), findsOneWidget);
 
       // Test minimize
-      await tester.tap(find.byTooltip('Thu nhỏ'));
+      await tester.tap(find.byKey(const Key('dev_minimize_btn')));
       await tester.pumpAndSettle();
       expect(find.text('Dev Console'), findsNothing);
       expect(find.textContaining('Dev (0)'), findsOneWidget);
+    });
+
+    testWidgets('safe from focus traversal and view focus changes without RenderBox layout error', (tester) async {
+      final service = DeveloperModeService();
+      await service.init();
+      await service.handleRoomCode('18366767');
+
+      service.recordError(
+        'Lỗi thử nghiệm layout',
+        error: 'StateError: Test layout state',
+        stackTrace: '#0 Test (test.dart:1)',
+      );
+
+      await tester.pumpWidget(buildTestWidget(service));
+      await tester.pumpAndSettle();
+
+      // Simulate focus traversal across all nodes in the scope
+      final element = tester.element(find.byType(MaterialApp));
+      final policy = FocusTraversalGroup.maybeOf(element) ?? ReadingOrderTraversalPolicy();
+      final focusScope = FocusScope.of(element);
+      expect(() {
+        policy.findFirstFocusInDirection(
+          focusScope,
+          TraversalDirection.down,
+        );
+        focusScope.nextFocus();
+        focusScope.previousFocus();
+      }, returnsNormally);
+
+      // Minimize and traverse again
+      await tester.tap(find.byKey(const Key('dev_minimize_btn')));
+      await tester.pumpAndSettle();
+
+      expect(() {
+        policy.findFirstFocusInDirection(
+          focusScope,
+          TraversalDirection.down,
+        );
+        focusScope.nextFocus();
+        focusScope.previousFocus();
+      }, returnsNormally);
     });
   });
 }
