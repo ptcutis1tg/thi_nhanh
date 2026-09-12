@@ -47,6 +47,7 @@ class AttemptPayload {
     required this.status,
     required this.questions,
     required this.answers,
+    this.isAuthorPreview = false,
   });
 
   final String attemptId;
@@ -56,6 +57,7 @@ class AttemptPayload {
   final String status;
   final List<ExamQuestion> questions;
   final Map<String, String> answers;
+  final bool isAuthorPreview;
 
   bool get isOpen => status == 'in_progress';
 
@@ -71,6 +73,7 @@ class AttemptPayload {
           .map((item) => ExamQuestion.fromJson(item as Map<String, dynamic>))
           .toList(),
       answers: rawAnswers.map((key, value) => MapEntry(key as String, value as String)),
+      isAuthorPreview: (json['isAuthorPreview'] as bool?) ?? false,
     );
   }
 }

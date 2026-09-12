@@ -7,7 +7,14 @@ class TakingExamScreen extends StatefulWidget {
   final String? examId;
   final String? attemptId;
   final String? roomId;
-  const TakingExamScreen({super.key, this.examId, this.attemptId, this.roomId});
+  final bool isAuthorPreview;
+  const TakingExamScreen({
+    super.key,
+    this.examId,
+    this.attemptId,
+    this.roomId,
+    this.isAuthorPreview = false,
+  });
 
   @override
   State<TakingExamScreen> createState() => _TakingExamScreenState();
@@ -15,6 +22,7 @@ class TakingExamScreen extends StatefulWidget {
 
 class _TakingExamScreenState extends State<TakingExamScreen> {
   bool _isLoading = true;
+  bool _isAuthorPreview = false;
   String _examTitle = 'Đang tải bài thi...';
   int _durationMinutes = 45;
 
@@ -26,6 +34,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   @override
   void initState() {
     super.initState();
+    _isAuthorPreview = widget.isAuthorPreview;
     _loadExamAndQuestions();
   }
 
@@ -38,7 +47,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       if (widget.examId != null && widget.examId!.isNotEmpty) {
         exam = await client
             .from('exams')
-            .select('id, title, subject, duration_minutes')
+            .select('id, title, subject, duration_minutes, teacher_id')
             .eq('id', widget.examId!)
             .maybeSingle();
       }
@@ -46,7 +55,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       // If no specific exam found or provided, pick the first published exam from Supabase
       exam ??= await client
           .from('exams')
-          .select('id, title, subject, duration_minutes')
+          .select('id, title, subject, duration_minutes, teacher_id')
           .eq('status', 'published')
           .order('created_at', ascending: false)
           .limit(1)
@@ -55,6 +64,21 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       if (exam != null) {
         _examTitle = exam['title'] ?? 'Bài kiểm tra';
         _durationMinutes = exam['duration_minutes'] ?? 45;
+
+        // Auto-detect author preview if user owns this exam
+        final user = client.auth.currentUser;
+        if (user != null && exam['teacher_id'] != null) {
+          try {
+            final teacher = await client
+                .from('teachers')
+                .select('id')
+                .eq('owner_user_id', user.id)
+                .maybeSingle();
+            if (teacher != null && teacher['id'] == exam['teacher_id']) {
+              _isAuthorPreview = true;
+            }
+          } catch (_) {}
+        }
 
         final examIdStr = exam['id'].toString();
 
@@ -124,6 +148,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
         'started_at': DateTime.now().subtract(Duration(minutes: _durationMinutes)).toIso8601String(),
         'submitted_at': DateTime.now().toIso8601String(),
         'score': finalScore,
+        'is_author_preview': _isAuthorPreview,
       });
     } catch (e) {
       debugPrint('Lỗi lưu bài làm lên Supabase: $e');
@@ -188,29 +213,56 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       child: Scaffold(
         backgroundColor: AppTheme.background,
         appBar: _buildMinimalAppBar(),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: _buildQuestionArea(),
+        body: Column(
+          children: [
+            if (_isAuthorPreview)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                color: const Color(0xFFFEF3C7),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.visibility_outlined, color: Color(0xFFD97706), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Chế độ xem trước của tác giả (không tính vào Bảng xếp hạng công khai)',
+                      style: TextStyle(
+                        color: Color(0xFF92400E),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: _buildQuestionArea(),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: _buildSidebarNavigator(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Expanded(
-                  flex: 1,
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: _buildSidebarNavigator(),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
