@@ -77,9 +77,13 @@ begin
   where e.id = p_exam_id
   group by e.id;
 
-  update public.exams
-  set snapshot_payload = v_payload
-  where id = p_exam_id;
+  begin
+    update public.exams
+    set snapshot_payload = v_payload
+    where id = p_exam_id;
+  exception when others then
+    null;
+  end;
 
   return v_payload;
 end;
@@ -110,15 +114,7 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_sync_exam_snapshot_questions on public.questions;
-create trigger trg_sync_exam_snapshot_questions
-after insert or update or delete on public.questions
-for each row execute function public.fn_trigger_sync_exam_snapshot();
 
-drop trigger if exists trg_sync_exam_snapshot_options on public.question_options;
-create trigger trg_sync_exam_snapshot_options
-after insert or update or delete on public.question_options
-for each row execute function public.fn_trigger_sync_exam_snapshot();
 
 -- ===========================================================================
 -- 2. SPECIALIZED TEACHERS FOR 8 SUBJECTS
@@ -3878,8 +3874,22 @@ do $$
 declare
   r record;
 begin
-  for r in select id from public.exams loop
+  for r in select id from public.exams where id not in (select distinct exam_id from public.attempts where exam_id is not null) loop
     perform public.fn_rebuild_exam_snapshot(r.id);
   end loop;
 end;
 $$;
+
+-- ===========================================================================
+-- 5. ATTACH AUTOMATED TRIGGERS FOR FUTURE TEACHER EDITS
+-- ===========================================================================
+drop trigger if exists trg_sync_exam_snapshot_questions on public.questions;
+create trigger trg_sync_exam_snapshot_questions
+after insert or update or delete on public.questions
+for each row execute function public.fn_trigger_sync_exam_snapshot();
+
+drop trigger if exists trg_sync_exam_snapshot_options on public.question_options;
+create trigger trg_sync_exam_snapshot_options
+after insert or update or delete on public.question_options
+for each row execute function public.fn_trigger_sync_exam_snapshot();
+
