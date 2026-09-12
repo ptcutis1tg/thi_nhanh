@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
 import '../utils/otp_mailer.dart';
+import '../utils/supabase_retry_helper.dart';
 
 enum UserRole { student, teacher }
 
@@ -528,10 +529,13 @@ class AuthProvider extends ChangeNotifier {
     final userId = _user?.id;
     if (_supabaseClient != null && userId != null) {
       try {
-        await _supabaseClient!.from('profiles').upsert({
-          'id': userId,
-          'active_role': role,
-          'display_name': userName,
+        await SupabaseRetryHelper.run(() async {
+          await _supabaseClient!.from('profiles').upsert({
+            'id': userId,
+            'active_role': role,
+            'display_name': userName,
+            'updated_at': DateTime.now().toIso8601String(),
+          });
         });
       } catch (error) {
         debugPrint('Không thể đồng bộ vai trò: $error');

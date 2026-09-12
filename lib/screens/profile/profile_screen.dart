@@ -29,10 +29,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isSavingInfo = false;
   bool _isSavingPassword = false;
 
-  bool _isRoleAutoDetected = false;
+  int _selectedTabIndex = 0; // 0: Học tập & Thành tích, 1: Đề thi & Phòng thi của tôi
   bool _isLoadingData = true;
 
-  bool get _isStudentRole => context.read<AuthProvider>().isStudent;
+  bool get _isStudentRole => _selectedTabIndex == 0;
 
   StudentProfileData _studentData = StudentProfileData.empty();
   TeacherProfileData _teacherData = TeacherProfileData.empty();
@@ -55,19 +55,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = authProvider.user?.id;
     final userEmail = authProvider.userEmail;
     final userName = authProvider.userName;
-
-    // Detect initial role if not manually toggled yet
-    if (!_isRoleAutoDetected) {
-      final isTeacher = await ProfileService.isUserTeacher(
-        userId: userId,
-        userEmail: userEmail,
-        userName: userName,
-      );
-      if (mounted && isTeacher) {
-        await authProvider.setRole(UserRole.teacher);
-      }
-      _isRoleAutoDetected = true;
-    }
 
     // Fetch both student and teacher data concurrently
     final studentDataFuture = ProfileService.fetchStudentData(
@@ -245,9 +232,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // 1. PROFILE HEADER CARD
                 _buildProfileHeaderCard(authProvider, isMobile),
 
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
 
-                // 2. DASHBOARD LAYOUT (2 COLUMNS) - Dynamic Student / Teacher Content
+                // 2. PROFILE 2-TAB BAR (Học tập & Thành tích ⇄ Đề thi & Phòng thi của tôi)
+                _buildProfileTabBar(),
+
+                const SizedBox(height: 24),
+
+                // 3. DASHBOARD LAYOUT (2 COLUMNS) - Dynamic Student / Teacher Content
                 if (isMobile)
                   Column(
                     children: [
@@ -414,44 +406,118 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Role badge with interactive toggle
-              InkWell(
-                onTap: () async {
-                  await authProvider.toggleRole();
-                  if (mounted) {
-                    _showSnackBar(
-                        'Đã chuyển góc nhìn sang ${authProvider.isStudent ? 'Học sinh' : 'Giáo viên'}');
-                  }
-                },
-                borderRadius: BorderRadius.circular(100),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0ECFF),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: const Color(0xFFE4DFFF)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        authProvider.isStudent ? '🎓 Học sinh' : '👨‍🏫 Giáo viên',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary,
-                        ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0ECFF),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: const Color(0xFFE4DFFF)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, size: 13, color: AppTheme.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'Tài khoản Toàn quyền',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primary,
                       ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.sync_alt_rounded, size: 12, color: AppTheme.primary),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  // --- 2-TAB BAR ---
+  Widget _buildProfileTabBar() {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTabItem(
+              index: 0,
+              icon: Icons.school_rounded,
+              label: '🎓 Học tập & Thành tích',
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildTabItem(
+              index: 1,
+              icon: Icons.menu_book_rounded,
+              label: '📚 Đề thi & Phòng thi của tôi',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabItem({
+    required int index,
+    required IconData icon,
+    required String label,
+  }) {
+    final isSelected = _selectedTabIndex == index;
+    return InkWell(
+      onTap: () {
+        if (_selectedTabIndex != index) {
+          setState(() => _selectedTabIndex = index);
+        }
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primary : const Color(0xFFF7F5FE),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : const Color(0xFFE9E4FA),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.white : AppTheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : AppTheme.textMain,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -489,41 +555,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildCompactStatItem('${_teacherData.createdExamsCount}', 'Bộ đề đã tạo'),
+          _buildCompactStatItem('${_teacherData.createdExamsCount}', 'Đề đã tạo'),
           _buildVerticalSeparator(),
           _buildCompactStatItem('${_teacherData.createdRoomsCount}', 'Phòng thi'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem('${_teacherData.totalParticipants}', 'Lượt tham gia'),
+          _buildCompactStatItem('${_teacherData.totalParticipants}', 'Lượt thi'),
           _buildVerticalSeparator(),
-          _buildCompactStatItem(avgStudentScoreStr, 'Điểm TB học sinh'),
+          _buildCompactStatItem(avgStudentScoreStr, 'Điểm TB HS'),
         ],
       );
     }
   }
 
   Widget _buildCompactStatItem(String value, String label) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: AppTheme.textMain,
+    return Flexible(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textMain,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 12,
-            color: AppTheme.textSecondary,
-            fontWeight: FontWeight.w500,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1353,7 +1425,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                '📝 Bộ đề của tôi',
+                '📝 Bộ Đề Thi Của Tôi',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
