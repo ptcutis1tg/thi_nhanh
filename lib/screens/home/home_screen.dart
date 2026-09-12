@@ -87,7 +87,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       }
     } catch (_) {}
 
-    final upperCode = code.toUpperCase();
     final authProvider = context.read<AuthProvider>();
     RoomRepository? roomRepo;
     try {
