@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/room_repository.dart';
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   final TextEditingController _joinRoomController = TextEditingController();
   late AnimationController _pulseController;
 
+  String _workspaceMode = 'learning'; // 'learning' | 'authoring'
   bool _isLoadingStats = true;
   StudentProfileData _studentStats = StudentProfileData.empty();
   TeacherProfileData _teacherStats = TeacherProfileData.empty();
@@ -33,7 +35,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
 
+    _loadWorkspaceMode();
     _loadDashboardData();
+  }
+
+  Future<void> _loadWorkspaceMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final mode = prefs.getString('active_workspace_mode');
+      if (mode != null && mounted) {
+        setState(() => _workspaceMode = mode);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _setWorkspaceMode(String mode) async {
+    if (_workspaceMode == mode) return;
+    setState(() => _workspaceMode = mode);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('active_workspace_mode', mode);
+    } catch (_) {}
   }
 
   Future<void> _loadDashboardData() async {
@@ -160,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
-    final isStudent = authProvider.isStudent;
+    final isStudent = _workspaceMode == 'learning';
     final avatarUrl = authProvider.userAvatarUrl;
 
     final avatarImage = parseAvatarImage(avatarUrl);
@@ -180,8 +202,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. HEADER SECTION (User Profile, Role Switcher & Quick Room Entry)
+                // 1. HEADER SECTION (User Profile & Quick Room Entry)
                 _buildHeaderSection(context, authProvider, avatarImage, isMobile),
+
+                const SizedBox(height: 20),
+
+                // WORKSPACE MODE SWITCHER (Học tập & Thi thử ⇄ Soạn đề & Quản lý)
+                _buildWorkspaceModeSwitcher(isMobile),
 
                 const SizedBox(height: 24),
 
@@ -203,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     Text(
-                      isStudent ? 'Góc nhìn Học sinh' : 'Góc nhìn Giáo viên',
+                      isStudent ? 'Chế độ Học tập & Thi thử' : 'Chế độ Soạn đề & Quản lý',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -306,49 +333,146 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
-              InkWell(
-                onTap: () async {
-                  await authProvider.toggleRole();
-                  if (!mounted) return;
-                  _loadDashboardData();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Đã chuyển sang vai trò ${authProvider.isStudent ? 'Học sinh' : 'Giáo viên'}',
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0ECFF),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: const Color(0xFFE4DFFF)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, size: 14, color: AppTheme.primary),
+                    SizedBox(width: 6),
+                    Text(
+                      'Tài khoản Toàn quyền',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primary,
                       ),
-                      duration: const Duration(seconds: 2),
                     ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(100),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0ECFF),
-                    borderRadius: BorderRadius.circular(100),
-                    border: Border.all(color: const Color(0xFFE4DFFF)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        authProvider.isStudent ? '🎓 Học sinh' : '👨‍🏫 Giáo viên',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.sync_alt_rounded, size: 14, color: AppTheme.primary),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  // --- WORKSPACE MODE SWITCHER ---
+  Widget _buildWorkspaceModeSwitcher(bool isMobile) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6B46C1).withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildModeTab(
+              mode: 'learning',
+              icon: Icons.school_rounded,
+              title: '🎓 Học tập & Thi thử',
+              subtitle: 'Làm bài thi, tích lũy điểm & xem thành tích',
+              isSelected: _workspaceMode == 'learning',
+              isMobile: isMobile,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildModeTab(
+              mode: 'authoring',
+              icon: Icons.edit_calendar_rounded,
+              title: '📝 Soạn đề & Quản lý',
+              subtitle: 'Tạo đề thi, mở phòng & theo dõi thí sinh',
+              isSelected: _workspaceMode == 'authoring',
+              isMobile: isMobile,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeTab({
+    required String mode,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool isSelected,
+    required bool isMobile,
+  }) {
+    return InkWell(
+      onTap: () => _setWorkspaceMode(mode),
+      borderRadius: BorderRadius.circular(14),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          vertical: isMobile ? 10 : 14,
+          horizontal: isMobile ? 8 : 16,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primary : const Color(0xFFF7F5FE),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : const Color(0xFFE9E4FA),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: isMobile ? 18 : 22,
+              color: isSelected ? Colors.white : AppTheme.primary,
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: isMobile ? 13 : 15,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : AppTheme.textMain,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (!isMobile) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.85)
+                            : AppTheme.textSecondary,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
