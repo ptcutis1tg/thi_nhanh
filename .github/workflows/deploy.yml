@@ -27,9 +27,14 @@ jobs:
         run: flutter pub get
 
       - name: Build Web App
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           touch .env
-          flutter build web --release --pwa-strategy=none --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }} --base-href="/thi_nhanh/"
+          URL="${SUPABASE_URL:-https://egsmzfrhekpacpjoxijs.supabase.co}"
+          KEY="${SUPABASE_PUBLISHABLE_KEY:-sb_publishable_pdO9X15rs1aobOdydiksWw_URfC684D}"
+          flutter build web --release --pwa-strategy=none --dart-define=SUPABASE_URL="$URL" --dart-define=SUPABASE_PUBLISHABLE_KEY="$KEY" --base-href="/thi_nhanh/"
           cp build/web/index.html build/web/404.html
 
       - name: Deploy to GitHub Pages

@@ -68,11 +68,11 @@ void main() async {
     originalDebugPrint(message, wrapWidth: wrapWidth);
   };
   
-  // Tải biến môi trường từ file .env nếu có
+  // Tải biến môi trường từ file .env nếu có (dành cho môi trường phát triển cục bộ)
   try {
     await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint('Không tìm thấy file .env, sử dụng biến môi trường mặc định.');
+  } catch (_) {
+    // Bỏ qua nếu không có file .env (khi chạy Web hoặc môi trường CI/CD)
   }
 
   // Ưu tiên lấy từ .env, nếu không có thì lấy từ tham số build --dart-define, cuối cùng là giá trị mặc định của dự án
@@ -90,6 +90,14 @@ void main() async {
   final supabaseKey = (envKey != null && envKey.isNotEmpty)
       ? envKey
       : (defineKey.isNotEmpty ? defineKey : 'sb_publishable_pdO9X15rs1aobOdydiksWw_URfC684D');
+
+  if (envUrl != null && envUrl.isNotEmpty) {
+    debugPrint('Cấu hình: Sử dụng biến môi trường từ file .env');
+  } else if (defineUrl.isNotEmpty) {
+    debugPrint('Cấu hình: Sử dụng biến môi trường từ tham số build (--dart-define)');
+  } else {
+    debugPrint('Cấu hình: Sử dụng thông tin kết nối mặc định của dự án');
+  }
 
   bool isSupabaseInitialized = false;
   final isPlaceholderKey = supabaseUrl.contains('your_supabase_url') || supabaseKey.contains('your_supabase_anon_key');
