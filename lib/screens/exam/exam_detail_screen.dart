@@ -36,13 +36,13 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
       if (widget.examId != null && widget.examId!.isNotEmpty) {
         res = await client
             .from('exams')
-            .select('id, code, title, subject, duration_minutes, created_at, snapshot_payload, teachers(display_name)')
+            .select('id, code, title, subject, duration_minutes, created_at, teachers(display_name), questions(count)')
             .eq('id', widget.examId!)
             .maybeSingle();
       }
       res ??= await client
           .from('exams')
-          .select('id, code, title, subject, duration_minutes, created_at, snapshot_payload, teachers(display_name)')
+          .select('id, code, title, subject, duration_minutes, created_at, teachers(display_name), questions(count)')
           .order('created_at', ascending: false)
           .limit(1)
           .maybeSingle();
@@ -138,9 +138,11 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
 
     final title = _examData?['title'] as String? ?? 'Đề thi trắc nghiệm môn Vật Lý 12';
     final subject = _examData?['subject'] as String? ?? 'Vật Lý';
-    final snapshot = _examData?['snapshot_payload'] as Map<String, dynamic>?;
-    final questionsList = snapshot?['questions'] as List<dynamic>?;
-    final totalQuestions = (snapshot?['total_questions'] as num?)?.toInt() ?? questionsList?.length ?? 40;
+    final questionsData = _examData?['questions'] as List<dynamic>?;
+    final countFromDb = (questionsData != null && questionsData.isNotEmpty)
+        ? ((questionsData.first as Map<String, dynamic>?)?['count'] as num?)?.toInt()
+        : null;
+    final totalQuestions = (countFromDb != null && countFromDb > 0) ? countFromDb : 40;
     final durationMinutes = (_examData?['duration_minutes'] as num?)?.toInt() ?? 60;
     final examCode = _examData?['code'] as String? ?? 'VL12';
 

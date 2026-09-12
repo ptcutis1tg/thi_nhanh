@@ -28,7 +28,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       
       final res = await client
           .from('exams')
-          .select('id, title, subject, duration_minutes, created_at, code, snapshot_payload')
+          .select('id, title, subject, duration_minutes, created_at, code, questions(count)')
           .order('created_at', ascending: false);
       
       if (mounted) {
@@ -168,9 +168,11 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final exam = filtered[index];
-                      final snapshot = exam['snapshot_payload'] as Map<String, dynamic>?;
-                      final questionsList = snapshot?['questions'] as List<dynamic>?;
-                      final qCount = (snapshot?['total_questions'] as num?)?.toInt() ?? questionsList?.length ?? 10;
+                      final questionsData = exam['questions'] as List<dynamic>?;
+                      final countFromDb = (questionsData != null && questionsData.isNotEmpty)
+                          ? ((questionsData.first as Map<String, dynamic>?)?['count'] as num?)?.toInt()
+                          : null;
+                      final qCount = (countFromDb != null && countFromDb > 0) ? countFromDb : 10;
                       final duration = (exam['duration_minutes'] as num?)?.toInt() ?? 45;
                       final examId = exam['id']?.toString() ?? '';
 

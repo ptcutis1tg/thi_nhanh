@@ -59,7 +59,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final client = Supabase.instance.client;
       final res = await client
           .from('exams')
-          .select('id, code, title, subject, duration_minutes, created_at, snapshot_payload, teachers(display_name)')
+          .select('id, code, title, subject, duration_minutes, created_at, teachers(display_name), questions(count)')
           .eq('status', 'published')
           .order('created_at', ascending: false);
 
@@ -69,8 +69,11 @@ class _SearchScreenState extends State<SearchScreen> {
       for (var item in list) {
         final teacherMap = item['teachers'] as Map<String, dynamic>?;
         final teacherName = teacherMap?['display_name'] as String? ?? 'Giáo viên bộ môn';
-        final snapshot = item['snapshot_payload'] as Map<String, dynamic>?;
-        final qCount = (snapshot?['total_questions'] as num?)?.toInt() ?? 10;
+        final questionsData = item['questions'] as List<dynamic>?;
+        final countFromDb = (questionsData != null && questionsData.isNotEmpty)
+            ? ((questionsData.first as Map<String, dynamic>?)?['count'] as num?)?.toInt()
+            : null;
+        final qCount = (countFromDb != null && countFromDb > 0) ? countFromDb : 10;
         final duration = (item['duration_minutes'] as num?)?.toInt() ?? 45;
 
         items.add(_SearchItem(

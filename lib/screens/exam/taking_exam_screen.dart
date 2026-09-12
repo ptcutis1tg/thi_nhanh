@@ -38,7 +38,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       if (widget.examId != null && widget.examId!.isNotEmpty) {
         exam = await client
             .from('exams')
-            .select('id, title, subject, duration_minutes, snapshot_payload')
+            .select('id, title, subject, duration_minutes')
             .eq('id', widget.examId!)
             .maybeSingle();
       }
@@ -46,7 +46,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       // If no specific exam found or provided, pick the first published exam from Supabase
       exam ??= await client
           .from('exams')
-          .select('id, title, subject, duration_minutes, snapshot_payload')
+          .select('id, title, subject, duration_minutes')
           .eq('status', 'published')
           .order('created_at', ascending: false)
           .limit(1)
@@ -58,27 +58,16 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
 
         final examIdStr = exam['id'].toString();
 
-        // 1. Fast path: Read from pre-materialized snapshot_payload
-        final snapshot = exam['snapshot_payload'] as Map<String, dynamic>?;
-        if (snapshot != null && snapshot['questions'] is List && (snapshot['questions'] as List).isNotEmpty) {
-          final sList = (snapshot['questions'] as List).cast<Map<String, dynamic>>();
-          for (final item in sList) {
-            item['exam_id'] ??= examIdStr;
-          }
-          _questions = sList;
-        } else {
-          // 2. Fallback path: Query questions & question_options
-          final qRes = await client
-              .from('questions')
-              .select('id, position, body, explanation, points, question_options(id, position, body, is_correct)')
-              .eq('exam_id', examIdStr)
-              .order('position', ascending: true);
+        final qRes = await client
+            .from('questions')
+            .select('id, position, body, explanation, points, question_options(id, position, body, is_correct)')
+            .eq('exam_id', examIdStr)
+            .order('position', ascending: true);
 
-          final qList = (qRes as List<dynamic>).cast<Map<String, dynamic>>();
+        final qList = (qRes as List<dynamic>).cast<Map<String, dynamic>>();
 
-          if (qList.isNotEmpty) {
-            _questions = qList;
-          }
+        if (qList.isNotEmpty) {
+          _questions = qList;
         }
       }
     } catch (e) {
