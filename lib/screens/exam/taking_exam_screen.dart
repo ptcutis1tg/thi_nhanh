@@ -8,12 +8,17 @@ class TakingExamScreen extends StatefulWidget {
   final String? attemptId;
   final String? roomId;
   final bool isAuthorPreview;
+  final List<Map<String, dynamic>>? initialQuestions;
+  final Future<void> Function(Map<String, dynamic> attemptPayload)? onSubmitAttempt;
+
   const TakingExamScreen({
     super.key,
     this.examId,
     this.attemptId,
     this.roomId,
     this.isAuthorPreview = false,
+    this.initialQuestions,
+    this.onSubmitAttempt,
   });
 
   @override
@@ -22,6 +27,8 @@ class TakingExamScreen extends StatefulWidget {
 
 class _TakingExamScreenState extends State<TakingExamScreen> {
   bool _isLoading = true;
+  bool _isSubmitting = false;
+  bool _hasSubmitted = false;
   bool _isAuthorPreview = false;
   String _examTitle = 'Đang tải bài thi...';
   int _durationMinutes = 45;
@@ -35,7 +42,12 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   void initState() {
     super.initState();
     _isAuthorPreview = widget.isAuthorPreview;
-    _loadExamAndQuestions();
+    if (widget.initialQuestions != null) {
+      _questions = List.of(widget.initialQuestions!);
+      _isLoading = false;
+    } else {
+      _loadExamAndQuestions();
+    }
   }
 
   Future<void> _loadExamAndQuestions() async {
@@ -103,8 +115,79 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     }
   }
 
+  Future<void> _handlePressSubmit() async {
+    if (_questions.isEmpty || _isSubmitting || _hasSubmitted) return;
+
+    final answeredCount = _selectedAnswers.length;
+    final totalCount = _questions.length;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.assignment_turned_in_outlined, color: AppTheme.primary),
+              SizedBox(width: 8),
+              Text('Xác nhận nộp bài thi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bạn đã làm $answeredCount / $totalCount câu hỏi.',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              if (answeredCount < totalCount) ...[
+                Text(
+                  'Còn ${totalCount - answeredCount} câu chưa chọn đáp án. Bạn có chắc chắn muốn nộp bài ngay bây giờ?',
+                  style: const TextStyle(fontSize: 13, color: AppTheme.warning),
+                ),
+              ] else ...[
+                const Text(
+                  'Bạn đã hoàn thành tất cả câu hỏi. Bạn có chắc chắn muốn kết thúc bài thi và xem kết quả?',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(false),
+              child: const Text('Làm tiếp', style: TextStyle(color: AppTheme.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      Navigator.of(context).pop(true);
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.success,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Nộp bài ngay'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true && mounted) {
+      await _submitExam();
+    }
+  }
+
   Future<void> _submitExam() async {
-    if (_questions.isEmpty) return;
+    if (_questions.isEmpty || _isSubmitting || _hasSubmitted) return;
+
+    setState(() => _isSubmitting = true);
 
     int correctCount = 0;
     int wrongCount = 0;
@@ -135,29 +218,73 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     final double rawScore = (correctCount / _questions.length) * 10.0;
     final double finalScore = double.parse(rawScore.toStringAsFixed(1));
 
+    final payload = <String, dynamic>{
+      'exam_id': widget.examId ?? (_questions.isNotEmpty ? _questions.first['exam_id'] : null),
+      'status': 'submitted',
+      'started_at': DateTime.now().subtract(Duration(minutes: _durationMinutes)).toIso8601String(),
+      'submitted_at': DateTime.now().toIso8601String(),
+      'score': finalScore,
+      'is_author_preview': _isAuthorPreview,
+    };
+
     // Save attempt to Supabase
     try {
-      final client = Supabase.instance.client;
-      final user = client.auth.currentUser;
-      
-      await client.from('attempts').insert({
-        'exam_id': widget.examId ?? (_questions.isNotEmpty ? _questions.first['exam_id'] : null),
-        'user_id': user?.id,
-        'guest_name': user == null ? 'Học sinh' : null,
-        'status': 'submitted',
-        'started_at': DateTime.now().subtract(Duration(minutes: _durationMinutes)).toIso8601String(),
-        'submitted_at': DateTime.now().toIso8601String(),
-        'score': finalScore,
-        'is_author_preview': _isAuthorPreview,
-      });
+      if (widget.onSubmitAttempt != null) {
+        await widget.onSubmitAttempt!(payload);
+      } else {
+        final client = Supabase.instance.client;
+        final user = client.auth.currentUser;
+
+        payload['user_id'] = user?.id;
+        if (user == null) {
+          payload['guest_name'] = 'Học sinh';
+        }
+
+        if (widget.attemptId != null && widget.attemptId!.isNotEmpty) {
+          await client.from('attempts').update({
+            'status': 'submitted',
+            'score': finalScore,
+            'submitted_at': DateTime.now().toIso8601String(),
+          }).eq('id', widget.attemptId!);
+        } else {
+          await client.from('attempts').insert(payload);
+        }
+      }
+
+      _hasSubmitted = true;
+
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        try {
+          context.go(
+            '/result?score=$finalScore&total=${_questions.length}&correct=$correctCount&wrong=$wrongCount&skipped=$skippedCount&title=${Uri.encodeComponent(_examTitle)}',
+          );
+        } catch (_) {
+          // Bỏ qua lỗi điều hướng nếu môi trường kiểm thử không cấu hình GoRouter
+        }
+      }
     } catch (e) {
       debugPrint('Lỗi lưu bài làm lên Supabase: $e');
-    }
-
-    if (mounted) {
-      context.go(
-        '/result?score=$finalScore&total=${_questions.length}&correct=$correctCount&wrong=$wrongCount&skipped=$skippedCount&title=${Uri.encodeComponent(_examTitle)}',
-      );
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Lỗi nộp bài thi: $e')),
+              ],
+            ),
+            backgroundColor: AppTheme.error,
+            action: SnackBarAction(
+              label: 'Thử lại',
+              textColor: Colors.white,
+              onPressed: _handlePressSubmit,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -331,6 +458,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     options.sort((a, b) => (a['position'] as int? ?? 0).compareTo(b['position'] as int? ?? 0));
 
     final isFlagged = _flaggedQuestions[_currentQuestionIndex] == true;
+    final isLastQuestion = _currentQuestionIndex >= _questions.length - 1;
 
     return Container(
       padding: const EdgeInsets.all(32),
@@ -414,20 +542,37 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               OutlinedButton.icon(
-                onPressed: _currentQuestionIndex > 0
+                onPressed: _currentQuestionIndex > 0 && !_isSubmitting
                     ? () => setState(() => _currentQuestionIndex--)
                     : null,
                 icon: const Icon(Icons.chevron_left),
                 label: const Text('Câu trước'),
               ),
               ElevatedButton.icon(
-                onPressed: _currentQuestionIndex < _questions.length - 1
-                    ? () => setState(() => _currentQuestionIndex++)
-                    : _submitExam,
-                icon: Icon(_currentQuestionIndex < _questions.length - 1 ? Icons.chevron_right : Icons.send),
-                label: Text(_currentQuestionIndex < _questions.length - 1 ? 'Câu sau' : 'Nộp bài'),
+                onPressed: (_isSubmitting || _hasSubmitted)
+                    ? null
+                    : (!isLastQuestion
+                        ? () => setState(() => _currentQuestionIndex++)
+                        : _handlePressSubmit),
+                icon: _isSubmitting && isLastQuestion
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Icon(!isLastQuestion ? Icons.chevron_right : (_hasSubmitted ? Icons.check_circle_outline : Icons.send)),
+                label: Text(
+                  _isSubmitting && isLastQuestion
+                      ? 'Đang nộp bài...'
+                      : (_hasSubmitted && isLastQuestion
+                          ? 'Đã nộp bài'
+                          : (!isLastQuestion ? 'Câu sau' : 'Nộp bài')),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _currentQuestionIndex < _questions.length - 1 ? null : AppTheme.success,
+                  backgroundColor: !isLastQuestion
+                      ? null
+                      : (_hasSubmitted ? AppTheme.textSecondary : AppTheme.success),
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
@@ -442,11 +587,13 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     final isSelected = _selectedAnswers[_currentQuestionIndex] == optId;
 
     return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedAnswers[_currentQuestionIndex] = optId;
-        });
-      },
+      onTap: _isSubmitting
+          ? null
+          : () {
+              setState(() {
+                _selectedAnswers[_currentQuestionIndex] = optId;
+              });
+            },
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -522,7 +669,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                 }
 
                 return InkWell(
-                  onTap: () => setState(() => _currentQuestionIndex = index),
+                  onTap: _isSubmitting ? null : () => setState(() => _currentQuestionIndex = index),
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     decoration: BoxDecoration(
@@ -555,9 +702,30 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _submitExam,
-              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.success),
-              child: const Text('Nộp bài thi'),
+              onPressed: (_isSubmitting || _hasSubmitted) ? null : _handlePressSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _hasSubmitted ? AppTheme.textSecondary : AppTheme.success,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: _isSubmitting
+                  ? const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Đang nộp bài...', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    )
+                  : Text(_hasSubmitted ? 'Đã nộp bài' : 'Nộp bài thi'),
             ),
           ),
         ],
