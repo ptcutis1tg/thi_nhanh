@@ -4,22 +4,48 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../utils/supabase_retry_helper.dart';
 
 class TeacherExamSummary {
-  const TeacherExamSummary({required this.id, required this.title, required this.subject, required this.durationMinutes, required this.questionCount, required this.status});
+  const TeacherExamSummary({
+    required this.id,
+    required this.title,
+    required this.subject,
+    required this.durationMinutes,
+    required this.questionCount,
+    required this.status,
+    this.code = '',
+    this.createdAt,
+  });
+
   final String id;
   final String title;
   final String subject;
   final int durationMinutes;
   final int questionCount;
   final String status;
+  final String code;
+  final DateTime? createdAt;
 
-  factory TeacherExamSummary.fromJson(Map<String, dynamic> json) => TeacherExamSummary(
-        id: json['id'] as String,
-        title: json['title'] as String,
-        subject: json['subject'] as String,
-        durationMinutes: (json['durationMinutes'] as num).toInt(),
-        questionCount: (json['questionCount'] as num).toInt(),
-        status: json['status'] as String,
-      );
+  bool get isDraft => status == 'draft';
+  bool get isPublished => status == 'published';
+
+  factory TeacherExamSummary.fromJson(Map<String, dynamic> json) {
+    DateTime? parsedDate;
+    if (json['createdAt'] != null) {
+      try {
+        parsedDate = DateTime.parse(json['createdAt'] as String);
+      } catch (_) {}
+    }
+
+    return TeacherExamSummary(
+      id: json['id'] as String,
+      title: json['title'] as String? ?? 'Đề thi',
+      subject: json['subject'] as String? ?? 'Chung',
+      durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 45,
+      questionCount: (json['questionCount'] as num?)?.toInt() ?? 0,
+      status: json['status'] as String? ?? 'draft',
+      code: json['code'] as String? ?? '',
+      createdAt: parsedDate,
+    );
+  }
 }
 
 class TeacherExamRepository {
@@ -56,6 +82,10 @@ class TeacherExamRepository {
 
   Future<void> publish(String examId) => SupabaseRetryHelper.run(
         () => _client.rpc('publish_teacher_exam', params: {'p_exam_id': examId}),
+      );
+
+  Future<void> deleteDraft(String examId) => SupabaseRetryHelper.run(
+        () => _client.from('exams').delete().eq('id', examId).eq('status', 'draft'),
       );
 
   Map<String, dynamic> _map(dynamic value) {
