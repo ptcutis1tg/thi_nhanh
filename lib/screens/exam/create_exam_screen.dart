@@ -162,17 +162,80 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     }
   }
 
-  Future<void> _createExam() async {
+  Future<void> _saveDraftOnly() async {
+    final success = await _saveDraft();
+    if (success && mounted) {
+      _showMessage('Đã lưu bản nháp thành công.');
+    }
+  }
+
+  Future<void> _publishExam() async {
     final invalidQuestion = _questions.indexWhere((question) =>
         question.body.trim().isEmpty || question.answers.any((answer) => answer.trim().isEmpty));
     if (invalidQuestion >= 0) {
       setState(() => _activeQuestionIndex = invalidQuestion);
-      _showMessage('Hãy nhập nội dung và đủ đáp án cho Câu ${invalidQuestion + 1}.', isError: true);
+      _showMessage('Hãy nhập nội dung và đủ đáp án cho Câu ${invalidQuestion + 1} trước khi xuất bản.', isError: true);
       return;
     }
+
     final success = await _saveDraft();
-    if (success && mounted) {
-      context.go('/teacher_exams');
+    if (!success || !mounted) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final repo = context.read<TeacherExamRepository>();
+      await repo.publish(_examId!);
+      if (!mounted) return;
+      setState(() {
+        _status = 'published';
+        _isLoading = false;
+      });
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: AppTheme.success, size: 28),
+              SizedBox(width: 10),
+              Text('Xuất bản thành công!'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Đề "${_examNameController.text}" đã được công khai lên hệ thống.'),
+              const SizedBox(height: 8),
+              const Text('Học sinh có thể tìm kiếm đề thi này hoặc bạn có thể mở phòng thi ngay bây giờ.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.go('/teacher_exams');
+              },
+              child: const Text('Về danh sách đề'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.go('/create_room?examId=$_examId');
+              },
+              icon: const Icon(Icons.meeting_room_outlined),
+              label: const Text('Tạo phòng thi ngay'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showMessage('Lỗi khi xuất bản: ${e.toString().replaceAll('PostgrestException: ', '')}', isError: true);
+      }
     }
   }
 
@@ -284,7 +347,24 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
             if (question.answers.length < 8) TextButton.icon(onPressed: () => setState(() => question.answers.add('')), icon: const Icon(Icons.add_circle_outline), label: const Text('Thêm lựa chọn')),
           ]))))),
         ),
-        Positioned(bottom: 0, left: 0, right: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16), decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: AppTheme.border))), child: Row(children: [Expanded(child: Text(_lastSavedAt == null ? 'Chưa lưu nháp' : 'Đã lưu nháp lúc ${TimeOfDay.fromDateTime(_lastSavedAt!).format(context)}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))), OutlinedButton(onPressed: _saveDraft, child: const Text('Lưu nháp')), const SizedBox(width: 12), ElevatedButton.icon(onPressed: _createExam, icon: const Icon(Icons.check), label: const Text('Lưu & Khởi tạo đề'))]))),
+        Positioned(bottom: 0, left: 0, right: 0, child: Container(padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16), decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: AppTheme.border))), child: Row(children: [
+          Expanded(child: Text(_lastSavedAt == null ? 'Chưa lưu nháp' : 'Đã lưu nháp lúc ${TimeOfDay.fromDateTime(_lastSavedAt!).format(context)}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
+          OutlinedButton.icon(
+            onPressed: _isLoading ? null : _saveDraftOnly,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: const Text('Lưu bản nháp'),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isLoading ? null : _publishExam,
+            icon: const Icon(Icons.rocket_launch_rounded, size: 18),
+            label: const Text('Lưu & Xuất bản ngay'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ]))),
       ]),
     );
   }
