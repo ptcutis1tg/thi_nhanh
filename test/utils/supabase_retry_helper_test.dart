@@ -75,8 +75,8 @@ void main() {
 
     test('rethrows if max retries exceeded', () async {
       int callCount = 0;
-      expect(
-        () => SupabaseRetryHelper.run(
+      await expectLater(
+        SupabaseRetryHelper.run(
           () async {
             callCount++;
             throw const PostgrestException(
@@ -89,6 +89,7 @@ void main() {
         ),
         throwsA(isA<PostgrestException>()),
       );
+      expect(callCount, 3);
     });
 
     test('rethrows immediately on non-retryable PostgrestException', () async {

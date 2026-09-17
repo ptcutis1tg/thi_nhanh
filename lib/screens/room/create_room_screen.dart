@@ -122,7 +122,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         ],
                       ],
                       const SizedBox(height: 36),
-                      SizedBox(width: double.infinity, height: 54, child: ElevatedButton.icon(onPressed: _selectedExam == null ? null : _createRoom, icon: const Icon(Icons.play_arrow), label: const Text('Khởi tạo phòng thi'))),
+                      SizedBox(width: double.infinity, height: 54, child: ElevatedButton.icon(onPressed: (_selectedExam == null || _isCreating) ? null : _createRoom, icon: const Icon(Icons.play_arrow), label: Text(_isCreating ? 'Đang khởi tạo...' : 'Khởi tạo phòng thi'))),
                     ]),
                   ),
                 ),
