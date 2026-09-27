@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/models/assessment.dart';
 import '../../core/repositories/assessment_repository.dart';
@@ -366,10 +368,12 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       'is_author_preview': _isAuthorPreview,
     };
 
-    // Save attempt to Supabase
+    // Save attempt to Supabase with local resilient fallback
+    bool savedToCloud = false;
     try {
       if (widget.onSubmitAttempt != null) {
         await widget.onSubmitAttempt!(payload);
+        savedToCloud = true;
       } else {
         final client = Supabase.instance.client;
         final user = client.auth.currentUser;
@@ -391,42 +395,38 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
         } else {
           await client.from('attempts').insert(payload);
         }
-      }
-
-      _hasSubmitted = true;
-      _timer?.cancel();
-
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        try {
-          context.go(
-            '/result?score=$finalScore&total=${_questions.length}&correct=$correctCount&wrong=$wrongCount&skipped=$skippedCount&title=${Uri.encodeComponent(_examTitle)}',
-          );
-        } catch (_) {
-          // Bỏ qua lỗi điều hướng nếu môi trường kiểm thử không cấu hình GoRouter
-        }
+        savedToCloud = true;
       }
     } catch (e) {
-      debugPrint('Lỗi lưu bài làm lên Supabase: $e');
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 10),
-                Expanded(child: Text('Lỗi nộp bài thi: $e')),
-              ],
-            ),
-            backgroundColor: AppTheme.error,
-            action: SnackBarAction(
-              label: 'Thử lại',
-              textColor: Colors.white,
-              onPressed: _handlePressSubmit,
-            ),
-          ),
+      debugPrint('Lỗi lưu bài làm lên Supabase, kích hoạt lưu cục bộ: $e');
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final localAttempts = prefs.getStringList('local_exam_attempts') ?? [];
+        final localRecord = jsonEncode({
+          'exam_id': payload['exam_id'],
+          'title': _examTitle,
+          'score': finalScore,
+          'correct': correctCount,
+          'total': _questions.length,
+          'submitted_at': payload['submitted_at'],
+        });
+        localAttempts.add(localRecord);
+        await prefs.setStringList('local_exam_attempts', localAttempts);
+      } catch (errStorage) {
+        debugPrint('Lỗi lưu bộ nhớ đệm: $errStorage');
+      }
+    }
+
+    _hasSubmitted = true;
+
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+      try {
+        context.go(
+          '/result?score=$finalScore&total=${_questions.length}&correct=$correctCount&wrong=$wrongCount&skipped=$skippedCount&title=${Uri.encodeComponent(_examTitle)}&offlineSaved=${!savedToCloud}',
         );
+      } catch (_) {
+        // Bỏ qua lỗi điều hướng nếu môi trường kiểm thử không cấu hình GoRouter
       }
     }
   }
@@ -661,7 +661,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -679,7 +679,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.1),
+                  color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
@@ -851,7 +851,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withOpacity(0.05) : Colors.white,
+          color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? AppTheme.primary : AppTheme.border,

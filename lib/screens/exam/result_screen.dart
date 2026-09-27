@@ -262,26 +262,29 @@ class _ResultScreenState extends State<ResultScreen> {
               child: CircleAvatar(
                 radius: 64,
                 backgroundColor: Colors.white,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Điểm số',
-                      style: TextStyle(color: AppTheme.textSecondary),
-                    ),
-                    Text(
-                      _score.toStringAsFixed(2),
-                      style: const TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Điểm số',
+                        style: TextStyle(color: AppTheme.textSecondary),
                       ),
-                    ),
-                    const Text(
-                      '/10',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
+                      Text(
+                        _score.toStringAsFixed(2),
+                        style: const TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primary,
+                        ),
+                      ),
+                      const Text(
+                        '/10',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
