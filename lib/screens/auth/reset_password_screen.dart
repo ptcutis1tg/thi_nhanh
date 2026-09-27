@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
@@ -107,7 +108,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         setState(() {
           _currentStep = 2;
         });
-        _showSuccess('Mã xác minh OTP 6 số đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
+        _showSuccess('Mã xác minh OTP 8 số đã được gửi về email $email. Vui lòng kiểm tra hộp thư!');
         _startCountdown();
       }
     } catch (e) {
@@ -120,8 +121,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   Future<void> _handleVerifyOTP() async {
     final email = _emailController.text.trim();
     final otp = _otpController.text.trim();
-    if (otp.isEmpty || otp.length != 6) {
-      _showError('Vui lòng nhập đủ 6 chữ số mã OTP.');
+    if (otp.isEmpty || otp.length != 8) {
+      _showError('Vui lòng nhập đủ 8 chữ số mã OTP.');
       return;
     }
 
@@ -270,7 +271,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Nhập địa chỉ Email của bạn để nhận mã xác minh 6 chữ số khôi phục tài khoản.',
+          'Nhập địa chỉ Email của bạn để nhận mã xác minh 8 chữ số khôi phục tài khoản.',
           style: TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 20),
@@ -298,18 +299,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Mã xác minh 6 số đã được gửi tới email:\n${_emailController.text.trim()}',
+          'Mã xác minh 8 số đã được gửi tới email:\n${_emailController.text.trim()}',
           style: const TextStyle(color: AppTheme.textSecondary, fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 20),
         TextField(
           controller: _otpController,
           keyboardType: TextInputType.number,
-          maxLength: 6,
+          maxLength: 8,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+          ],
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 24, letterSpacing: 6, fontWeight: FontWeight.bold),
           decoration: const InputDecoration(
-            hintText: '000000',
+            hintText: '00000000',
             counterText: '',
           ),
         ),
