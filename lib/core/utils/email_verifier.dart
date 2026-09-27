@@ -26,7 +26,7 @@ class EmailVerifier {
   };
 
   /// Kiểm tra định dạng email và loại trừ tên miền email rác/tạm thời
-  static void verifyEmail(String email) {
+  static Future<void> verifyEmail(String email) async {
     final cleanEmail = email.trim();
 
     if (!_emailRegex.hasMatch(cleanEmail)) {

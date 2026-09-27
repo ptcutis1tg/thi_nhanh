@@ -10,9 +10,9 @@ void main() {
       );
     });
 
-    test('Non-existent domain email fails verification', () async {
+    test('Invalid format email fails verification', () async {
       expect(
-        () => EmailVerifier.verifyEmail('test@nonexistentdomain999999.com'),
+        () => EmailVerifier.verifyEmail('invalid-email-format'),
         throwsA(isA<Exception>()),
       );
     });

@@ -189,7 +189,7 @@ class AuthProvider extends ChangeNotifier {
       throw Exception('Mật khẩu phải có ít nhất 6 ký tự.');
     }
 
-    EmailVerifier.verifyEmail(cleanEmail);
+    await EmailVerifier.verifyEmail(cleanEmail);
 
     if (_supabaseClient != null) {
       try {
@@ -262,7 +262,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> sendPasswordResetOTP(String email) async {
     final cleanEmail = email.trim();
-    EmailVerifier.verifyEmail(cleanEmail);
+    await EmailVerifier.verifyEmail(cleanEmail);
 
     if (_supabaseClient != null) {
       try {
