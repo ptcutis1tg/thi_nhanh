@@ -24,7 +24,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   bool _isNewPasswordObscured = true;
   bool _isConfirmPasswordObscured = true;
 
-  String? _generatedOtp;
   int _resendCountdown = 60;
   Timer? _timer;
 
@@ -80,6 +79,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
+  String _friendlyError(dynamic e) {
+    final str = e.toString().toLowerCase();
+    if (str.contains('token has expired') || str.contains('otp_expired') || str.contains('invalid')) {
+      return 'Mã OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại.';
+    }
+    if (str.contains('rate limit') || str.contains('over_email_send_rate_limit')) {
+      return 'Bạn đã gửi yêu cầu quá nhiều lần. Vui lòng chờ 1 - 2 phút rồi thử lại nhé!';
+    }
+    if (str.contains('same_password')) {
+      return 'Mật khẩu mới không được trùng với mật khẩu cũ.';
+    }
+    return e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+  }
+
   Future<void> _handleSendOTP() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -89,7 +102,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      await context.read<AuthProvider>().sendPasswordResetEmail(email);
+      await context.read<AuthProvider>().sendPasswordResetOTP(email);
       if (mounted) {
         setState(() {
           _currentStep = 2;
@@ -98,7 +111,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         _startCountdown();
       }
     } catch (e) {
-      _showError(e.toString().replaceAll('Exception: ', ''));
+      _showError(_friendlyError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -120,14 +133,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         setState(() => _currentStep = 3);
       }
     } catch (e) {
-      _showError(e.toString().replaceAll('Exception: ', ''));
+      _showError(_friendlyError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _handleUpdatePassword() async {
-    final email = _emailController.text.trim();
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
@@ -147,14 +159,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     setState(() => _isLoading = true);
     try {
       final auth = context.read<AuthProvider>();
-      await auth.updateNewPassword(email, newPassword);
+      await auth.updateNewPassword(newPassword);
       auth.clearPasswordRecoveryMode();
       if (mounted) {
         _showSuccess('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
         context.go('/greeting');
       }
     } catch (e) {
-      _showError(e.toString().replaceAll('Exception: ', ''));
+      _showError(_friendlyError(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
