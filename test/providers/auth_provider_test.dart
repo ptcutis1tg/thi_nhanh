@@ -1,14 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onthi_community/core/providers/auth_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('AuthProvider Email Validation Tests', () {
+  group('AuthProvider Native Tests', () {
     late AuthProvider authProvider;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
       authProvider = AuthProvider(isSupabaseInitialized: false);
+      await authProvider.init();
     });
 
     test('signUpWithEmail throws exception for invalid email format', () async {
@@ -18,9 +21,27 @@ void main() {
       );
     });
 
-    test('sendPasswordResetEmail throws exception for invalid email format', () async {
+    test('signUpWithEmail throws exception for short password', () async {
       expect(
-        () => authProvider.sendPasswordResetEmail('invalid-email'),
+        () => authProvider.signUpWithEmail('valid@gmail.com', '12345', 'Test User'),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('verifySignUpOTP throws exception for invalid OTP format', () async {
+      expect(
+        () => authProvider.verifySignUpOTP('valid@gmail.com', '123'),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        () => authProvider.verifySignUpOTP('valid@gmail.com', 'abcdef'),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('sendPasswordResetOTP throws exception for invalid email format', () async {
+      expect(
+        () => authProvider.sendPasswordResetOTP('invalid-email'),
         throwsA(isA<Exception>()),
       );
     });
@@ -30,11 +51,15 @@ void main() {
         () => authProvider.verifyPasswordResetOTP('test@gmail.com', '123'),
         throwsA(isA<Exception>()),
       );
+      expect(
+        () => authProvider.verifyPasswordResetOTP('test@gmail.com', 'abcdef'),
+        throwsA(isA<Exception>()),
+      );
     });
 
     test('updateNewPassword throws exception for short password', () async {
       expect(
-        () => authProvider.updateNewPassword('test@gmail.com', '123'),
+        () => authProvider.updateNewPassword('123'),
         throwsA(isA<Exception>()),
       );
     });
@@ -43,84 +68,22 @@ void main() {
       await authProvider.signInWithGoogle();
       expect(authProvider.isAuthenticated, isTrue);
       expect(authProvider.userEmail, equals('demo_google_user@gmail.com'));
-    });
-
-    test('sendPasswordResetEmail for unregistered email throws Exception', () async {
-      expect(
-        () => authProvider.sendPasswordResetEmail('unregistered_user@gmail.com'),
-        throwsA(isA<Exception>()),
-      );
-    });
-
-    test('updateNewPassword without OTP verification throws Exception', () async {
-      await authProvider.signUpWithEmail('registered_user@gmail.com', 'oldpassword123', 'Registered User');
-      authProvider.signOut();
-
-      // Trying to update password without OTP verification must throw Exception
-      expect(
-        () => authProvider.updateNewPassword('registered_user@gmail.com', 'newpassword123'),
-        throwsA(isA<Exception>()),
-      );
-    });
-
-    test('Full password reset flow with OTP verification succeeds and revokes token', () async {
-      const email = 'valid_user@gmail.com';
-      await authProvider.signUpWithEmail(email, 'oldpassword123', 'Valid User');
-      authProvider.signOut();
-
-      // Step 1: Send OTP
-      final otpCode = await authProvider.sendPasswordResetEmail(email);
-      expect(otpCode, isNotNull);
-      expect(otpCode!.length, equals(6));
-
-      // Step 2: Verify OTP
-      await authProvider.verifyPasswordResetOTP(email, otpCode);
-
-      // OTP cannot be reused a second time
-      expect(
-        () => authProvider.verifyPasswordResetOTP(email, otpCode),
-        throwsA(isA<Exception>()),
-      );
-
-      // Step 3: Update Password
-      await authProvider.updateNewPassword(email, 'newpassword123');
-
-      // Check login with new password
-      await authProvider.signInWithEmail(email, 'newpassword123');
-      expect(authProvider.isAuthenticated, isTrue);
-
-      // Privilege to update password without a new OTP is revoked
-      authProvider.signOut();
-      expect(
-        () => authProvider.updateNewPassword(email, 'anotherpass123'),
-        throwsA(isA<Exception>()),
-      );
-    });
-
-    test('local-only sign-in is not treated as a Supabase session', () async {
-      await authProvider.signInWithEmail('local@example.com', '123456');
-
-      expect(authProvider.hasSupabaseSession, isFalse);
+      expect(authProvider.userName, equals('Google User (Demo)'));
     });
 
     test('getWebRedirectUrl constructs proper base redirect URL for subpath and root deployments', () {
-      // Subpath deployment (e.g. GitHub Pages /thi_nhanh/)
       final ghPagesUri = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh/');
       expect(AuthProvider.getWebRedirectUrl(ghPagesUri), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
 
-      // Subpath with deep hash route
       final ghPagesHashUri = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh/#/greeting');
       expect(AuthProvider.getWebRedirectUrl(ghPagesHashUri), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
 
-      // Subpath without trailing slash
       final ghPagesNoSlash = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh');
       expect(AuthProvider.getWebRedirectUrl(ghPagesNoSlash), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
 
-      // Subpath with index.html
       final ghPagesIndex = Uri.parse('https://ptcutis1tg.github.io/thi_nhanh/index.html');
       expect(AuthProvider.getWebRedirectUrl(ghPagesIndex), equals('https://ptcutis1tg.github.io/thi_nhanh/'));
 
-      // Localhost root
       final localhostUri = Uri.parse('http://localhost:5000/');
       expect(AuthProvider.getWebRedirectUrl(localhostUri), equals('http://localhost:5000/'));
     });

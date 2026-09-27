@@ -1,19 +1,8 @@
-import 'dart:convert';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/email_verifier.dart';
-import '../utils/otp_mailer.dart';
 import '../utils/supabase_retry_helper.dart';
-
-enum UserRole { student, teacher }
-
-class _OTPRecord {
-  final String code;
-  final DateTime expiresAt;
-  _OTPRecord({required this.code, required this.expiresAt});
-}
 
 class AuthProvider extends ChangeNotifier {
   SupabaseClient? _supabaseClient;
@@ -21,40 +10,26 @@ class AuthProvider extends ChangeNotifier {
   String? _userName;
   String? _userEmail;
   String? _userAvatarUrl;
-  String _activeRole = 'student';
-
-  UserRole get currentRole => _activeRole == 'teacher' ? UserRole.teacher : UserRole.student;
-  bool get isStudent => _activeRole == 'student';
-  bool get isTeacher => _activeRole == 'teacher';
-
-  Future<void> setRole(UserRole role) async {
-    await updateActiveRole(role == UserRole.teacher ? 'teacher' : 'student');
-  }
-
-  Future<void> toggleRole() async {
-    await setRole(isStudent ? UserRole.teacher : UserRole.student);
-  }
-
-  // Local Accounts DB: email -> {'name': fullName, 'password': password, 'avatar': avatarDataUrl}
-  Map<String, Map<String, String>> _registeredUsers = {};
-  final Map<String, _OTPRecord> _localOTPs = {};
-  final Set<String> _verifiedResetEmails = {};
 
   User? get user => _user;
   bool get isAuthenticated =>
       _user != null || (_supabaseClient == null && _userEmail != null);
   bool get hasSupabaseSession => _supabaseClient?.auth.currentSession != null;
-  String get activeRole => _activeRole;
-  String get activeRoleLabel => isTeacher ? 'Giáo viên' : 'Học sinh';
+  bool get isGoogleUser =>
+      _user?.appMetadata['provider'] == 'google' ||
+      (_user?.identities?.any((id) => id.provider == 'google') ?? false);
 
-  String get userName =>
-      _user?.userMetadata?['full_name'] as String? ??
-      _userName ??
-      (_userEmail != null && _userEmail!.contains('@')
-          ? _userEmail!.split('@').first
-          : 'Người dùng');
+  String get userName {
+    final metaName = _user?.userMetadata?['full_name'] as String?;
+    if (metaName != null && metaName.isNotEmpty) return metaName;
+    if (_userName != null && _userName!.isNotEmpty) return _userName!;
+    if (_userEmail != null && _userEmail!.contains('@')) {
+      return _userEmail!.split('@').first;
+    }
+    return 'Người dùng';
+  }
 
-  String get userEmail => _user?.email ?? _userEmail ?? 'chua_dang_ky@gmail.com';
+  String get userEmail => _user?.email ?? _userEmail ?? '';
 
   String? get userAvatarUrl =>
       (_user?.userMetadata?['avatar_url'] as String?) ?? _userAvatarUrl;
@@ -68,9 +43,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   AuthProvider({bool isSupabaseInitialized = false}) {
-    _loadSavedState();
     if (isSupabaseInitialized) {
       _supabaseClient = Supabase.instance.client;
+      _user = _supabaseClient?.auth.currentUser;
       _supabaseClient?.auth.onAuthStateChange.listen((data) {
         _user = data.session?.user;
         if (data.event == AuthChangeEvent.passwordRecovery) {
@@ -78,7 +53,16 @@ class AuthProvider extends ChangeNotifier {
           if (_user?.email != null) {
             _userEmail = _user!.email;
           }
-          debugPrint('Đã kích hoạt chế độ khôi phục mật khẩu từ Email Link!');
+          debugPrint('Đã kích hoạt chế độ khôi phục mật khẩu từ Supabase Recovery Event!');
+        } else if (data.event == AuthChangeEvent.signedIn ||
+            data.event == AuthChangeEvent.tokenRefreshed ||
+            data.event == AuthChangeEvent.userUpdated) {
+          _syncProfileFromUser();
+        } else if (data.event == AuthChangeEvent.signedOut) {
+          _userName = null;
+          _userEmail = null;
+          _userAvatarUrl = null;
+          _saveState();
         }
         notifyListeners();
       });
@@ -92,41 +76,9 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadSavedState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final usersJson = prefs.getString('local_registered_users');
-      if (usersJson != null) {
-        final Map<String, dynamic> decoded = jsonDecode(usersJson);
-        _registeredUsers = decoded.map((key, value) => MapEntry(
-            key,
-            Map<String, String>.from(value as Map)));
-      }
-      _userEmail = prefs.getString('active_user_email');
-      _userName = prefs.getString('active_user_name');
-      _userAvatarUrl = prefs.getString('active_user_avatar');
-      _activeRole = prefs.getString('active_user_role') == 'teacher'
-          ? 'teacher'
-          : 'student';
-
-      final savedRole = prefs.getString('active_user_role');
-      if (savedRole == 'teacher') {
-        _activeRole = 'teacher';
-      } else if (savedRole == 'student') {
-        _activeRole = 'student';
-      }
-
-      // Restoring name and avatar from registered DB for active email
-      if (_userEmail != null) {
-        final key = _userEmail!.trim().toLowerCase();
-        if (_registeredUsers.containsKey(key)) {
-          final savedName = _registeredUsers[key]!['name'];
-          if (savedName != null && savedName.isNotEmpty) {
-            _userName = savedName;
-          }
-          final savedAvatar = _registeredUsers[key]!['avatar'];
-          if (savedAvatar != null && savedAvatar.isNotEmpty) {
-            _userAvatarUrl = savedAvatar;
-          }
-        }
-      }
+      _userEmail ??= prefs.getString('active_user_email');
+      _userName ??= prefs.getString('active_user_name');
+      _userAvatarUrl ??= prefs.getString('active_user_avatar');
       notifyListeners();
     } catch (e) {
       debugPrint('Lỗi tải dữ liệu tài khoản từ SharedPreferences: $e');
@@ -136,8 +88,6 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _saveState() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('local_registered_users', jsonEncode(_registeredUsers));
-      await prefs.setString('active_user_role', _activeRole);
       if (_userEmail != null) {
         await prefs.setString('active_user_email', _userEmail!);
       } else {
@@ -153,15 +103,28 @@ class AuthProvider extends ChangeNotifier {
       } else {
         await prefs.remove('active_user_avatar');
       }
-      await prefs.setString('active_user_role', _activeRole);
     } catch (e) {
       debugPrint('Lỗi lưu dữ liệu tài khoản vào SharedPreferences: $e');
     }
   }
 
+  Future<void> _syncProfileFromUser() async {
+    final u = _user;
+    if (u == null) return;
+    _userEmail = u.email;
+    final metaName = u.userMetadata?['full_name'] as String?;
+    if (metaName != null && metaName.isNotEmpty) {
+      _userName = metaName;
+    }
+    final metaAvatar = u.userMetadata?['avatar_url'] as String?;
+    if (metaAvatar != null && metaAvatar.isNotEmpty) {
+      _userAvatarUrl = metaAvatar;
+    }
+    await _saveState();
+  }
+
   /// Calculates the full redirect URL for web OAuth and auth callbacks,
-  /// ensuring subdirectory paths (such as GitHub Pages /thi_nhanh/) are preserved
-  /// instead of redirecting to the root domain and causing 404 errors.
+  /// preserving subdirectory paths (such as GitHub Pages /thi_nhanh/)
   static String? getWebRedirectUrl([Uri? customUri]) {
     if (!kIsWeb && customUri == null) return null;
     final uri = customUri ?? Uri.base;
@@ -191,66 +154,32 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signInWithEmail(String email, String password) async {
+  Future<AuthResponse?> signInWithEmail(String email, String password) async {
     final cleanEmail = email.trim();
-    final key = cleanEmail.toLowerCase();
-
-    if (_registeredUsers.containsKey(key)) {
-      final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword != null && savedPassword.isNotEmpty && savedPassword != password) {
-        throw Exception('Mật khẩu không chính xác. Vui lòng thử lại.');
-      }
-    }
-
     if (_supabaseClient != null) {
       try {
         final response = await _supabaseClient!.auth.signInWithPassword(
           email: cleanEmail,
           password: password,
         );
-        if (response.user != null) {
-          _user = response.user;
-        }
+        _user = response.user;
+        await _syncProfileFromUser();
+        notifyListeners();
+        return response;
       } catch (e) {
         debugPrint('Lỗi đăng nhập Supabase: $e');
         rethrow;
       }
-    }
-
-    if (_registeredUsers.containsKey(key)) {
-      final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword != null && savedPassword.isNotEmpty && savedPassword != password) {
-        throw Exception('Mật khẩu không chính xác. Vui lòng thử lại.');
-      }
-      _userEmail = cleanEmail;
-      _userName = _registeredUsers[key]!['name'];
-      _userAvatarUrl = _registeredUsers[key]!['avatar'];
     } else {
-      final defaultName = cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng';
-      _registeredUsers[key] = {
-        'name': defaultName,
-        'password': password,
-      };
       _userEmail = cleanEmail;
-      _userName = defaultName;
-      _userAvatarUrl = null;
+      _userName = cleanEmail.split('@').first;
+      await _saveState();
+      notifyListeners();
+      return null;
     }
-
-    await _saveState();
-    notifyListeners();
   }
 
-  static final RegExp _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  );
-
-  bool isValidEmail(String email) => _emailRegex.hasMatch(email.trim());
-
-  String _generate6DigitOTP() {
-    return (100000 + Random().nextInt(900000)).toString();
-  }
-
-  Future<void> signUpWithEmail(
+  Future<AuthResponse?> signUpWithEmail(
     String email,
     String password,
     String fullName,
@@ -260,18 +189,7 @@ class AuthProvider extends ChangeNotifier {
       throw Exception('Mật khẩu phải có ít nhất 6 ký tự.');
     }
 
-    // Kiểm tra thực tế xem Email có tồn tại và nhận thư được không
-    await EmailVerifier.verifyEmail(cleanEmail);
-
-    final key = cleanEmail.toLowerCase();
-    // Kiểm tra trùng lặp Email: Mỗi Gmail chỉ được đăng ký 1 tài khoản duy nhất
-    if (_registeredUsers.containsKey(key)) {
-      throw Exception('Email "$cleanEmail" đã được sử dụng để đăng ký tài khoản. Mỗi Email chỉ được đăng ký 1 tài khoản duy nhất.');
-    }
-
-    // Tự động sinh mã 6 số OTP riêng ban đầu cho tài khoản khi được tạo
-    final initialOtp = _generate6DigitOTP();
-    final initialExpiresAt = DateTime.now().add(const Duration(hours: 24));
+    EmailVerifier.verifyEmail(cleanEmail);
 
     if (_supabaseClient != null) {
       try {
@@ -280,265 +198,188 @@ class AuthProvider extends ChangeNotifier {
           password: password,
           data: {'full_name': fullName},
         );
-        if (response.user != null) {
-          _user = response.user;
+        _user = response.user;
+        if (response.session != null) {
+          await _syncProfileFromUser();
         }
-        if (response.session == null) {
-          throw Exception('email_not_confirmed');
-        }
-
-        // Lưu mã OTP 6 số vào bảng user_otps trên Supabase DB
-        try {
-          await _supabaseClient!.from('user_otps').upsert({
-            'email': cleanEmail,
-            'user_id': _user?.id,
-            'otp_code': initialOtp,
-            'expires_at': initialExpiresAt.toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          });
-        } catch (eDb) {
-          debugPrint('Lỗi lưu OTP ban đầu vào Supabase DB: $eDb');
-        }
+        notifyListeners();
+        return response;
       } catch (e) {
+        debugPrint('Lỗi đăng ký Supabase: $e');
         rethrow;
       }
+    } else {
+      _userEmail = cleanEmail;
+      _userName = fullName;
+      await _saveState();
+      notifyListeners();
+      return null;
     }
-
-    _registeredUsers[key] = {
-      'name': fullName,
-      'password': password,
-      'otp': initialOtp,
-      'otp_expires_at': initialExpiresAt.toIso8601String(),
-    };
-
-    _userEmail = cleanEmail;
-    _userName = fullName;
-    _userAvatarUrl = null;
-
-    await _saveState();
-    notifyListeners();
   }
 
-  Future<String?> sendPasswordResetEmail(String email) async {
-    final cleanEmail = email.trim();
-    await EmailVerifier.verifyEmail(cleanEmail);
-
-    final key = cleanEmail.toLowerCase();
-    // Chỉ cho phép đổi mật khẩu đối với tài khoản đã được đăng ký
-    if (!_registeredUsers.containsKey(key)) {
-      throw Exception('Email "$cleanEmail" chưa được đăng ký trong hệ thống. Vui lòng kiểm tra lại hoặc tạo tài khoản mới.');
-    }
-
-    // Sinh 1 mã 6 số mới mỗi khi được yêu cầu liên quan đến OTP (đổi mật khẩu...)
-    final randomOtp = _generate6DigitOTP();
-    final expiresAt = DateTime.now().add(const Duration(minutes: 15));
-
-    // 1. Lưu mã OTP 6 số mới vào database local tương ứng với tài khoản đó
-    _registeredUsers[key]!['otp'] = randomOtp;
-    _registeredUsers[key]!['otp_expires_at'] = expiresAt.toIso8601String();
-    _localOTPs[key] = _OTPRecord(
-      code: randomOtp,
-      expiresAt: expiresAt,
-    );
-    await _saveState();
-
-    // 2. Đồng bộ mã OTP 6 số mới vào CSDL Supabase user_otps
-    if (_supabaseClient != null) {
-      try {
-        await _supabaseClient!.from('user_otps').upsert({
-          'email': cleanEmail,
-          'user_id': _user?.id,
-          'otp_code': randomOtp,
-          'expires_at': expiresAt.toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
-        });
-      } catch (eDb) {
-        debugPrint('Lỗi đồng bộ OTP mới vào Supabase DB: $eDb');
-      }
-    }
-
-    // 3. Gửi mã 6 số đấy về email cho user
-    await OTPMailer.sendOTPEmail(recipientEmail: cleanEmail, otpCode: randomOtp);
-
-    // 4. Thử qua Supabase Auth nếu khả dụng
-    if (_supabaseClient != null) {
-      try {
-        await _supabaseClient!.auth.resetPasswordForEmail(
-          cleanEmail,
-          redirectTo: getWebRedirectUrl(),
-        );
-      } catch (e) {
-        try {
-          await _supabaseClient!.auth.signInWithOtp(
-            email: cleanEmail,
-            shouldCreateUser: false,
-          );
-        } catch (e2) {
-          debugPrint('Thông báo Supabase Auth OTP: $e2');
-        }
-      }
-    }
-
-    return randomOtp;
-  }
-
-  Future<void> verifyPasswordResetOTP(String email, String otpCode) async {
+  Future<AuthResponse?> verifySignUpOTP(String email, String otpCode) async {
     final cleanEmail = email.trim();
     final cleanOtp = otpCode.trim();
     if (cleanOtp.length != 6 || int.tryParse(cleanOtp) == null) {
       throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
     }
 
-    final key = cleanEmail.toLowerCase();
-    bool isVerified = false;
-
-    // 1. Kiểm tra với Supabase Database user_otps
     if (_supabaseClient != null) {
       try {
-        final res = await _supabaseClient!
-            .from('user_otps')
-            .select()
-            .eq('email', cleanEmail)
-            .maybeSingle();
-        if (res != null) {
-          final dbOtp = res['otp_code'] as String?;
-          final dbExpires = DateTime.tryParse(res['expires_at'] as String? ?? '');
-          if (dbOtp == cleanOtp && dbExpires != null && DateTime.now().isBefore(dbExpires)) {
-            isVerified = true;
-          }
-        }
-      } catch (e) {
-        debugPrint('Lỗi đối chiếu mã OTP từ Supabase DB: $e');
-      }
-
-      if (!isVerified) {
-        for (final type in [OtpType.recovery, OtpType.magiclink, OtpType.email]) {
+        final response = await _supabaseClient!.auth.verifyOTP(
+          email: cleanEmail,
+          token: cleanOtp,
+          type: OtpType.signup,
+        );
+        _user = response.user;
+        if (_user != null) {
+          await _syncProfileFromUser();
+          final userId = _user!.id;
           try {
-            final response = await _supabaseClient!.auth.verifyOTP(
-              email: cleanEmail,
-              token: cleanOtp,
-              type: type,
-            );
-            if (response.user != null) {
-              _user = response.user;
-            }
-            isVerified = true;
-            break;
-          } catch (e) {
-            debugPrint('Lỗi xác nhận mã OTP Supabase ($type): $e');
+            await SupabaseRetryHelper.run(() async {
+              await _supabaseClient!.from('profiles').upsert({
+                'id': userId,
+                'display_name': userName,
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+            });
+          } catch (eDb) {
+            debugPrint('Lỗi đồng bộ hồ sơ sau kích hoạt OTP: $eDb');
           }
         }
+        notifyListeners();
+        return response;
+      } catch (e) {
+        debugPrint('Lỗi xác thực mã OTP đăng ký: $e');
+        rethrow;
       }
+    } else {
+      _userEmail = cleanEmail;
+      notifyListeners();
+      return null;
     }
-
-    // 2. Kiểm tra mã OTP 6 số lưu trong Database tương ứng của tài khoản (Local / In-memory)
-    if (!isVerified && _registeredUsers.containsKey(key)) {
-      final savedOtp = _registeredUsers[key]!['otp'];
-      final savedExpStr = _registeredUsers[key]!['otp_expires_at'];
-      final savedExp = savedExpStr != null ? DateTime.tryParse(savedExpStr) : null;
-      if (savedOtp == cleanOtp && (savedExp == null || DateTime.now().isBefore(savedExp))) {
-        isVerified = true;
-      }
-    }
-
-    if (!isVerified) {
-      final record = _localOTPs[key];
-      if (record != null && DateTime.now().isBefore(record.expiresAt)) {
-        if (record.code == cleanOtp) {
-          isVerified = true;
-        }
-      }
-    }
-
-    if (!isVerified) {
-      throw Exception('Mã OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại.');
-    }
-
-    // Đã xác thực thành công: Hủy mã OTP (tránh tái sử dụng) và ghi nhận trạng thái xác nhận cho email này
-    _localOTPs.remove(key);
-    if (_registeredUsers.containsKey(key)) {
-      _registeredUsers[key]!.remove('otp');
-      _registeredUsers[key]!.remove('otp_expires_at');
-    }
-    _verifiedResetEmails.add(key);
-    await _saveState();
   }
 
-  Future<void> updateNewPassword(String email, String newPassword) async {
+  Future<void> sendPasswordResetOTP(String email) async {
     final cleanEmail = email.trim();
-    final key = cleanEmail.toLowerCase();
+    EmailVerifier.verifyEmail(cleanEmail);
 
+    if (_supabaseClient != null) {
+      try {
+        await _supabaseClient!.auth.resetPasswordForEmail(cleanEmail);
+      } catch (e) {
+        debugPrint('Lỗi gửi OTP đặt lại mật khẩu: $e');
+        rethrow;
+      }
+    }
+  }
+
+  Future<AuthResponse?> verifyPasswordResetOTP(String email, String otpCode) async {
+    final cleanEmail = email.trim();
+    final cleanOtp = otpCode.trim();
+    if (cleanOtp.length != 6 || int.tryParse(cleanOtp) == null) {
+      throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
+    }
+
+    if (_supabaseClient != null) {
+      try {
+        final response = await _supabaseClient!.auth.verifyOTP(
+          email: cleanEmail,
+          token: cleanOtp,
+          type: OtpType.recovery,
+        );
+        _user = response.user;
+        _isPasswordRecoveryMode = true;
+        notifyListeners();
+        return response;
+      } catch (e) {
+        debugPrint('Lỗi xác thực OTP khôi phục mật khẩu: $e');
+        rethrow;
+      }
+    } else {
+      _isPasswordRecoveryMode = true;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<UserResponse?> updateNewPassword(String newPassword) async {
     if (newPassword.length < 6) {
       throw Exception('Mật khẩu mới phải có ít nhất 6 ký tự.');
     }
 
-    if (!isPasswordRecoveryMode && !_verifiedResetEmails.contains(key)) {
-      throw Exception('Yêu cầu không hợp lệ. Vui lòng xác thực mã OTP trước khi đổi mật khẩu.');
-    }
-
-    if (_registeredUsers.containsKey(key)) {
-      _registeredUsers[key]!['password'] = newPassword;
+    if (_supabaseClient != null) {
+      try {
+        final response = await _supabaseClient!.auth.updateUser(
+          UserAttributes(password: newPassword),
+        );
+        _isPasswordRecoveryMode = false;
+        notifyListeners();
+        return response;
+      } catch (e) {
+        debugPrint('Lỗi cập nhật mật khẩu mới: $e');
+        rethrow;
+      }
     } else {
-      final defaultName = cleanEmail.contains('@') ? cleanEmail.split('@').first : 'Người dùng';
-      _registeredUsers[key] = {
-        'name': defaultName,
-        'password': newPassword,
-      };
+      _isPasswordRecoveryMode = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    final email = userEmail;
+    if (email.isEmpty) {
+      throw Exception('Bạn chưa đăng nhập.');
+    }
+    if (newPassword.length < 6) {
+      throw Exception('Mật khẩu mới phải có ít nhất 6 ký tự.');
     }
 
     if (_supabaseClient != null) {
       try {
+        // 1. Xác thực lại mật khẩu hiện tại để bảo mật
+        await _supabaseClient!.auth.signInWithPassword(
+          email: email,
+          password: currentPassword,
+        );
+
+        // 2. Cập nhật mật khẩu mới lên Supabase
         await _supabaseClient!.auth.updateUser(
           UserAttributes(password: newPassword),
         );
       } catch (e) {
-        debugPrint('Bỏ qua lỗi phiên làm việc Supabase khi cập nhật mật khẩu: $e');
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('invalid login credentials') ||
+            errStr.contains('invalid_grant')) {
+          throw Exception('Mật khẩu hiện tại không chính xác.');
+        }
+        rethrow;
       }
     }
-
-    // Đổi mật khẩu thành công, thu hồi quyền đổi mật khẩu của email này
-    _verifiedResetEmails.remove(key);
-
-    await _saveState();
     notifyListeners();
   }
 
   Future<void> updateProfile(String newName) async {
     _userName = newName;
-    if (_userEmail != null) {
-      final key = _userEmail!.trim().toLowerCase();
-      if (_registeredUsers.containsKey(key)) {
-        _registeredUsers[key]!['name'] = newName;
-      } else {
-        _registeredUsers[key] = {
-          'name': newName,
-          'password': '',
-        };
-      }
-    }
-    await _saveState();
-    notifyListeners();
-  }
-
-  Future<void> updateActiveRole(String role) async {
-    if (role != 'student' && role != 'teacher') {
-      throw ArgumentError.value(role, 'role');
-    }
-    _activeRole = role;
     await _saveState();
     final userId = _user?.id;
-    if (_supabaseClient != null && userId != null) {
+    if (_supabaseClient != null) {
       try {
-        await SupabaseRetryHelper.run(() async {
-          await _supabaseClient!.from('profiles').upsert({
-            'id': userId,
-            'active_role': role,
-            'display_name': userName,
-            'updated_at': DateTime.now().toIso8601String(),
+        await _supabaseClient!.auth.updateUser(
+          UserAttributes(data: {'full_name': newName}),
+        );
+        if (userId != null) {
+          await SupabaseRetryHelper.run(() async {
+            await _supabaseClient!.from('profiles').upsert({
+              'id': userId,
+              'display_name': newName,
+              'updated_at': DateTime.now().toIso8601String(),
+            });
           });
-        });
-      } catch (error) {
-        debugPrint('Không thể đồng bộ vai trò: $error');
+        }
+      } catch (e) {
+        debugPrint('Lỗi cập nhật hồ sơ người dùng: $e');
       }
     }
     notifyListeners();
@@ -546,40 +387,21 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> updateAvatar(String avatarDataUrl) async {
     _userAvatarUrl = avatarDataUrl;
-    if (_userEmail != null) {
-      final key = _userEmail!.trim().toLowerCase();
-      if (_registeredUsers.containsKey(key)) {
-        _registeredUsers[key]!['avatar'] = avatarDataUrl;
-      } else {
-        _registeredUsers[key] = {
-          'name': userName,
-          'password': '',
-          'avatar': avatarDataUrl,
-        };
+    await _saveState();
+    final userId = _user?.id;
+    if (_supabaseClient != null && userId != null) {
+      try {
+        await SupabaseRetryHelper.run(() async {
+          await _supabaseClient!.from('profiles').upsert({
+            'id': userId,
+            'avatar_url': avatarDataUrl,
+            'updated_at': DateTime.now().toIso8601String(),
+          });
+        });
+      } catch (e) {
+        debugPrint('Lỗi cập nhật ảnh đại diện: $e');
       }
     }
-    await _saveState();
-    notifyListeners();
-  }
-
-  Future<void> changePassword(String currentPassword, String newPassword) async {
-    if (_userEmail == null) {
-      throw Exception('Bạn chưa đăng nhập.');
-    }
-    final key = _userEmail!.trim().toLowerCase();
-    if (_registeredUsers.containsKey(key)) {
-      final savedPassword = _registeredUsers[key]!['password'];
-      if (savedPassword != null && savedPassword.isNotEmpty && savedPassword != currentPassword) {
-        throw Exception('Mật khẩu hiện tại không chính xác.');
-      }
-      _registeredUsers[key]!['password'] = newPassword;
-    } else {
-      _registeredUsers[key] = {
-        'name': userName,
-        'password': newPassword,
-      };
-    }
-    await _saveState();
     notifyListeners();
   }
 
@@ -587,6 +409,8 @@ class AuthProvider extends ChangeNotifier {
     _userName = null;
     _userEmail = null;
     _userAvatarUrl = null;
+    _user = null;
+    _isPasswordRecoveryMode = false;
     await _supabaseClient?.auth.signOut();
     await _saveState();
     notifyListeners();
