@@ -21,6 +21,9 @@ class LiveLeaderboardView extends StatefulWidget {
 }
 
 class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
+  static const double _leaderboardRowHeight = 54;
+  static const Duration _reorderDuration = Duration(milliseconds: 650);
+
   List<RoomLeaderboardEntry> _entries = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -39,6 +42,18 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
     if (widget.autoRefresh) {
       _refreshTimer = Timer.periodic(const Duration(seconds: 3), (_) {
         if (mounted) _fetchLeaderboard(silent: true);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant LiveLeaderboardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialEntries != null &&
+        widget.initialEntries != oldWidget.initialEntries) {
+      setState(() {
+        _entries = widget.initialEntries!;
+        _isLoading = false;
       });
     }
   }
@@ -101,7 +116,10 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
             children: [
               const Icon(Icons.error_outline, color: AppTheme.error, size: 36),
               const SizedBox(height: 12),
-              Text(_errorMessage!, style: const TextStyle(color: AppTheme.error)),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: AppTheme.error),
+              ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: () => _fetchLeaderboard(),
@@ -120,7 +138,11 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
         alignment: Alignment.center,
         child: const Column(
           children: [
-            Icon(Icons.emoji_events_outlined, size: 48, color: AppTheme.textSecondary),
+            Icon(
+              Icons.emoji_events_outlined,
+              size: 48,
+              color: AppTheme.textSecondary,
+            ),
             SizedBox(height: 12),
             Text(
               'Chưa có dữ liệu bảng xếp hạng',
@@ -161,28 +183,102 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
-                    const SizedBox(width: 44, child: Text('HẠNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-                    const Expanded(flex: 3, child: Text('THÍ SINH', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-                    const Expanded(flex: 2, child: Text('TRẠNG THÁI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-                    const Expanded(flex: 2, child: Text('CÂU ĐÚNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-                    const Expanded(flex: 2, child: Text('THỜI GIAN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
-                    const SizedBox(width: 60, child: Text('ĐIỂM', textAlign: TextAlign.right, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textSecondary))),
+                    const SizedBox(
+                      width: 44,
+                      child: Text(
+                        'HẠNG',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      flex: 3,
+                      child: Text(
+                        'THÍ SINH',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      flex: 2,
+                      child: Text(
+                        'TRẠNG THÁI',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      flex: 2,
+                      child: Text(
+                        'CÂU ĐÚNG',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const Expanded(
+                      flex: 2,
+                      child: Text(
+                        'THỜI GIAN',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 60,
+                      child: Text(
+                        'ĐIỂM',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
               const Divider(height: 1, color: AppTheme.border),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _entries.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: AppTheme.border),
-                itemBuilder: (context, index) {
-                  final entry = _entries[index];
-                  return _buildLeaderboardRow(entry);
-                },
+              SizedBox(
+                height: _entries.length * _leaderboardRowHeight,
+                child: Stack(
+                  children: [
+                    for (var index = 0; index < _entries.length; index++)
+                      AnimatedPositioned(
+                        key: ValueKey(
+                          'leaderboard-position-${_entries[index].participantId}',
+                        ),
+                        duration: _reorderDuration,
+                        curve: Curves.easeInOutCubic,
+                        top: index * _leaderboardRowHeight,
+                        left: 0,
+                        right: 0,
+                        height: _leaderboardRowHeight,
+                        child: _AnimatedLeaderboardRow(entry: _entries[index]),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -200,21 +296,38 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (top2 != null) Expanded(child: _buildPodiumItem(top2, 2, const Color(0xFFC0C0C0), 140)),
-        if (top1 != null) Expanded(child: _buildPodiumItem(top1, 1, const Color(0xFFFFD700), 165)),
-        if (top3 != null) Expanded(child: _buildPodiumItem(top3, 3, const Color(0xFFCD7F32), 125)),
+        if (top2 != null)
+          Expanded(
+            child: _buildPodiumItem(top2, 2, const Color(0xFFC0C0C0), 140),
+          ),
+        if (top1 != null)
+          Expanded(
+            child: _buildPodiumItem(top1, 1, const Color(0xFFFFD700), 165),
+          ),
+        if (top3 != null)
+          Expanded(
+            child: _buildPodiumItem(top3, 3, const Color(0xFFCD7F32), 125),
+          ),
       ],
     );
   }
 
-  Widget _buildPodiumItem(RoomLeaderboardEntry entry, int rank, Color medalColor, double height) {
+  Widget _buildPodiumItem(
+    RoomLeaderboardEntry entry,
+    int rank,
+    Color medalColor,
+    double height,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: medalColor.withValues(alpha: 0.5), width: 1.5),
+        border: Border.all(
+          color: medalColor.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: medalColor.withValues(alpha: 0.1),
@@ -244,7 +357,13 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
           const SizedBox(height: 4),
           Text(
             '${entry.score.toStringAsFixed(1)} đ',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: medalColor == const Color(0xFFFFD700) ? AppTheme.primary : AppTheme.textMain),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: medalColor == const Color(0xFFFFD700)
+                  ? AppTheme.primary
+                  : AppTheme.textMain,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
@@ -255,21 +374,69 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
       ),
     );
   }
+}
 
-  Widget _buildLeaderboardRow(RoomLeaderboardEntry entry) {
+class _AnimatedLeaderboardRow extends StatefulWidget {
+  const _AnimatedLeaderboardRow({required this.entry});
+
+  final RoomLeaderboardEntry entry;
+
+  @override
+  State<_AnimatedLeaderboardRow> createState() =>
+      _AnimatedLeaderboardRowState();
+}
+
+class _AnimatedLeaderboardRowState extends State<_AnimatedLeaderboardRow> {
+  Timer? _highlightTimer;
+  bool _highlighted = false;
+
+  @override
+  void didUpdateWidget(covariant _AnimatedLeaderboardRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final improved =
+        widget.entry.correctCount > oldWidget.entry.correctCount ||
+        widget.entry.rank < oldWidget.entry.rank;
+    if (improved) {
+      _highlightTimer?.cancel();
+      setState(() => _highlighted = true);
+      _highlightTimer = Timer(const Duration(milliseconds: 900), () {
+        if (mounted) setState(() => _highlighted = false);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _highlightTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
     Color? rankBadgeColor;
     if (entry.rank == 1) rankBadgeColor = const Color(0xFFFFD700);
     if (entry.rank == 2) rankBadgeColor = const Color(0xFFC0C0C0);
     if (entry.rank == 3) rankBadgeColor = const Color(0xFFCD7F32);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    return AnimatedContainer(
+      key: ValueKey('leaderboard-row-${entry.participantId}'),
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+      decoration: BoxDecoration(
+        color: _highlighted
+            ? AppTheme.success.withValues(alpha: 0.12)
+            : Colors.white,
+        border: const Border(bottom: BorderSide(color: AppTheme.border)),
+      ),
       child: Row(
         children: [
           SizedBox(
             width: 44,
             child: rankBadgeColor != null
-                ? Container(
+                ? AnimatedContainer(
+                    duration: const Duration(milliseconds: 350),
                     width: 24,
                     height: 24,
                     alignment: Alignment.center,
@@ -277,14 +444,25 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
                       color: rankBadgeColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      '${entry.rank}',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        '${entry.rank}',
+                        key: ValueKey(entry.rank),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   )
                 : Text(
                     '#${entry.rank}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
           ),
           Expanded(
@@ -311,7 +489,9 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: entry.isSubmitted ? AppTheme.success : AppTheme.primary,
+                    color: entry.isSubmitted
+                        ? AppTheme.success
+                        : AppTheme.primary,
                   ),
                 ),
               ),
@@ -319,24 +499,41 @@ class _LiveLeaderboardViewState extends State<LiveLeaderboardView> {
           ),
           Expanded(
             flex: 2,
-            child: Text(
-              '${entry.correctCount}/${entry.totalQuestions}',
-              style: const TextStyle(fontSize: 13),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: entry.correctCount.toDouble()),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              builder: (_, value, __) => Text(
+                '${value.round()}/${entry.totalQuestions}',
+                style: const TextStyle(fontSize: 13),
+              ),
             ),
           ),
           Expanded(
             flex: 2,
             child: Text(
               entry.durationFormatted,
-              style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
             ),
           ),
           SizedBox(
             width: 60,
-            child: Text(
-              '${entry.score.toStringAsFixed(1)}',
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.primary),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: entry.score),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              builder: (_, value, __) => Text(
+                value.toStringAsFixed(1),
+                textAlign: TextAlign.right,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: AppTheme.primary,
+                ),
+              ),
             ),
           ),
         ],

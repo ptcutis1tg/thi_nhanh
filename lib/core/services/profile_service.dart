@@ -322,6 +322,11 @@ class ProfileService {
 
       final averageScore = completedTestsCount > 0 ? sumScore / completedTestsCount : 0.0;
 
+      final top3Raw = await SupabaseRetryHelper.run(
+        () => client.rpc('current_student_top3_attempt_ids'),
+      );
+      final top3AttemptIds = ((top3Raw as List<dynamic>?) ?? const []).map((id) => id.toString()).toSet();
+
       // Calculate Streak (consecutive days with submitted attempts)
       int streakDays = 0;
       if (submittedAttempts.isNotEmpty) {
@@ -379,7 +384,7 @@ class ProfileService {
         }
         return false;
       });
-      final hasTop3 = submittedAttempts.any((a) => (a['score'] as num).toDouble() >= 8.5);
+      final hasTop3 = submittedAttempts.any((a) => top3AttemptIds.contains(a['id'].toString()));
 
       final achievements = [
         AchievementItemData(
@@ -406,7 +411,7 @@ class ProfileService {
         AchievementItemData(
           icon: '🥉',
           title: 'Top 3',
-          description: 'Đạt điểm từ 8.5 trở lên',
+          description: 'Xếp hạng trong top 3 của một phòng thi',
           bgColorHex: 0xFFF3F4F6,
           isUnlocked: hasTop3,
         ),
@@ -460,6 +465,68 @@ class ProfileService {
   }
 
   /// Fetch Teacher Profile Data
+  static Future<TeacherProfileData> fetchTeacherDataSecure() async {
+    final client = _client;
+    if (client == null || client.auth.currentUser == null) return TeacherProfileData.empty();
+    try {
+      final raw = await SupabaseRetryHelper.run(() => client.rpc('teacher_profile_payload'));
+      final payload = Map<String, dynamic>.from(raw as Map);
+      final recentRooms = ((payload['recentRooms'] as List<dynamic>?) ?? const []).map((item) {
+        final room = Map<String, dynamic>.from(item as Map);
+        final status = room['status']?.toString() ?? 'waiting';
+        final createdAt = DateTime.tryParse(room['createdAt']?.toString() ?? '')?.toLocal();
+        return TeacherRoomData(
+          id: room['id'].toString(),
+          title: room['title']?.toString() ?? 'Phòng thi',
+          roomCode: room['roomCode']?.toString() ?? '',
+          date: createdAt == null ? 'Mới tạo' : '${createdAt.day.toString().padLeft(2, '0')}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.year}',
+          studentsCount: (room['studentsCount'] as num?)?.toInt() ?? 0,
+          statusLabel: status == 'live' ? 'Đang diễn ra' : (status == 'closed' ? 'Đã kết thúc' : 'Đang chờ'),
+          statusType: status == 'live' ? 'live' : (status == 'closed' ? 'ended' : 'upcoming'),
+        );
+      }).toList();
+      final recentExams = ((payload['recentExams'] as List<dynamic>?) ?? const []).map((item) {
+        final exam = Map<String, dynamic>.from(item as Map);
+        final updatedAt = DateTime.tryParse(exam['updatedAt']?.toString() ?? '')?.toLocal();
+        final updated = updatedAt == null ? 'Vừa xong' : '${updatedAt.day.toString().padLeft(2, '0')}/${updatedAt.month.toString().padLeft(2, '0')}/${updatedAt.year}';
+        return TeacherExamSetData(
+          id: exam['id'].toString(),
+          title: exam['title']?.toString() ?? 'Đề thi',
+          details: '${(exam['questionCount'] as num?)?.toInt() ?? 0} câu • ${(exam['durationMinutes'] as num?)?.toInt() ?? 0} phút • ${(exam['attemptCount'] as num?)?.toInt() ?? 0} lượt thi • Cập nhật $updated',
+        );
+      }).toList();
+      final average = ((payload['studentAverageScore'] as num?) ?? 0).toDouble();
+      final completion = ((payload['completionRate'] as num?) ?? 0).toDouble();
+      final busiest = ((payload['busiestRoomCount'] as num?) ?? 0).toInt();
+      final insights = <String>[
+        if (average > 0) '📈 Điểm trung bình của các phòng thi hiện đạt ${average.toStringAsFixed(1)} điểm.',
+        if (completion > 0) '🎯 Tỷ lệ học sinh hoàn thành bài thi đạt ${completion.toStringAsFixed(0)}%.',
+        if (busiest > 0) '👥 Phòng thi đông nhất của bạn thu hút $busiest học sinh tham gia.',
+      ];
+      return TeacherProfileData(
+        createdExamsCount: ((payload['createdExamsCount'] as num?) ?? 0).toInt(),
+        createdRoomsCount: ((payload['createdRoomsCount'] as num?) ?? 0).toInt(),
+        totalParticipants: ((payload['totalParticipants'] as num?) ?? 0).toInt(),
+        studentAverageScore: average,
+        chartValues: ((payload['chartValues'] as List<dynamic>?) ?? const []).map((value) => (value as num).toDouble()).toList(),
+        chartLabels: ((payload['chartLabels'] as List<dynamic>?) ?? const []).map((value) => value.toString()).toList(),
+        busiestRoomCount: busiest,
+        completionRate: completion,
+        totalQuestionsCount: ((payload['totalQuestionsCount'] as num?) ?? 0).toInt(),
+        overallCorrectRate: ((payload['overallCorrectRate'] as num?) ?? 0).toDouble(),
+        hardestQuestionInfo: payload['hardestQuestionInfo']?.toString() ?? 'Chưa có dữ liệu trả lời',
+        mostPopularExamInfo: payload['mostPopularExamInfo']?.toString() ?? 'Chưa có lượt thi',
+        recentRooms: recentRooms,
+        recentExams: recentExams,
+        teachingInsights: insights,
+      );
+    } catch (e) {
+      debugPrint('Lỗi tải dữ liệu giáo viên an toàn: $e');
+      return TeacherProfileData.empty();
+    }
+  }
+
+  /// Legacy direct-table implementation kept for compatibility with older tests.
   static Future<TeacherProfileData> fetchTeacherData({
     required String? userId,
     required String? userEmail,

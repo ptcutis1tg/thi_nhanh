@@ -24,20 +24,7 @@ class _TeacherStudentResultsScreenState extends State<TeacherStudentResultsScree
     setState(() => _isLoading = true);
     try {
       final client = Supabase.instance.client;
-      final res = await client
-          .from('attempts')
-          .select('''
-            id,
-            guest_name,
-            score,
-            status,
-            submitted_at,
-            exams (
-              title
-            )
-          ''')
-          .eq('status', 'submitted')
-          .order('submitted_at', ascending: false);
+      final res = await client.rpc('teacher_student_results');
 
       if (mounted) {
         setState(() {
@@ -120,9 +107,8 @@ class _TeacherStudentResultsScreenState extends State<TeacherStudentResultsScree
                           separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF0ECFF)),
                           itemBuilder: (context, index) {
                             final sub = _submissions[index];
-                            final examMap = sub['exams'] as Map<String, dynamic>?;
-                            final examTitle = examMap?['title'] as String? ?? 'Bài kiểm tra';
-                            final studentName = sub['guest_name'] as String? ?? 'Học sinh';
+                            final examTitle = sub['examTitle'] as String? ?? 'Bài kiểm tra';
+                            final studentName = sub['studentName'] as String? ?? 'Học sinh';
                             final score = (sub['score'] as num?)?.toDouble() ?? 0.0;
 
                             return ListTile(

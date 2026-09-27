@@ -1,19 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/models/assessment.dart';
+import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
 class ResultScreen extends StatefulWidget {
-  final double? score;
-  final int? total;
-  final int? correct;
-  final int? wrong;
-  final int? skipped;
-  final String? title;
-  final String? attemptId;
-  final String? roomId;
-
   const ResultScreen({
     super.key,
     this.score,
@@ -26,250 +22,466 @@ class ResultScreen extends StatefulWidget {
     this.roomId,
   });
 
+  final double? score;
+  final int? total;
+  final int? correct;
+  final int? wrong;
+  final int? skipped;
+  final String? title;
+  final String? attemptId;
+  final String? roomId;
+
   @override
   State<ResultScreen> createState() => _ResultScreenState();
 }
 
 class _ResultScreenState extends State<ResultScreen> {
   bool _isLoading = false;
-
-  double _finalScore = 0.0;
-  int _totalQuestions = 0;
-  int _correctCount = 0;
-  int _wrongCount = 0;
-  int _skippedCount = 0;
-  String _examTitle = 'Bài thi vừa hoàn thành';
-  int _rank = 1;
+  String? _error;
+  AttemptReviewPayload? _review;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _initData();
-  }
-
-  Future<void> _initData() async {
-    if (widget.score != null) {
-      setState(() {
-        _finalScore = widget.score!;
-        _totalQuestions = widget.total ?? 10;
-        _correctCount = widget.correct ?? (_finalScore / 10 * _totalQuestions).round();
-        _wrongCount = widget.wrong ?? (_totalQuestions - _correctCount);
-        _skippedCount = widget.skipped ?? 0;
-        _examTitle = widget.title ?? 'Bài thi vừa hoàn thành';
-      });
-    } else {
-      // Query latest submitted attempt from Supabase
-      setState(() => _isLoading = true);
-      try {
-        final client = Supabase.instance.client;
-        final res = await client
-            .from('attempts')
-            .select('score, started_at, submitted_at, exams(title)')
-            .eq('status', 'submitted')
-            .order('submitted_at', ascending: false)
-            .limit(1)
-            .maybeSingle();
-
-        if (mounted && res != null) {
-          final scoreVal = (res['score'] as num?)?.toDouble() ?? 8.5;
-          final examMap = res['exams'] as Map<String, dynamic>?;
-          final titleStr = examMap?['title'] as String? ?? 'Bài thi vừa hoàn thành';
-
-          setState(() {
-            _finalScore = scoreVal;
-            _examTitle = titleStr;
-            _totalQuestions = 10;
-            _correctCount = (scoreVal / 10 * 10).round();
-            _wrongCount = 10 - _correctCount;
-            _skippedCount = 0;
-            _isLoading = false;
-          });
-        } else {
-          if (mounted) setState(() => _isLoading = false);
-        }
-      } catch (e) {
-        if (mounted) setState(() => _isLoading = false);
-      }
+    if (widget.attemptId != null && widget.attemptId!.isNotEmpty) {
+      _loadReview();
     }
   }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadReview({bool silent = false}) async {
+    if (!silent) setState(() => _isLoading = true);
+    try {
+      final review = await context.read<AssessmentRepository>().loadReview(
+        widget.attemptId!,
+      );
+      if (!mounted) return;
+      setState(() {
+        _review = review;
+        _error = null;
+        _isLoading = false;
+      });
+      if (!review.resultReleased && review.roomId != null) {
+        _refreshTimer ??= Timer.periodic(
+          const Duration(seconds: 5),
+          (_) => _loadReview(silent: true),
+        );
+      } else {
+        _refreshTimer?.cancel();
+        _refreshTimer = null;
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  bool get _usesLegacyData =>
+      widget.attemptId == null || widget.attemptId!.isEmpty;
+  double get _score => _review?.score ?? widget.score ?? 0;
+  int get _total => _review?.totalQuestions ?? widget.total ?? 0;
+  int get _correct => _review?.correctCount ?? widget.correct ?? 0;
+  int get _wrong => _review?.wrongCount ?? widget.wrong ?? 0;
+  int get _skipped => _review?.skippedCount ?? widget.skipped ?? 0;
+  String get _title =>
+      _review?.title ?? widget.title ?? 'Bài thi vừa hoàn thành';
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(
         appBar: TopNavBar(),
-        backgroundColor: AppTheme.background,
         body: Center(child: CircularProgressIndicator()),
       );
     }
+    if (_error != null && _review == null) {
+      return Scaffold(
+        appBar: const TopNavBar(),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: AppTheme.error, size: 48),
+              const SizedBox(height: 12),
+              const Text('Không tải được kết quả bài thi.'),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: _loadReview,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (!_usesLegacyData && _review != null && !_review!.resultReleased)
+      return _buildWaitingResult();
 
     return Scaffold(
       appBar: const TopNavBar(),
       backgroundColor: AppTheme.background,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Column(
-              children: [
-                _buildCongratulationCard(),
-                const SizedBox(height: 32),
-                _buildDetailedStats(),
-                const SizedBox(height: 32),
-                _buildActionButtons(context),
-              ],
+      body: RefreshIndicator(
+        onRefresh: widget.attemptId == null ? () async {} : _loadReview,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 960),
+                child: Column(
+                  children: [
+                    _buildScoreCard(),
+                    const SizedBox(height: 24),
+                    _buildStats(),
+                    if (_review != null) ...[
+                      const SizedBox(height: 24),
+                      _buildAttemptDetails(),
+                      if (_review!.questions.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        _buildQuestionReview(),
+                      ],
+                    ],
+                    const SizedBox(height: 28),
+                    _buildActions(),
+                  ],
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildCongratulationCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(48),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: const Border(top: BorderSide(color: AppTheme.primary, width: 8)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(
-              color: AppTheme.success.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Icon(Icons.workspace_premium, color: AppTheme.success, size: 48),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Chúc mừng bạn đã hoàn thành bài thi!',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _examTitle,
-            style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          
-          // Score Circle
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.primary, width: 8),
-            ),
-            alignment: Alignment.center,
-            padding: const EdgeInsets.all(8),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
+  Widget _buildWaitingResult() {
+    final review = _review!;
+    return Scaffold(
+      appBar: const TopNavBar(),
+      backgroundColor: AppTheme.background,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 620),
+          child: Card(
+            margin: const EdgeInsets.all(24),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text('Điểm số', style: TextStyle(color: AppTheme.textSecondary, fontSize: 14)),
-                  Text(
-                    _finalScore.toStringAsFixed(1),
-                    style: const TextStyle(fontSize: 44, fontWeight: FontWeight.bold, color: AppTheme.primary, height: 1.1),
+                  const Icon(
+                    Icons.hourglass_top_rounded,
+                    color: AppTheme.primary,
+                    size: 64,
                   ),
-                  const Text('/10', style: TextStyle(fontSize: 14, color: AppTheme.textSecondary, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Đã nộp bài thành công',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    review.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppTheme.textSecondary),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Giáo viên chưa công bố kết quả. Điểm và lời giải sẽ tự động xuất hiện khi phòng thi kết thúc.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Đã trả lời ${review.answeredCount}/${review.totalQuestions} câu • ${review.durationFormatted}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _loadReview(),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Kiểm tra kết quả'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => context.go('/home'),
+                        icon: const Icon(Icons.home),
+                        label: const Text('Về trang chủ'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildDetailedStats() {
-    return Row(
-      children: [
-        Expanded(child: _buildStatCard(Icons.check_circle, AppTheme.success, 'Câu đúng', '$_correctCount', 'câu')),
-        const SizedBox(width: 16),
-        Expanded(child: _buildStatCard(Icons.cancel, AppTheme.warning, 'Câu sai', '$_wrongCount', 'câu')),
-        const SizedBox(width: 16),
-        Expanded(child: _buildStatCard(Icons.help, AppTheme.textSecondary, 'Bỏ qua', '$_skippedCount', 'câu')),
-        const SizedBox(width: 16),
-        Expanded(child: _buildStatCard(Icons.leaderboard, AppTheme.primary, 'Xếp hạng', '#$_rank', '')),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(IconData icon, Color color, String label, String value, String unit) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
-      ),
+  Widget _buildScoreCard() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
+          const Icon(
+            Icons.workspace_premium,
+            color: AppTheme.success,
+            size: 56,
+          ),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              if (unit.isNotEmpty) ...[
-                const SizedBox(width: 4),
-                Text(unit, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
-              ],
-            ],
+          const Text(
+            'Chúc mừng bạn đã hoàn thành bài thi!',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            _title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 22),
+          Semantics(
+            label: 'Điểm số ${_score.toStringAsFixed(2)} trên 10',
+            child: CircleAvatar(
+              radius: 72,
+              backgroundColor: AppTheme.primary,
+              child: CircleAvatar(
+                radius: 64,
+                backgroundColor: Colors.white,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Điểm số',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    Text(
+                      _score.toStringAsFixed(2),
+                      style: const TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    const Text(
+                      '/10',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (_review != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              '${_review!.earnedPoints.toStringAsFixed(2)}/${_review!.totalPoints.toStringAsFixed(2)} điểm trọng số',
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+
+  Widget _buildStats() => Wrap(
+    spacing: 12,
+    runSpacing: 12,
+    alignment: WrapAlignment.center,
+    children: [
+      _stat(Icons.check_circle, AppTheme.success, 'Câu đúng', '$_correct'),
+      _stat(Icons.cancel, AppTheme.warning, 'Câu sai', '$_wrong'),
+      _stat(Icons.help, AppTheme.textSecondary, 'Bỏ qua', '$_skipped'),
+      if (_review?.rank != null)
+        _stat(
+          Icons.leaderboard,
+          AppTheme.primary,
+          'Xếp hạng',
+          '#${_review!.rank}/${_review!.participantCount ?? '-'}',
+        ),
+    ],
+  );
+
+  Widget _stat(
+    IconData icon,
+    Color color,
+    String label,
+    String value,
+  ) => SizedBox(
+    width: 210,
+    child: Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 8),
+            Text(label, style: const TextStyle(color: AppTheme.textSecondary)),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildAttemptDetails() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Wrap(
+        spacing: 32,
+        runSpacing: 16,
+        alignment: WrapAlignment.spaceAround,
+        children: [
+          _detail(
+            Icons.quiz_outlined,
+            'Đã trả lời',
+            '${_review!.answeredCount}/$_total câu',
+          ),
+          _detail(
+            Icons.timer_outlined,
+            'Thời gian làm bài',
+            _review!.durationFormatted,
+          ),
+          _detail(
+            Icons.check_circle_outline,
+            'Trạng thái',
+            _review!.status == 'expired' ? 'Hết giờ tự nộp' : 'Đã nộp',
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
 
-  Widget _buildActionButtons(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _detail(IconData icon, String label, String value) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: AppTheme.primary),
+      const SizedBox(width: 8),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    ],
+  );
+
+  Widget _buildQuestionReview() => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Xem lại bài làm',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Mở từng câu để xem đáp án và lời giải.',
+            style: TextStyle(color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 12),
+          ..._review!.questions.map(_questionTile),
+        ],
+      ),
+    ),
+  );
+
+  Widget _questionTile(ReviewQuestion question) {
+    final color = question.isCorrect
+        ? AppTheme.success
+        : (question.isSkipped ? AppTheme.textSecondary : AppTheme.warning);
+    final status = question.isCorrect
+        ? 'Đúng'
+        : (question.isSkipped ? 'Bỏ qua' : 'Sai');
+    return ExpansionTile(
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(.12),
+        child: Text('${question.position}', style: TextStyle(color: color)),
+      ),
+      title: Text('Câu ${question.position} • $status'),
+      subtitle: Text('+${question.earnedPoints}/${question.points} điểm'),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       children: [
-        OutlinedButton.icon(
-          onPressed: () {
-            context.go('/student/history');
-          },
-          icon: const Icon(Icons.history),
-          label: const Text('Xem lịch sử thi'),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            question.body,
+            style: const TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
-        const SizedBox(width: 16),
-        ElevatedButton.icon(
-          onPressed: () {
-            context.go('/home');
-          },
-          icon: const Icon(Icons.home),
-          label: const Text('Về trang chủ'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        const SizedBox(height: 12),
+        ...question.options.map((option) {
+          final selected = option.id == question.selectedOptionId;
+          final optionColor = option.isCorrect
+              ? AppTheme.success
+              : (selected ? AppTheme.warning : AppTheme.textSecondary);
+          return ListTile(
+            dense: true,
+            leading: Icon(
+              option.isCorrect
+                  ? Icons.check_circle
+                  : (selected ? Icons.cancel : Icons.radio_button_unchecked),
+              color: optionColor,
+            ),
+            title: Text(option.body),
+            trailing: selected ? const Text('Bạn chọn') : null,
+          );
+        }),
+        if (question.explanation.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            color: AppTheme.primary.withOpacity(.06),
+            child: Text('Giải thích: ${question.explanation}'),
           ),
-        ),
       ],
     );
   }
-}
 
+  Widget _buildActions() => Wrap(
+    spacing: 12,
+    runSpacing: 12,
+    alignment: WrapAlignment.center,
+    children: [
+      OutlinedButton.icon(
+        onPressed: () => context.go('/student/history'),
+        icon: const Icon(Icons.history),
+        label: const Text('Xem lịch sử thi'),
+      ),
+      if (widget.roomId != null)
+        OutlinedButton.icon(
+          onPressed: () => context.go('/student/leaderboard'),
+          icon: const Icon(Icons.leaderboard),
+          label: const Text('Bảng xếp hạng'),
+        ),
+      ElevatedButton.icon(
+        onPressed: () => context.go('/home'),
+        icon: const Icon(Icons.home),
+        label: const Text('Về trang chủ'),
+      ),
+    ],
+  );
+}

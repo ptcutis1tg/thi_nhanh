@@ -67,11 +67,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       userEmail: authProvider.userEmail,
       userName: authProvider.userName,
     );
-    final teacherDataFuture = ProfileService.fetchTeacherData(
-      userId: authProvider.user?.id,
-      userEmail: authProvider.userEmail,
-      userName: authProvider.userName,
-    );
+    final teacherDataFuture = ProfileService.fetchTeacherDataSecure();
 
     final results = await Future.wait([studentDataFuture, teacherDataFuture]);
     if (mounted) {
@@ -933,7 +929,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       title: t.title,
                       authorName: 'Điểm: ${t.score} • ${t.date}',
                       type: ExamCardType.exam,
-                      onTap: () => context.go('/exam/physics-12'),
+                      onTap: () => context.go('/result?attemptId=${Uri.encodeComponent(t.id)}'),
                     ),
                   );
                 },
@@ -972,7 +968,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       title: r.title,
                       authorName: 'Mã PT: ${r.roomCode} • ${r.studentsCount} HS',
                       type: ExamCardType.room,
-                      onTap: () => context.go('/teacher_waiting_room'),
+                      onTap: () => context.go('/teacher_waiting_room?roomId=${Uri.encodeComponent(r.id)}'),
                     ),
                   );
                 },

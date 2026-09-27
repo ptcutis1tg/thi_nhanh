@@ -4,7 +4,9 @@ import 'package:onthi_community/core/repositories/room_repository.dart';
 import 'package:onthi_community/screens/room/widgets/live_leaderboard_view.dart';
 
 void main() {
-  testWidgets('renders LiveLeaderboardView with podium and entries', (tester) async {
+  testWidgets('renders LiveLeaderboardView with podium and entries', (
+    tester,
+  ) async {
     final entries = [
       const RoomLeaderboardEntry(
         rank: 1,
@@ -50,4 +52,67 @@ void main() {
     expect(find.text('9.0 đ'), findsOneWidget);
     expect(find.text('Đã nộp'), findsWidgets);
   });
+
+  testWidgets('animates rows when live ranks change', (tester) async {
+    final key = GlobalKey<_LeaderboardHarnessState>();
+    await tester.pumpWidget(MaterialApp(home: _LeaderboardHarness(key: key)));
+    await tester.pumpAndSettle();
+
+    final firstRow = find.byKey(const ValueKey('leaderboard-row-p-1'));
+    final initialY = tester.getTopLeft(firstRow).dy;
+
+    key.currentState!.swapRanks();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 325));
+    final movingY = tester.getTopLeft(firstRow).dy;
+    await tester.pumpAndSettle();
+    final finalY = tester.getTopLeft(firstRow).dy;
+
+    expect(movingY, greaterThan(initialY));
+    expect(movingY, lessThan(finalY));
+  });
+}
+
+class _LeaderboardHarness extends StatefulWidget {
+  const _LeaderboardHarness({super.key});
+
+  @override
+  State<_LeaderboardHarness> createState() => _LeaderboardHarnessState();
+}
+
+class _LeaderboardHarnessState extends State<_LeaderboardHarness> {
+  var entries = _entries(swapped: false);
+
+  void swapRanks() => setState(() => entries = _entries(swapped: true));
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: LiveLeaderboardView(
+      roomId: 'room-1',
+      initialEntries: entries,
+      autoRefresh: false,
+    ),
+  );
+}
+
+List<RoomLeaderboardEntry> _entries({required bool swapped}) {
+  final first = RoomLeaderboardEntry(
+    rank: swapped ? 2 : 1,
+    participantId: 'p-1',
+    name: 'Học sinh 1',
+    status: 'in_progress',
+    score: swapped ? 1 : 0,
+    correctCount: swapped ? 1 : 0,
+    totalQuestions: 10,
+  );
+  final second = RoomLeaderboardEntry(
+    rank: swapped ? 1 : 2,
+    participantId: 'p-2',
+    name: 'Học sinh 2',
+    status: 'in_progress',
+    score: swapped ? 2 : 0,
+    correctCount: swapped ? 2 : 0,
+    totalQuestions: 10,
+  );
+  return swapped ? [second, first] : [first, second];
 }

@@ -16,7 +16,8 @@ class RoomParticipant {
   final String status;
   final bool isSelf;
 
-  factory RoomParticipant.fromJson(Map<String, dynamic> json) => RoomParticipant(
+  factory RoomParticipant.fromJson(Map<String, dynamic> json) =>
+      RoomParticipant(
         id: json['id'] as String,
         name: json['name'] as String,
         status: json['status'] as String,
@@ -49,20 +50,26 @@ class TeacherRoomDashboard {
 
   bool get isWaiting => status == 'waiting';
   bool get isLive => status == 'live';
+  bool get isClosed => status == 'closed';
 
-  factory TeacherRoomDashboard.fromJson(Map<String, dynamic> json) => TeacherRoomDashboard(
-        id: json['id'] as String,
-        code: json['code'] as String,
-        name: json['name'] as String,
-        status: json['status'] as String,
-        examTitle: json['examTitle'] as String,
-        subject: json['subject'] as String,
-        durationMinutes: (json['durationMinutes'] as num).toInt(),
-        maxParticipants: (json['maxParticipants'] as num?)?.toInt() ?? 50,
-        participants: ((json['participants'] as List<dynamic>?) ?? const [])
-            .map((item) => RoomParticipant.fromJson(Map<String, dynamic>.from(item as Map)))
-            .toList(),
-      );
+  factory TeacherRoomDashboard.fromJson(
+    Map<String, dynamic> json,
+  ) => TeacherRoomDashboard(
+    id: json['id'] as String,
+    code: json['code'] as String,
+    name: json['name'] as String,
+    status: json['status'] as String,
+    examTitle: json['examTitle'] as String,
+    subject: json['subject'] as String,
+    durationMinutes: (json['durationMinutes'] as num).toInt(),
+    maxParticipants: (json['maxParticipants'] as num?)?.toInt() ?? 50,
+    participants: ((json['participants'] as List<dynamic>?) ?? const [])
+        .map(
+          (item) =>
+              RoomParticipant.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList(),
+  );
 }
 
 class StudentJoinResult {
@@ -97,7 +104,8 @@ class StudentJoinResult {
   bool get isWaiting => status == 'waiting';
   bool get isLive => status == 'live';
 
-  factory StudentJoinResult.fromJson(Map<String, dynamic> json) => StudentJoinResult(
+  factory StudentJoinResult.fromJson(Map<String, dynamic> json) =>
+      StudentJoinResult(
         roomId: json['roomId'] as String,
         participantId: json['participantId'] as String,
         code: json['code'] as String,
@@ -148,23 +156,28 @@ class StudentRoomState {
   bool get isLive => status == 'live';
   bool get isClosed => status == 'closed';
 
-  factory StudentRoomState.fromJson(Map<String, dynamic> json) => StudentRoomState(
-        roomId: json['roomId'] as String,
-        code: json['code'] as String,
-        name: json['name'] as String,
-        status: json['status'] as String,
-        examId: json['examId'] as String,
-        examTitle: json['examTitle'] as String,
-        subject: json['subject'] as String,
-        durationMinutes: (json['durationMinutes'] as num).toInt(),
-        teacherName: json['teacherName'] as String,
-        participantStatus: json['participantStatus'] as String,
-        participantCount: (json['participantCount'] as num?)?.toInt() ?? 0,
-        attemptId: json['attemptId'] as String?,
-        participants: ((json['participants'] as List<dynamic>?) ?? const [])
-            .map((item) => RoomParticipant.fromJson(Map<String, dynamic>.from(item as Map)))
-            .toList(),
-      );
+  factory StudentRoomState.fromJson(
+    Map<String, dynamic> json,
+  ) => StudentRoomState(
+    roomId: json['roomId'] as String,
+    code: json['code'] as String,
+    name: json['name'] as String,
+    status: json['status'] as String,
+    examId: json['examId'] as String,
+    examTitle: json['examTitle'] as String,
+    subject: json['subject'] as String,
+    durationMinutes: (json['durationMinutes'] as num).toInt(),
+    teacherName: json['teacherName'] as String,
+    participantStatus: json['participantStatus'] as String,
+    participantCount: (json['participantCount'] as num?)?.toInt() ?? 0,
+    attemptId: json['attemptId'] as String?,
+    participants: ((json['participants'] as List<dynamic>?) ?? const [])
+        .map(
+          (item) =>
+              RoomParticipant.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList(),
+  );
 }
 
 class RoomLeaderboardEntry {
@@ -199,7 +212,8 @@ class RoomLeaderboardEntry {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  factory RoomLeaderboardEntry.fromJson(Map<String, dynamic> json) => RoomLeaderboardEntry(
+  factory RoomLeaderboardEntry.fromJson(Map<String, dynamic> json) =>
+      RoomLeaderboardEntry(
         rank: (json['rank'] as num).toInt(),
         participantId: json['participantId'] as String,
         name: json['name'] as String,
@@ -223,26 +237,53 @@ class RoomRepository {
     int maxParticipants = 50,
   }) async {
     final result = await SupabaseRetryHelper.run(
-      () => _client.rpc('create_teacher_room', params: {
-        'p_exam_id': examId,
-        'p_name': name,
-        'p_password': password,
-        'p_max_participants': maxParticipants,
-      }),
+      () => _client.rpc(
+        'create_teacher_room',
+        params: {
+          'p_exam_id': examId,
+          'p_name': name,
+          'p_password': password,
+          'p_max_participants': maxParticipants,
+        },
+      ),
     );
     return dashboard(_map(result)['id'] as String);
   }
 
-  Future<TeacherRoomDashboard> dashboard(String roomId) async => TeacherRoomDashboard.fromJson(
-        _map(await SupabaseRetryHelper.run(
-          () => _client.rpc('teacher_room_dashboard', params: {'p_room_id': roomId}),
-        )),
+  Future<TeacherRoomDashboard> dashboard(String roomId) async =>
+      TeacherRoomDashboard.fromJson(
+        _map(
+          await SupabaseRetryHelper.run(
+            () => _client.rpc(
+              'teacher_room_dashboard',
+              params: {'p_room_id': roomId},
+            ),
+          ),
+        ),
       );
 
-  Future<TeacherRoomDashboard> start(String roomId) async => TeacherRoomDashboard.fromJson(
-        _map(await SupabaseRetryHelper.run(
-          () => _client.rpc('start_teacher_room', params: {'p_room_id': roomId}),
-        )),
+  Future<TeacherRoomDashboard> start(String roomId) async =>
+      TeacherRoomDashboard.fromJson(
+        _map(
+          await SupabaseRetryHelper.run(
+            () => _client.rpc(
+              'start_teacher_room',
+              params: {'p_room_id': roomId},
+            ),
+          ),
+        ),
+      );
+
+  Future<TeacherRoomDashboard> close(String roomId) async =>
+      TeacherRoomDashboard.fromJson(
+        _map(
+          await SupabaseRetryHelper.run(
+            () => _client.rpc(
+              'close_teacher_room',
+              params: {'p_room_id': roomId},
+            ),
+          ),
+        ),
       );
 
   Future<String?> findHostedRoomId(String code) async {
@@ -264,11 +305,14 @@ class RoomRepository {
     String? guestName,
   }) async {
     final result = await SupabaseRetryHelper.run(
-      () => _client.rpc('join_student_room', params: {
-        'p_code': code,
-        'p_password': password,
-        'p_guest_name': guestName,
-      }),
+      () => _client.rpc(
+        'join_student_room',
+        params: {
+          'p_code': code,
+          'p_password': password,
+          'p_guest_name': guestName,
+        },
+      ),
     );
     return StudentJoinResult.fromJson(_map(result));
   }
@@ -279,31 +323,37 @@ class RoomRepository {
     String? guestToken,
   }) async {
     final result = await SupabaseRetryHelper.run(
-      () => _client.rpc('get_student_room_state', params: {
-        'p_room_id': roomId,
-        'p_participant_id': participantId,
-        'p_guest_token': guestToken,
-      }),
+      () => _client.rpc(
+        'get_student_room_state',
+        params: {
+          'p_room_id': roomId,
+          'p_participant_id': participantId,
+          'p_guest_token': guestToken,
+        },
+      ),
     );
     return StudentRoomState.fromJson(_map(result));
   }
 
   Future<List<RoomLeaderboardEntry>> getRoomLeaderboard(String roomId) async {
     final result = await SupabaseRetryHelper.run(
-      () => _client.rpc('get_room_leaderboard', params: {
-        'p_room_id': roomId,
-      }),
+      () => _client.rpc('get_room_leaderboard', params: {'p_room_id': roomId}),
     );
     final list = (result as List<dynamic>?) ?? const [];
     return list
-        .map((item) => RoomLeaderboardEntry.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map(
+          (item) => RoomLeaderboardEntry.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
         .toList();
   }
 
   Map<String, dynamic> _map(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
-    if (value is String) return Map<String, dynamic>.from(jsonDecode(value) as Map);
+    if (value is String)
+      return Map<String, dynamic>.from(jsonDecode(value) as Map);
     throw const FormatException('Invalid room response.');
   }
 }

@@ -177,7 +177,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                                   ),
                                 ),
                               ),
-                              onTap: () => context.go('/exam/physics-12'),
+                              onTap: () => context.go('/result?attemptId=${Uri.encodeComponent(test.id)}'),
                             );
                           },
                         ),

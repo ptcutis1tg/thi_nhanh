@@ -1,15 +1,19 @@
 class ExamOption {
-  const ExamOption({required this.id, required this.position, required this.body});
+  const ExamOption({
+    required this.id,
+    required this.position,
+    required this.body,
+  });
 
   final String id;
   final int position;
   final String body;
 
   factory ExamOption.fromJson(Map<String, dynamic> json) => ExamOption(
-        id: json['id'] as String,
-        position: (json['position'] as num).toInt(),
-        body: json['body'] as String,
-      );
+    id: json['id'] as String,
+    position: (json['position'] as num).toInt(),
+    body: json['body'] as String,
+  );
 }
 
 class ExamQuestion {
@@ -28,14 +32,14 @@ class ExamQuestion {
   final List<ExamOption> options;
 
   factory ExamQuestion.fromJson(Map<String, dynamic> json) => ExamQuestion(
-        id: json['id'] as String,
-        position: (json['position'] as num).toInt(),
-        body: json['body'] as String,
-        points: json['points'] as num,
-        options: (json['options'] as List<dynamic>)
-            .map((item) => ExamOption.fromJson(item as Map<String, dynamic>))
-            .toList(),
-      );
+    id: json['id'] as String,
+    position: (json['position'] as num).toInt(),
+    body: json['body'] as String,
+    points: json['points'] as num,
+    options: (json['options'] as List<dynamic>)
+        .map((item) => ExamOption.fromJson(item as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class AttemptPayload {
@@ -72,23 +76,60 @@ class AttemptPayload {
       questions: (json['questions'] as List<dynamic>)
           .map((item) => ExamQuestion.fromJson(item as Map<String, dynamic>))
           .toList(),
-      answers: rawAnswers.map((key, value) => MapEntry(key as String, value as String)),
+      answers: rawAnswers.map(
+        (key, value) => MapEntry(key as String, value as String),
+      ),
       isAuthorPreview: (json['isAuthorPreview'] as bool?) ?? false,
     );
   }
 }
 
 class StartedAttempt {
-  const StartedAttempt({required this.attemptId, required this.expiresAt, this.guestToken});
+  const StartedAttempt({
+    required this.attemptId,
+    required this.expiresAt,
+    this.guestToken,
+  });
 
   final String attemptId;
   final DateTime expiresAt;
   final String? guestToken;
 
   factory StartedAttempt.fromJson(Map<String, dynamic> json) => StartedAttempt(
+    attemptId: json['attemptId'] as String,
+    expiresAt: DateTime.parse(json['expiresAt'] as String).toLocal(),
+    guestToken: json['guestToken'] as String?,
+  );
+}
+
+class AttemptSubmissionResult {
+  const AttemptSubmissionResult({
+    required this.attemptId,
+    this.roomId,
+    required this.status,
+    required this.resultReleased,
+    this.score,
+    required this.answeredCount,
+    required this.totalQuestions,
+  });
+
+  final String attemptId;
+  final String? roomId;
+  final String status;
+  final bool resultReleased;
+  final double? score;
+  final int answeredCount;
+  final int totalQuestions;
+
+  factory AttemptSubmissionResult.fromJson(Map<String, dynamic> json) =>
+      AttemptSubmissionResult(
         attemptId: json['attemptId'] as String,
-        expiresAt: DateTime.parse(json['expiresAt'] as String).toLocal(),
-        guestToken: json['guestToken'] as String?,
+        roomId: json['roomId'] as String?,
+        status: (json['status'] as String?) ?? 'submitted',
+        resultReleased: (json['resultReleased'] as bool?) ?? false,
+        score: (json['score'] as num?)?.toDouble(),
+        answeredCount: ((json['answeredCount'] as num?) ?? 0).toInt(),
+        totalQuestions: ((json['totalQuestions'] as num?) ?? 0).toInt(),
       );
 }
 
@@ -106,11 +147,11 @@ class ReviewOption {
   final bool isCorrect;
 
   factory ReviewOption.fromJson(Map<String, dynamic> json) => ReviewOption(
-        id: json['id'] as String,
-        position: (json['position'] as num).toInt(),
-        body: json['body'] as String,
-        isCorrect: (json['isCorrect'] as bool?) ?? false,
-      );
+    id: json['id'] as String,
+    position: (json['position'] as num).toInt(),
+    body: json['body'] as String,
+    isCorrect: (json['isCorrect'] as bool?) ?? false,
+  );
 }
 
 class ReviewQuestion {
@@ -119,6 +160,7 @@ class ReviewQuestion {
     required this.position,
     required this.body,
     required this.points,
+    required this.earnedPoints,
     required this.explanation,
     this.selectedOptionId,
     this.correctOptionId,
@@ -129,27 +171,33 @@ class ReviewQuestion {
   final int position;
   final String body;
   final num points;
+  final num earnedPoints;
   final String explanation;
   final String? selectedOptionId;
   final String? correctOptionId;
   final List<ReviewOption> options;
 
-  bool get isCorrect => selectedOptionId != null && selectedOptionId == correctOptionId;
+  bool get isCorrect =>
+      selectedOptionId != null && selectedOptionId == correctOptionId;
   bool get isSkipped => selectedOptionId == null;
   bool get isWrong => !isSkipped && !isCorrect;
 
   factory ReviewQuestion.fromJson(Map<String, dynamic> json) => ReviewQuestion(
-        id: json['id'] as String,
-        position: (json['position'] as num).toInt(),
-        body: json['body'] as String,
-        points: (json['points'] as num?) ?? 1,
-        explanation: (json['explanation'] as String?) ?? '',
-        selectedOptionId: json['selectedOptionId'] as String?,
-        correctOptionId: json['correctOptionId'] as String?,
-        options: ((json['options'] as List<dynamic>?) ?? const [])
-            .map((item) => ReviewOption.fromJson(Map<String, dynamic>.from(item as Map)))
-            .toList(),
-      );
+    id: json['id'] as String,
+    position: (json['position'] as num).toInt(),
+    body: json['body'] as String,
+    points: (json['points'] as num?) ?? 1,
+    earnedPoints: (json['earnedPoints'] as num?) ?? 0,
+    explanation: (json['explanation'] as String?) ?? '',
+    selectedOptionId: json['selectedOptionId'] as String?,
+    correctOptionId: json['correctOptionId'] as String?,
+    options: ((json['options'] as List<dynamic>?) ?? const [])
+        .map(
+          (item) =>
+              ReviewOption.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList(),
+  );
 }
 
 class AttemptReviewPayload {
@@ -160,14 +208,20 @@ class AttemptReviewPayload {
     required this.title,
     required this.subject,
     required this.status,
+    required this.resultReleased,
     required this.score,
+    required this.earnedPoints,
+    required this.totalPoints,
     required this.maxScore,
     required this.correctCount,
     required this.wrongCount,
     required this.skippedCount,
     required this.totalQuestions,
+    required this.answeredCount,
     this.durationSeconds,
     this.submittedAt,
+    this.rank,
+    this.participantCount,
     required this.questions,
   });
 
@@ -177,14 +231,20 @@ class AttemptReviewPayload {
   final String title;
   final String subject;
   final String status;
+  final bool resultReleased;
   final double score;
+  final double earnedPoints;
+  final double totalPoints;
   final double maxScore;
   final int correctCount;
   final int wrongCount;
   final int skippedCount;
   final int totalQuestions;
+  final int answeredCount;
   final int? durationSeconds;
   final String? submittedAt;
+  final int? rank;
+  final int? participantCount;
   final List<ReviewQuestion> questions;
 
   String get durationFormatted {
@@ -194,23 +254,34 @@ class AttemptReviewPayload {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  factory AttemptReviewPayload.fromJson(Map<String, dynamic> json) => AttemptReviewPayload(
+  factory AttemptReviewPayload.fromJson(Map<String, dynamic> json) =>
+      AttemptReviewPayload(
         attemptId: json['attemptId'] as String,
         roomId: json['roomId'] as String?,
         examId: (json['examId'] as String?) ?? '',
         title: (json['title'] as String?) ?? 'Bài kiểm tra',
         subject: (json['subject'] as String?) ?? 'Chung',
         status: (json['status'] as String?) ?? 'submitted',
+        resultReleased: (json['resultReleased'] as bool?) ?? true,
         score: ((json['score'] as num?) ?? 0).toDouble(),
+        earnedPoints: ((json['earnedPoints'] as num?) ?? 0).toDouble(),
+        totalPoints: ((json['totalPoints'] as num?) ?? 10).toDouble(),
         maxScore: ((json['maxScore'] as num?) ?? 10.0).toDouble(),
         correctCount: ((json['correctCount'] as num?) ?? 0).toInt(),
         wrongCount: ((json['wrongCount'] as num?) ?? 0).toInt(),
         skippedCount: ((json['skippedCount'] as num?) ?? 0).toInt(),
         totalQuestions: ((json['totalQuestions'] as num?) ?? 0).toInt(),
+        answeredCount: ((json['answeredCount'] as num?) ?? 0).toInt(),
         durationSeconds: (json['durationSeconds'] as num?)?.toInt(),
         submittedAt: json['submittedAt'] as String?,
+        rank: (json['rank'] as num?)?.toInt(),
+        participantCount: (json['participantCount'] as num?)?.toInt(),
         questions: ((json['questions'] as List<dynamic>?) ?? const [])
-            .map((item) => ReviewQuestion.fromJson(Map<String, dynamic>.from(item as Map)))
+            .map(
+              (item) => ReviewQuestion.fromJson(
+                Map<String, dynamic>.from(item as Map),
+              ),
+            )
             .toList(),
       );
 }

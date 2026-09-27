@@ -30,11 +30,10 @@ void main() {
 
     // Verify header and score stats
     expect(find.textContaining('Điểm số'), findsOneWidget);
-    expect(find.text('8.5'), findsOneWidget);
+    expect(find.text('8.50'), findsOneWidget);
     expect(find.text('Câu đúng'), findsOneWidget);
     expect(find.text('Câu sai'), findsOneWidget);
     expect(find.text('Bỏ qua'), findsOneWidget);
-    expect(find.text('Xếp hạng'), findsOneWidget);
 
     // Verify navigation action buttons
     expect(find.text('Xem lịch sử thi'), findsOneWidget);

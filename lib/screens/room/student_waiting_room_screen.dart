@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/repositories/assessment_repository.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
@@ -20,7 +21,8 @@ class StudentWaitingRoomScreen extends StatefulWidget {
   final String? guestToken;
 
   @override
-  State<StudentWaitingRoomScreen> createState() => _StudentWaitingRoomScreenState();
+  State<StudentWaitingRoomScreen> createState() =>
+      _StudentWaitingRoomScreenState();
 }
 
 class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
@@ -74,7 +76,7 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
           _roomState = state;
           _isLoading = false;
         });
-        _checkAndTransitionToExam(state);
+        await _checkAndTransitionToExam(state);
       }
     } catch (e) {
       if (mounted) {
@@ -99,15 +101,24 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
         setState(() {
           _roomState = state;
         });
-        _checkAndTransitionToExam(state);
+        await _checkAndTransitionToExam(state);
       }
     } catch (_) {}
   }
 
-  void _checkAndTransitionToExam(StudentRoomState state) {
+  Future<void> _checkAndTransitionToExam(StudentRoomState state) async {
     if (state.isLive && state.attemptId != null) {
       _pollingTimer?.cancel();
-      context.go('/taking_exam?attemptId=${state.attemptId}&roomId=${widget.roomId}');
+      if (widget.guestToken != null) {
+        await context.read<AssessmentRepository>().rememberGuestToken(
+          state.attemptId!,
+          widget.guestToken!,
+        );
+        if (!mounted) return;
+      }
+      context.go(
+        '/taking_exam?attemptId=${state.attemptId}&roomId=${widget.roomId}',
+      );
     }
   }
 
@@ -132,11 +143,16 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                           decoration: BoxDecoration(
                             color: AppTheme.error.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppTheme.error.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color: AppTheme.error.withValues(alpha: 0.3),
+                            ),
                           ),
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(color: AppTheme.error, fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              color: AppTheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -161,7 +177,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           if (_roomState?.attemptId != null) {
-            context.go('/taking_exam?attemptId=${_roomState!.attemptId}&roomId=${widget.roomId}');
+            context.go(
+              '/taking_exam?attemptId=${_roomState!.attemptId}&roomId=${widget.roomId}',
+            );
           } else {
             context.go('/taking_exam');
           }
@@ -174,7 +192,8 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
   }
 
   Widget _buildHeroBanner() {
-    final title = _roomState?.examTitle ?? _roomState?.name ?? 'Phòng thi trực tuyến';
+    final title =
+        _roomState?.examTitle ?? _roomState?.name ?? 'Phòng thi trực tuyến';
     final isLive = _roomState?.isLive ?? false;
 
     return Column(
@@ -183,7 +202,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
           width: 68,
           height: 68,
           decoration: BoxDecoration(
-            color: isLive ? AppTheme.success.withValues(alpha: 0.15) : AppTheme.primary.withValues(alpha: 0.1),
+            color: isLive
+                ? AppTheme.success.withValues(alpha: 0.15)
+                : AppTheme.primary.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
@@ -217,7 +238,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
 
   Widget _buildInfoGrid() {
     final code = _roomState?.code ?? 'PT892341';
-    final duration = _roomState != null ? '${_roomState!.durationMinutes} phút' : '45 phút';
+    final duration = _roomState != null
+        ? '${_roomState!.durationMinutes} phút'
+        : '45 phút';
     final teacher = _roomState?.teacherName ?? 'Giáo viên';
     final subject = _roomState?.subject ?? 'Toán học';
 
@@ -231,18 +254,30 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
           child: Column(
             children: [
               const Text(
                 'MÃ PHÒNG THI',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textSecondary, letterSpacing: 1.2),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 1.2,
+                ),
               ),
               const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.background,
                   borderRadius: BorderRadius.circular(8),
@@ -250,7 +285,12 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                 ),
                 child: Text(
                   code,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 2),
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primary,
+                    letterSpacing: 2,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -258,13 +298,17 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: code));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã sao chép mã phòng vào clipboard')),
+                    const SnackBar(
+                      content: Text('Đã sao chép mã phòng vào clipboard'),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.copy, size: 18),
                 label: const Text('Sao chép mã'),
                 style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
                 ),
               ),
             ],
@@ -277,13 +321,20 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 8)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Thông tin bài thi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text(
+                'Thông tin bài thi',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
               const Divider(height: 32, color: AppTheme.border),
               Wrap(
                 spacing: 20,
@@ -291,19 +342,36 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                 children: [
                   SizedBox(
                     width: isCompact ? constraints.maxWidth : 180,
-                    child: _buildInfoItem(Icons.schedule, 'Thời gian làm bài', duration),
+                    child: _buildInfoItem(
+                      Icons.schedule,
+                      'Thời gian làm bài',
+                      duration,
+                    ),
                   ),
                   SizedBox(
                     width: isCompact ? constraints.maxWidth : 180,
-                    child: _buildInfoItem(Icons.category_outlined, 'Môn học', subject),
+                    child: _buildInfoItem(
+                      Icons.category_outlined,
+                      'Môn học',
+                      subject,
+                    ),
                   ),
                   SizedBox(
                     width: isCompact ? constraints.maxWidth : 180,
-                    child: _buildInfoItem(Icons.school_outlined, 'Giáo viên coi thi', teacher),
+                    child: _buildInfoItem(
+                      Icons.school_outlined,
+                      'Giáo viên coi thi',
+                      teacher,
+                    ),
                   ),
                   SizedBox(
                     width: isCompact ? constraints.maxWidth : 180,
-                    child: _buildInfoItem(Icons.rule, 'Quy chế', 'Không thoát màn hình', isError: true),
+                    child: _buildInfoItem(
+                      Icons.rule,
+                      'Quy chế',
+                      'Không thoát màn hình',
+                      isError: true,
+                    ),
                   ),
                 ],
               ),
@@ -313,11 +381,7 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
 
         if (isCompact) {
           return Column(
-            children: [
-              codeCard,
-              const SizedBox(height: 24),
-              detailsCard,
-            ],
+            children: [codeCard, const SizedBox(height: 24), detailsCard],
           );
         }
 
@@ -333,7 +397,12 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
     );
   }
 
-  Widget _buildInfoItem(IconData icon, String label, String value, {bool isError = false}) {
+  Widget _buildInfoItem(
+    IconData icon,
+    String label,
+    String value, {
+    bool isError = false,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -343,18 +412,37 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
               const SizedBox(height: 4),
               isError
                   ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(value, style: const TextStyle(color: AppTheme.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          color: AppTheme.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     )
-                  : Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  : Text(
+                      value,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
             ],
           ),
         ),
@@ -364,7 +452,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
 
   Widget _buildParticipantsSection() {
     final participants = _roomState?.participants ?? const [];
-    final count = _roomState?.participantCount ?? (participants.isNotEmpty ? participants.length : 1);
+    final count =
+        _roomState?.participantCount ??
+        (participants.isNotEmpty ? participants.length : 1);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -372,7 +462,11 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 24, offset: const Offset(0, 8)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -388,18 +482,28 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                 children: [
                   Icon(Icons.group, color: AppTheme.primary),
                   SizedBox(width: 8),
-                  Text('Học sinh trong phòng', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Học sinh trong phòng',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
                   '$count học sinh đã sẵn sàng',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 12),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primary,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -421,7 +525,13 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                   runSpacing: 24,
                   children: participants.map((p) {
                     final initials = p.name.trim().isNotEmpty
-                        ? p.name.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+                        ? p.name
+                              .trim()
+                              .split(' ')
+                              .map((e) => e.isNotEmpty ? e[0] : '')
+                              .take(2)
+                              .join()
+                              .toUpperCase()
                         : 'HS';
                     return _buildAvatarItem(p.name, initials, isSelf: p.isSelf);
                   }).toList(),
@@ -431,7 +541,12 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
     );
   }
 
-  Widget _buildAvatarItem(String name, String initials, {bool isSelf = false, bool isConnecting = false}) {
+  Widget _buildAvatarItem(
+    String name,
+    String initials, {
+    bool isSelf = false,
+    bool isConnecting = false,
+  }) {
     return Column(
       children: [
         Stack(
@@ -442,21 +557,30 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
               decoration: BoxDecoration(
                 color: isConnecting
                     ? AppTheme.background
-                    : (isSelf ? AppTheme.primary.withValues(alpha: 0.2) : AppTheme.surface),
+                    : (isSelf
+                          ? AppTheme.primary.withValues(alpha: 0.2)
+                          : AppTheme.surface),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isConnecting ? AppTheme.border : (isSelf ? AppTheme.primary : AppTheme.border),
+                  color: isConnecting
+                      ? AppTheme.border
+                      : (isSelf ? AppTheme.primary : AppTheme.border),
                   width: 2,
                 ),
               ),
               alignment: Alignment.center,
               child: isConnecting
-                  ? const Icon(Icons.person_outline, color: AppTheme.textSecondary)
+                  ? const Icon(
+                      Icons.person_outline,
+                      color: AppTheme.textSecondary,
+                    )
                   : Text(
                       initials,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: isSelf ? AppTheme.primary : AppTheme.textSecondary,
+                        color: isSelf
+                            ? AppTheme.primary
+                            : AppTheme.textSecondary,
                       ),
                     ),
             ),

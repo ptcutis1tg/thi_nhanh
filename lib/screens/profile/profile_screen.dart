@@ -63,11 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       userName: userName,
     );
 
-    final teacherDataFuture = ProfileService.fetchTeacherData(
-      userId: userId,
-      userEmail: userEmail,
-      userName: userName,
-    );
+    final teacherDataFuture = ProfileService.fetchTeacherDataSecure();
 
     final results = await Future.wait([studentDataFuture, teacherDataFuture]);
 
