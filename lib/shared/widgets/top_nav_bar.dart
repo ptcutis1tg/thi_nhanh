@@ -134,21 +134,41 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                     icon: const Icon(Icons.help_outline_rounded, color: AppTheme.primary, size: 22),
                   ),
                   const SizedBox(width: 6),
-                  InkWell(
-                    onTap: () {
-                      context.go('/profile');
-                    },
-                    borderRadius: BorderRadius.circular(100),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: AppTheme.border,
-                      backgroundImage: avatarImage,
-                      onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
-                      child: avatarImage == null
-                          ? const Icon(Icons.person, color: AppTheme.textSecondary, size: 18)
-                          : null,
+                  if (!authProvider.isAuthenticated)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: ElevatedButton.icon(
+                        onPressed: () => context.go('/greeting'),
+                        icon: const Icon(Icons.login_rounded, size: 16),
+                        label: const Text(
+                          'Đăng nhập',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+                        ),
+                      ),
+                    )
+                  else
+                    InkWell(
+                      onTap: () {
+                        context.go('/profile');
+                      },
+                      borderRadius: BorderRadius.circular(100),
+                      child: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppTheme.border,
+                        backgroundImage: avatarImage,
+                        onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
+                        child: avatarImage == null
+                            ? const Icon(Icons.person, color: AppTheme.textSecondary, size: 18)
+                            : null,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],
@@ -158,10 +178,58 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  void _showGuestRestrictedDialog(BuildContext context, String featureName) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: const [
+            Icon(Icons.lock_outline_rounded, color: AppTheme.primary, size: 24),
+            SizedBox(width: 10),
+            Text(
+              'Yêu cầu đăng nhập',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          'Tính năng "$featureName" yêu cầu đăng nhập để lưu trữ dữ liệu cá nhân của bạn. Bạn có muốn đăng nhập hoặc tạo tài khoản ngay bây giờ không?',
+          style: const TextStyle(fontSize: 14, height: 1.5, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Để sau', style: TextStyle(color: Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              context.go('/greeting');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+            ),
+            child: const Text('Đăng nhập ngay'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNavItem(BuildContext context, String title, String route, {bool isActive = false, bool isCompact = false}) {
+    final requiresAuth = route == '/create_exam' || route == '/teacher_exams' || route == '/create_room';
+
     return InkWell(
       onTap: () {
         if (!isActive) {
+          final isAuth = context.read<AuthProvider>().isAuthenticated;
+          if (requiresAuth && !isAuth) {
+            _showGuestRestrictedDialog(context, title);
+            return;
+          }
           context.go(route);
         }
       },
