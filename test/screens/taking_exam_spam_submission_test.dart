@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:onthi_community/screens/exam/taking_exam_screen.dart';
 
 void main() {
@@ -132,5 +134,55 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(submitCallCount, equals(1));
+  });
+
+  testWidgets('TakingExamScreen gracefully handles RLS 42501 error and saves locally', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    bool submitAttemptCalled = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TakingExamScreen(
+          examId: 'test-exam-id',
+          initialQuestions: sampleQuestions,
+          onSubmitAttempt: (payload) async {
+            submitAttemptCalled = true;
+            throw const PostgrestException(
+              message: 'new row violates row-level security policy for table "attempts"',
+              code: '42501',
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Di chuyển đến câu cuối cùng và bấm Nộp bài
+    final nextBtn = find.widgetWithText(ElevatedButton, 'Câu sau');
+    await tester.tap(nextBtn);
+    await tester.pumpAndSettle();
+
+    final submitBtn = find.widgetWithText(ElevatedButton, 'Nộp bài');
+    await tester.tap(submitBtn);
+    await tester.pumpAndSettle();
+
+    final confirmBtn = find.widgetWithText(ElevatedButton, 'Nộp bài ngay');
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(submitAttemptCalled, isTrue);
+
+    // Kiểm tra đã lưu bài làm dự phòng vào SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final localAttempts = prefs.getStringList('local_exam_attempts');
+    expect(localAttempts, isNotNull);
+    expect(localAttempts!.isNotEmpty, isTrue);
+
+    // Xác nhận không còn thanh lỗi màu đỏ chặn người dùng
+    expect(find.textContaining('Lỗi nộp bài thi:'), findsNothing);
   });
 }
