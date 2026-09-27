@@ -106,30 +106,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleChangePassword() async {
-    if (_currentPasswordController.text.isEmpty ||
-        _newPasswordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
+    final curPass = _currentPasswordController.text;
+    final newPass = _newPasswordController.text;
+    final confPass = _confirmPasswordController.text;
+
+    if (curPass.isEmpty || newPass.isEmpty || confPass.isEmpty) {
       _showSnackBar('Vui lòng nhập đầy đủ các trường mật khẩu', isError: true);
       return;
     }
-    if (_newPasswordController.text != _confirmPasswordController.text) {
+    if (newPass != confPass) {
       _showSnackBar('Mật khẩu mới và xác nhận không khớp', isError: true);
+      return;
+    }
+    if (newPass.length < 6) {
+      _showSnackBar('Mật khẩu mới phải có ít nhất 6 ký tự', isError: true);
       return;
     }
     setState(() => _isSavingPassword = true);
     try {
-      await context.read<AuthProvider>().changePassword(
-            _currentPasswordController.text,
-            _newPasswordController.text,
-          );
+      await context.read<AuthProvider>().changePassword(curPass, newPass);
       if (mounted) {
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
-        _showSnackBar('Đổi mật khẩu thành công!');
+        _showSnackBar('Đổi mật khẩu thành công! Mật khẩu mới đã được cập nhật.');
       }
     } catch (e) {
-      final msg = e.toString().replaceAll('Exception: ', '');
+      final msg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
       _showSnackBar(msg, isError: true);
     } finally {
       if (mounted) setState(() => _isSavingPassword = false);
@@ -292,7 +295,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 28),
 
                 // 7. CHANGE PASSWORD CARD
-                _buildChangePasswordCard(),
+                _buildChangePasswordCard(authProvider),
 
                 const SizedBox(height: 28),
 
@@ -1775,7 +1778,71 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ---------------------------------------------------------------------------
   // 9. CHANGE PASSWORD CARD
   // ---------------------------------------------------------------------------
-  Widget _buildChangePasswordCard() {
+  Widget _buildChangePasswordCard(AuthProvider authProvider) {
+    if (authProvider.isGoogleUser) {
+      return Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Image.asset(
+                'assets/images/google_logo.png',
+                width: 24,
+                height: 24,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.g_mobiledata_rounded,
+                  size: 28,
+                  color: Color(0xFF4285F4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tài khoản liên kết Google',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textMain,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Tài khoản này được xác thực trực tiếp qua Google OAuth. Mật khẩu và tính bảo mật được quản lý thông qua tài khoản Google của bạn.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
