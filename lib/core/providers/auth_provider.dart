@@ -220,8 +220,8 @@ class AuthProvider extends ChangeNotifier {
   Future<AuthResponse?> verifySignUpOTP(String email, String otpCode) async {
     final cleanEmail = email.trim();
     final cleanOtp = otpCode.trim();
-    if (cleanOtp.length != 6 || int.tryParse(cleanOtp) == null) {
-      throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
+    if (cleanOtp.length != 8 || int.tryParse(cleanOtp) == null) {
+      throw Exception('Mã OTP phải bao gồm đúng 8 chữ số.');
     }
 
     if (_supabaseClient != null) {
@@ -277,8 +277,8 @@ class AuthProvider extends ChangeNotifier {
   Future<AuthResponse?> verifyPasswordResetOTP(String email, String otpCode) async {
     final cleanEmail = email.trim();
     final cleanOtp = otpCode.trim();
-    if (cleanOtp.length != 6 || int.tryParse(cleanOtp) == null) {
-      throw Exception('Mã OTP phải bao gồm đúng 6 chữ số.');
+    if (cleanOtp.length != 8 || int.tryParse(cleanOtp) == null) {
+      throw Exception('Mã OTP phải bao gồm đúng 8 chữ số.');
     }
 
     if (_supabaseClient != null) {

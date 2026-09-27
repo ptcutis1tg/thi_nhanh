@@ -33,8 +33,17 @@ void main() {
         () => authProvider.verifySignUpOTP('valid@gmail.com', '123'),
         throwsA(isA<Exception>()),
       );
+      // Mã 6 số cũ hiện tại phải bị từ chối vì hệ thống yêu cầu đúng 8 số
       expect(
-        () => authProvider.verifySignUpOTP('valid@gmail.com', 'abcdef'),
+        () => authProvider.verifySignUpOTP('valid@gmail.com', '123456'),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        () => authProvider.verifySignUpOTP('valid@gmail.com', 'abcdefgh'),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        () => authProvider.verifySignUpOTP('valid@gmail.com', '123456789'),
         throwsA(isA<Exception>()),
       );
     });
@@ -51,10 +60,34 @@ void main() {
         () => authProvider.verifyPasswordResetOTP('test@gmail.com', '123'),
         throwsA(isA<Exception>()),
       );
+      // Mã 6 số cũ hiện tại phải bị từ chối vì hệ thống yêu cầu đúng 8 số
       expect(
-        () => authProvider.verifyPasswordResetOTP('test@gmail.com', 'abcdef'),
+        () => authProvider.verifyPasswordResetOTP('test@gmail.com', '123456'),
         throwsA(isA<Exception>()),
       );
+      expect(
+        () => authProvider.verifyPasswordResetOTP('test@gmail.com', 'abcdefgh'),
+        throwsA(isA<Exception>()),
+      );
+      expect(
+        () => authProvider.verifyPasswordResetOTP('test@gmail.com', '123456789'),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('verifySignUpOTP accepts valid 8-digit OTP in local mode', () async {
+      await expectLater(
+        authProvider.verifySignUpOTP('valid@gmail.com', '12345678'),
+        completes,
+      );
+    });
+
+    test('verifyPasswordResetOTP accepts valid 8-digit OTP in local mode', () async {
+      await expectLater(
+        authProvider.verifyPasswordResetOTP('test@gmail.com', '12345678'),
+        completes,
+      );
+      expect(authProvider.isPasswordRecoveryMode, isTrue);
     });
 
     test('updateNewPassword throws exception for short password', () async {
