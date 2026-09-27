@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
@@ -128,7 +129,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
           );
       if (mounted) {
         if (response != null && response.session == null) {
-          // Supabase yêu cầu xác thực OTP 6 số
+          // Supabase yêu cầu xác thực OTP 8 số
           _showSignUpOtpDialog(email);
         } else {
           _showSuccess('Đăng ký thành công! Chào mừng bạn.');
@@ -652,8 +653,8 @@ class _SignUpOtpDialogState extends State<_SignUpOtpDialog> {
 
   Future<void> _handleVerify() async {
     final otp = _otpController.text.trim();
-    if (otp.length != 6 || int.tryParse(otp) == null) {
-      setState(() => _errorMessage = 'Vui lòng nhập đủ 6 chữ số mã OTP.');
+    if (otp.length != 8 || int.tryParse(otp) == null) {
+      setState(() => _errorMessage = 'Vui lòng nhập đủ 8 chữ số mã OTP.');
       return;
     }
     setState(() {
@@ -690,7 +691,7 @@ class _SignUpOtpDialogState extends State<_SignUpOtpDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đã gửi lại mã OTP 6 số về hộp thư của bạn!'),
+            content: Text('Đã gửi lại mã OTP 8 số về hộp thư của bạn!'),
             backgroundColor: AppTheme.success,
           ),
         );
@@ -748,7 +749,7 @@ class _SignUpOtpDialogState extends State<_SignUpOtpDialog> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Mã xác thực gồm 6 chữ số đã được gửi tới email:\n${widget.email}\n(Vui lòng kiểm tra hộp thư đến và thư mục Spam/Rác)',
+                'Mã xác thực gồm 8 chữ số đã được gửi tới email:\n${widget.email}\n(Vui lòng kiểm tra hộp thư đến và thư mục Spam/Rác)',
                 style: const TextStyle(
                   fontSize: 13,
                   color: Color(0xFF64748B),
@@ -760,20 +761,23 @@ class _SignUpOtpDialogState extends State<_SignUpOtpDialog> {
               TextField(
                 controller: _otpController,
                 keyboardType: TextInputType.number,
-                maxLength: 6,
+                maxLength: 8,
                 textAlign: TextAlign.center,
                 autofocus: true,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 8,
+                  letterSpacing: 6,
                   color: Color(0xFF1E293B),
                 ),
                 decoration: InputDecoration(
-                  hintText: '000000',
+                  hintText: '00000000',
                   hintStyle: const TextStyle(
                     color: Color(0xFFCBD5E1),
-                    letterSpacing: 8,
+                    letterSpacing: 6,
                   ),
                   counterText: '',
                   filled: true,
