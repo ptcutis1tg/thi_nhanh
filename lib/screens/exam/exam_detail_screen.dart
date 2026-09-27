@@ -106,13 +106,21 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
           return;
         }
       } catch (_) {}
-      context.go('/room/password');
+      if (mounted) {
+        context.go('/room/password');
+      }
       return;
     }
     setState(() => _isStarting = true);
     final currentExamId = _examData?['id']?.toString() ?? widget.examId ?? _demoExamId;
+    AssessmentRepository? repo;
     try {
-      final repo = context.read<AssessmentRepository?>();
+      repo = context.read<AssessmentRepository>();
+    } catch (_) {
+      repo = null;
+    }
+
+    try {
       if (repo != null) {
         final attempt = await repo.beginPractice(currentExamId);
         if (mounted) context.go('/taking_exam?attemptId=${attempt.attemptId}&examId=$currentExamId');
