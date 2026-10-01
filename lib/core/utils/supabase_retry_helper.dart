@@ -44,6 +44,8 @@ class SupabaseRetryHelper {
         str.contains('network is unreachable');
   }
 
+  static const Duration defaultInitialDelay = Duration(milliseconds: 800);
+
   /// Runs [action] with automatic retries and intelligent recovery:
   /// - On clock skew (PGRST303): waits for server clock to advance past JWT iat, then retries.
   /// - On expired JWT (PGRST301): attempts to refresh the Supabase session, then retries.
@@ -51,7 +53,7 @@ class SupabaseRetryHelper {
   static Future<T> run<T>(
     Future<T> Function() action, {
     int maxRetries = 2,
-    Duration initialDelay = const Duration(milliseconds: 1500),
+    Duration initialDelay = defaultInitialDelay,
   }) async {
     for (int attempt = 0; attempt <= maxRetries; attempt++) {
       try {

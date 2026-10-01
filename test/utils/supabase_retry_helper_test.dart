@@ -5,6 +5,10 @@ import 'package:onthi_community/core/utils/supabase_retry_helper.dart';
 
 void main() {
   group('SupabaseRetryHelper', () {
+    test('defaultInitialDelay is 800 milliseconds for fast recovery', () {
+      expect(SupabaseRetryHelper.defaultInitialDelay, const Duration(milliseconds: 800));
+    });
+
     test('succeeds immediately if no error', () async {
       int callCount = 0;
       final result = await SupabaseRetryHelper.run(() async {
