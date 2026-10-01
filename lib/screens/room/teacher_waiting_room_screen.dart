@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 import 'widgets/live_leaderboard_view.dart';
+import 'widgets/room_qr_dialog.dart';
 
 class TeacherWaitingRoomScreen extends StatefulWidget {
   const TeacherWaitingRoomScreen({super.key, this.roomId});
@@ -255,7 +258,7 @@ class _RoomView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                _RoomCodeCard(code: room.code),
+                _RoomCodeCard(code: room.code, roomName: room.name),
               ],
             ),
             const SizedBox(height: 24),
@@ -414,33 +417,114 @@ class _RoomView extends StatelessWidget {
 }
 
 class _RoomCodeCard extends StatelessWidget {
-  const _RoomCodeCard({required this.code});
+  const _RoomCodeCard({required this.code, required this.roomName});
   final String code;
+  final String roomName;
+
+  String get _joinUrl => 'https://thinhành.vn/join?code=$code';
+
+  void _copyLink(BuildContext context) {
+    Clipboard.setData(ClipboardData(text: _joinUrl));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã sao chép liên kết vào phòng thi.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _openPresentation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => RoomQrDialog(roomCode: code, roomName: roomName),
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Card(
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: AppTheme.border),
+    ),
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Text(
-            'MÃ PHÒNG',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              letterSpacing: 1.1,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'MÃ PHÒNG THI',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    code,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 14),
+              InkWell(
+                onTap: () => _openPresentation(context),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: QrImageView(
+                    data: _joinUrl,
+                    version: QrVersions.auto,
+                    size: 52,
+                    gapless: false,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            code,
-            style: const TextStyle(
-              fontSize: 26,
-              color: AppTheme.primary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () => _openPresentation(context),
+                icon: const Icon(Icons.fullscreen, size: 16),
+                label: const Text('Chiếu QR', style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.outlined(
+                onPressed: () => _copyLink(context),
+                icon: const Icon(Icons.link, size: 16),
+                tooltip: 'Sao chép liên kết vào phòng',
+                visualDensity: VisualDensity.compact,
+              ),
+            ],
           ),
         ],
       ),
