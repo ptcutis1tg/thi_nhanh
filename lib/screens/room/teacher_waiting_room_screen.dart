@@ -334,7 +334,7 @@ class _RoomView extends StatelessWidget {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: room.participants.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        separatorBuilder: (context, index) => const Divider(height: 1),
                         itemBuilder: (_, index) {
                           final participant = room.participants[index];
                           return ListTile(

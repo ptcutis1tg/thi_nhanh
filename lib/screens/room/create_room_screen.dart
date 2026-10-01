@@ -342,7 +342,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: _filteredExams.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                                separatorBuilder: (context, index) => const SizedBox(height: 10),
                                 itemBuilder: (context, index) {
                                   final exam = _filteredExams[index];
                                   final isSelected = _selectedExam?.id == exam.id;
