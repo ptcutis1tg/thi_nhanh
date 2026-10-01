@@ -344,7 +344,9 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/room/password',
-      builder: (context, state) => const RoomPasswordScreen(),
+      builder: (context, state) => RoomPasswordScreen(
+        roomCode: state.uri.queryParameters['code'],
+      ),
     ),
     GoRoute(
       path: '/taking_exam',
