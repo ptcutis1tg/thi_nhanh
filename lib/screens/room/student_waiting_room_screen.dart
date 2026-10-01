@@ -174,20 +174,6 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
                 ),
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          if (_roomState?.attemptId != null) {
-            context.go(
-              '/taking_exam?attemptId=${_roomState!.attemptId}&roomId=${widget.roomId}',
-            );
-          } else {
-            context.go('/taking_exam');
-          }
-        },
-        backgroundColor: AppTheme.success,
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('Mô phỏng: Bắt đầu thi'),
-      ),
     );
   }
 
@@ -237,12 +223,12 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
   }
 
   Widget _buildInfoGrid() {
-    final code = _roomState?.code ?? 'PT892341';
+    final code = _roomState?.code ?? (widget.roomId != null ? '...' : '--');
     final duration = _roomState != null
         ? '${_roomState!.durationMinutes} phút'
-        : '45 phút';
-    final teacher = _roomState?.teacherName ?? 'Giáo viên';
-    final subject = _roomState?.subject ?? 'Toán học';
+        : '-- phút';
+    final teacher = _roomState?.teacherName ?? 'Đang cập nhật';
+    final subject = _roomState?.subject ?? 'Đang cập nhật';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -510,15 +496,37 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
           ),
           const Divider(height: 32, color: AppTheme.border),
           participants.isEmpty
-              ? Wrap(
-                  spacing: 24,
-                  runSpacing: 24,
-                  children: [
-                    _buildAvatarItem('Bạn', 'B', isSelf: true),
-                    _buildAvatarItem('Minh Anh', 'MA'),
-                    _buildAvatarItem('Hải Bình', 'HB'),
-                    _buildAvatarItem('Tiến Cường', 'TC'),
-                  ],
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                  alignment: Alignment.center,
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.hourglass_top_rounded,
+                          color: AppTheme.primary,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Bạn đã vào phòng thi thành công!',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Hãy chuẩn bị sẵn sàng. Bài thi sẽ tự động bắt đầu khi giáo viên bấm mở phòng.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: AppTheme.textSecondary, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 )
               : Wrap(
                   spacing: 24,

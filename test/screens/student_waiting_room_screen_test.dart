@@ -29,5 +29,12 @@ void main() {
     expect(find.text('Thông tin bài thi'), findsOneWidget);
     expect(find.text('Học sinh trong phòng'), findsOneWidget);
     expect(find.text('Sao chép mã'), findsOneWidget);
+
+    // Không được chứa nút mô phỏng debug hoặc dữ liệu học sinh giả lập
+    expect(find.text('Mô phỏng: Bắt đầu thi'), findsNothing);
+    expect(find.text('Minh Anh'), findsNothing);
+    expect(find.text('Hải Bình'), findsNothing);
+    expect(find.text('Tiến Cường'), findsNothing);
+    expect(find.text('PT892341'), findsNothing);
   });
 }
