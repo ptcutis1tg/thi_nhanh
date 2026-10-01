@@ -72,7 +72,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
 
-              // Menu items (All 5 core features available for all users)
+              // Menu items (Core features available for all users)
               Expanded(
                 child: Builder(
                   builder: (context) {
@@ -89,8 +89,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                           const SizedBox(width: 8),
                           _buildNavItem(context, 'Home', '/home', isActive: currentLocation == '/home', isCompact: isCompact),
                           _buildNavItem(context, 'Tìm kiếm', '/search', isActive: currentLocation == '/search', isCompact: isCompact),
-                          _buildNavItem(context, 'Tạo đề thi', '/create_exam', isActive: currentLocation == '/create_exam', isCompact: isCompact),
-                          _buildNavItem(context, 'Đề của tôi', '/teacher_exams', isActive: currentLocation == '/teacher_exams', isCompact: isCompact),
+                          _buildNavItem(context, 'Quản lí đề', '/teacher_exams', isActive: currentLocation == '/teacher_exams', isCompact: isCompact),
                           _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: currentLocation == '/create_room', isCompact: isCompact),
                           const SizedBox(width: 8),
                         ],
