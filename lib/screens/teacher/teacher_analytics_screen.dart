@@ -24,7 +24,12 @@ class _TeacherAnalyticsScreenState extends State<TeacherAnalyticsScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final data = await ProfileService.fetchTeacherDataSecure();
+    final auth = context.read<AuthProvider>();
+    final data = await ProfileService.fetchTeacherDataSecure(
+      userId: auth.user?.id,
+      userEmail: auth.userEmail,
+      userName: auth.userName,
+    );
     if (mounted) {
       setState(() {
         _data = data;

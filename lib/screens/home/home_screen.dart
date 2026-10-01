@@ -67,7 +67,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       userEmail: authProvider.userEmail,
       userName: authProvider.userName,
     );
-    final teacherDataFuture = ProfileService.fetchTeacherDataSecure();
+    final teacherDataFuture = ProfileService.fetchTeacherDataSecure(
+      userId: authProvider.user?.id,
+      userEmail: authProvider.userEmail,
+      userName: authProvider.userName,
+    );
 
     final results = await Future.wait([studentDataFuture, teacherDataFuture]);
     if (mounted) {

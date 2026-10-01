@@ -33,7 +33,55 @@ class _TeacherStudentResultsScreenState extends State<TeacherStudentResultsScree
         });
       }
     } catch (e) {
-      debugPrint('Lỗi tải kết quả làm bài của học sinh: $e');
+      debugPrint('Lỗi tải kết quả làm bài của học sinh qua RPC: $e. Thử truy vấn bảng trực tiếp...');
+      try {
+        final client = Supabase.instance.client;
+        final teacherRes = await client
+            .from('teachers')
+            .select('id')
+            .eq('owner_user_id', client.auth.currentUser?.id ?? '')
+            .maybeSingle();
+        final teacherId = teacherRes?['id'];
+        if (teacherId != null) {
+          final exams = await client.from('exams').select('id, title, subject').eq('teacher_id', teacherId);
+          final examMap = {for (var ex in (exams as List)) ex['id']: ex};
+          final examIds = examMap.keys.toList();
+          if (examIds.isNotEmpty) {
+            final attempts = await client
+                .from('attempts')
+                .select('id, room_id, exam_id, score, status, submitted_at, guest_name, profiles(display_name)')
+                .inFilter('exam_id', examIds)
+                .inFilter('status', ['submitted', 'expired'])
+                .not('score', 'is', null)
+                .order('submitted_at', ascending: false);
+
+            final list = (attempts as List).map((a) {
+              final ex = examMap[a['exam_id']];
+              final profile = a['profiles'] as Map<String, dynamic>?;
+              final studentName = profile?['display_name'] ?? a['guest_name'] ?? 'Học sinh';
+              return {
+                'attemptId': a['id'],
+                'roomId': a['room_id'],
+                'studentName': studentName,
+                'score': a['score'],
+                'status': a['status'],
+                'submittedAt': a['submitted_at'],
+                'examTitle': ex?['title'] ?? 'Đề thi',
+                'subject': ex?['subject'] ?? '',
+              };
+            }).toList();
+            if (mounted) {
+              setState(() {
+                _submissions = list;
+                _isLoading = false;
+              });
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        debugPrint('Lỗi fallback kết quả làm bài trực tiếp: $err');
+      }
       if (mounted) setState(() => _isLoading = false);
     }
   }

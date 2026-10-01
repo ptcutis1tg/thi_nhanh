@@ -242,11 +242,11 @@ class ProfileService {
     final s = subject.toLowerCase();
     if (s.contains('toán')) return '📐';
     if (s.contains('anh') || s.contains('english')) return '🔤';
-    if (s.contains('lý') || s.contains('physic')) return '⚡';
+    if (s.contains('địa')) return '🌍';
+    if (s.contains('lý') || s.contains('lí') || s.contains('physic')) return '⚡';
     if (s.contains('hóa')) return '🧪';
     if (s.contains('sinh')) return '🧬';
     if (s.contains('sử')) return '📜';
-    if (s.contains('địa')) return '🌍';
     if (s.contains('tin')) return '💻';
     return '📝';
   }
@@ -322,10 +322,15 @@ class ProfileService {
 
       final averageScore = completedTestsCount > 0 ? sumScore / completedTestsCount : 0.0;
 
-      final top3Raw = await SupabaseRetryHelper.run(
-        () => client.rpc('current_student_top3_attempt_ids'),
-      );
-      final top3AttemptIds = ((top3Raw as List<dynamic>?) ?? const []).map((id) => id.toString()).toSet();
+      Set<String> top3AttemptIds = {};
+      try {
+        final top3Raw = await SupabaseRetryHelper.run(
+          () => client.rpc('current_student_top3_attempt_ids'),
+        );
+        top3AttemptIds = ((top3Raw as List<dynamic>?) ?? const []).map((id) => id.toString()).toSet();
+      } catch (e) {
+        debugPrint('Thông báo: RPC current_student_top3_attempt_ids không khả dụng ($e). Bỏ qua tính năng top 3.');
+      }
 
       // Calculate Streak (consecutive days with submitted attempts)
       int streakDays = 0;
@@ -465,9 +470,21 @@ class ProfileService {
   }
 
   /// Fetch Teacher Profile Data
-  static Future<TeacherProfileData> fetchTeacherDataSecure() async {
+  static Future<TeacherProfileData> fetchTeacherDataSecure({
+    String? userId,
+    String? userEmail,
+    String? userName,
+  }) async {
     final client = _client;
-    if (client == null || client.auth.currentUser == null) return TeacherProfileData.empty();
+    final currentUser = client?.auth.currentUser;
+    final effectiveUserId = userId ?? currentUser?.id;
+    final effectiveUserEmail = userEmail ?? currentUser?.email;
+    final effectiveUserName = userName ?? (currentUser?.userMetadata?['name'] as String?);
+
+    if (client == null || (effectiveUserId == null && effectiveUserEmail == null)) {
+      return TeacherProfileData.empty();
+    }
+
     try {
       final raw = await SupabaseRetryHelper.run(() => client.rpc('teacher_profile_payload'));
       final payload = Map<String, dynamic>.from(raw as Map);
@@ -521,8 +538,12 @@ class ProfileService {
         teachingInsights: insights,
       );
     } catch (e) {
-      debugPrint('Lỗi tải dữ liệu giáo viên an toàn: $e');
-      return TeacherProfileData.empty();
+      debugPrint('Lỗi tải dữ liệu giáo viên qua RPC ($e). Đang tự động chuyển sang chế độ fallback trực tiếp bảng...');
+      return fetchTeacherData(
+        userId: effectiveUserId,
+        userEmail: effectiveUserEmail,
+        userName: effectiveUserName,
+      );
     }
   }
 
