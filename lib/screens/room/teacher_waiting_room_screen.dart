@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,20 +23,42 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
   bool _starting = false;
   bool _ending = false;
   int _selectedTab = 0; // 0: Danh sách thí sinh, 1: Bảng xếp hạng trực tiếp
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _startPolling();
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (mounted && widget.roomId != null && _selectedTab == 0 && (_room == null || _room!.isWaiting)) {
+        _load(silent: true);
+      }
+    });
+  }
+
+  Future<void> _load({bool silent = false}) async {
     if (widget.roomId == null) {
-      setState(() {
-        _error = 'Thiếu mã phòng. Hãy tạo phòng từ trang Tạo phòng thi.';
-        _loading = false;
-      });
+      if (!silent) {
+        setState(() {
+          _error = 'Thiếu mã phòng. Hãy tạo phòng từ trang Tạo phòng thi.';
+          _loading = false;
+        });
+      }
       return;
+    }
+    if (!silent && _room == null) {
+      setState(() => _loading = true);
     }
     try {
       final room = await context.read<RoomRepository>().dashboard(
@@ -44,13 +67,13 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
       if (mounted) {
         setState(() {
           _room = room;
-          if (room.isLive) _selectedTab = 1;
+          if (room.isLive && _selectedTab == 0) _selectedTab = 1;
         });
       }
     } catch (error) {
-      if (mounted) setState(() => _error = error);
+      if (mounted && !silent) setState(() => _error = error);
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && !silent) setState(() => _loading = false);
     }
   }
 
