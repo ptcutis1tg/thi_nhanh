@@ -25,6 +25,8 @@ class StudentTestHistoryData {
   final String date;
   final String score;
   final double scoreValue;
+  final String subject;
+  final DateTime? submittedAt;
 
   StudentTestHistoryData({
     required this.id,
@@ -33,6 +35,8 @@ class StudentTestHistoryData {
     required this.date,
     required this.score,
     required this.scoreValue,
+    this.subject = 'Khác',
+    this.submittedAt,
   });
 }
 
@@ -427,13 +431,15 @@ class ProfileService {
       for (var a in submittedAttempts) {
         final examMap = a['exams'] as Map<String, dynamic>?;
         final title = examMap?['title'] as String? ?? 'Bài kiểm tra';
-        final subject = examMap?['subject'] as String? ?? 'General';
+        final subject = examMap?['subject'] as String? ?? 'Khác';
         final icon = getSubjectIcon(subject);
 
         String dateStr = 'Mới đây';
+        DateTime? submittedAt;
         if (a['submitted_at'] != null) {
           final dt = DateTime.tryParse(a['submitted_at'].toString())?.toLocal();
           if (dt != null) {
+            submittedAt = dt;
             dateStr = '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
           }
         }
@@ -448,6 +454,8 @@ class ProfileService {
             date: dateStr,
             score: '${scoreVal.toStringAsFixed(1)} điểm',
             scoreValue: scoreVal,
+            subject: subject,
+            submittedAt: submittedAt,
           ),
         );
       }
