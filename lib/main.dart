@@ -317,6 +317,14 @@ final GoRouter _router = GoRouter(
             child: const TeacherAnalyticsScreen(),
           ),
         ),
+        GoRoute(
+          path: '/student/history',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const StudentHistoryScreen(),
+          ),
+        ),
       ],
     ),
     // Các màn hình không có TopNavBar
