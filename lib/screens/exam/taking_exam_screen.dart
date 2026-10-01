@@ -38,6 +38,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   bool _isSubmitting = false;
   bool _hasSubmitted = false;
   bool _isAuthorPreview = false;
+  String? _resolvedExamId;
   String _examTitle = 'Đang tải bài thi...';
   int _durationMinutes = 45;
   int _remainingSeconds = 45 * 60;
@@ -53,8 +54,12 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   void initState() {
     super.initState();
     _isAuthorPreview = widget.isAuthorPreview;
+    _resolvedExamId = widget.examId;
     if (widget.initialQuestions != null) {
       _questions = List.of(widget.initialQuestions!);
+      if (_resolvedExamId == null && _questions.isNotEmpty) {
+        _resolvedExamId = _questions.first['exam_id']?.toString();
+      }
       _isLoading = false;
     } else {
       _loadExamAndQuestions();
@@ -124,6 +129,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           .maybeSingle();
 
       if (exam != null) {
+        _resolvedExamId = exam['id']?.toString();
         _examTitle = exam['title'] ?? 'Bài kiểm tra';
         _durationMinutes = exam['duration_minutes'] ?? 45;
 
@@ -147,7 +153,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
         final qRes = await client
             .from('questions')
             .select(
-              'id, position, body, explanation, points, question_options(id, position, body, is_correct)',
+              'id, exam_id, position, body, explanation, points, question_options(id, position, body, is_correct)',
             )
             .eq('exam_id', examIdStr)
             .order('position', ascending: true);
@@ -355,10 +361,13 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
     final double rawScore = (correctCount / _questions.length) * 10.0;
     final double finalScore = double.parse(rawScore.toStringAsFixed(1));
 
+    final resolvedExamId = _resolvedExamId ??
+        widget.examId ??
+        (_questions.isNotEmpty ? _questions.first['exam_id']?.toString() : null);
+
     final payload = <String, dynamic>{
-      'exam_id':
-          widget.examId ??
-          (_questions.isNotEmpty ? _questions.first['exam_id'] : null),
+      if (resolvedExamId != null && resolvedExamId.isNotEmpty)
+        'exam_id': resolvedExamId,
       'status': 'submitted',
       'started_at': DateTime.now()
           .subtract(Duration(minutes: _durationMinutes))
@@ -392,10 +401,13 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                 'submitted_at': DateTime.now().toIso8601String(),
               })
               .eq('id', widget.attemptId!);
-        } else {
+          savedToCloud = true;
+        } else if (resolvedExamId != null && resolvedExamId.isNotEmpty) {
           await client.from('attempts').insert(payload);
+          savedToCloud = true;
+        } else {
+          debugPrint('Không có exam_id hợp lệ để lưu lên Supabase, kích hoạt lưu cục bộ.');
         }
-        savedToCloud = true;
       }
     } catch (e) {
       debugPrint('Lỗi lưu bài làm lên Supabase, kích hoạt lưu cục bộ: $e');

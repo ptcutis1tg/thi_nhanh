@@ -185,4 +185,49 @@ void main() {
     // Xác nhận không còn thanh lỗi màu đỏ chặn người dùng
     expect(find.textContaining('Lỗi nộp bài thi:'), findsNothing);
   });
+
+  testWidgets('TakingExamScreen preserves resolved exam_id from questions when widget.examId is null', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final questionsWithExamId = [
+      {
+        'id': 'q1',
+        'exam_id': 'exam-uuid-999',
+        'body': 'Câu 1: 2 + 2 = ?',
+        'position': 1,
+        'options': [
+          {'id': 'opt1', 'body': '4', 'is_correct': true, 'position': 1},
+        ],
+      },
+    ];
+
+    Map<String, dynamic>? receivedPayload;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: TakingExamScreen(
+          initialQuestions: questionsWithExamId,
+          onSubmitAttempt: (payload) async {
+            receivedPayload = payload;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final submitBtn = find.text('Nộp bài');
+    expect(submitBtn, findsOneWidget);
+    await tester.tap(submitBtn);
+    await tester.pumpAndSettle();
+
+    final confirmBtn = find.text('Nộp bài ngay');
+    expect(confirmBtn, findsOneWidget);
+    await tester.tap(confirmBtn);
+    await tester.pumpAndSettle();
+
+    expect(receivedPayload, isNotNull);
+    expect(receivedPayload!['exam_id'], 'exam-uuid-999');
+  });
 }
