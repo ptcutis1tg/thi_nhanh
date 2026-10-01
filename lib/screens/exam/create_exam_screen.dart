@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/repositories/teacher_exam_repository.dart';
+import '../../core/models/question_draft.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/repositories/teacher_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
+import 'widgets/exam_left_sidebar.dart';
+import 'widgets/exam_right_sidebar.dart';
+import 'widgets/latex_math_view.dart';
+import 'widgets/question_answers_editor.dart';
+import 'widgets/quick_bulk_import_dialog.dart';
+import 'widgets/scientific_bottom_toolbar.dart';
+import 'widgets/student_exam_preview_dialog.dart';
 
 class CreateExamScreen extends StatefulWidget {
   const CreateExamScreen({super.key, this.examId});
@@ -13,33 +21,6 @@ class CreateExamScreen extends StatefulWidget {
 
   @override
   State<CreateExamScreen> createState() => _CreateExamScreenState();
-}
-
-class _QuestionDraft {
-  _QuestionDraft({required this.id}) : answers = List.filled(4, '');
-
-  final String id;
-  String body = '';
-  List<String> answers;
-  int correctAnswer = 0;
-  String difficulty = 'medium';
-  String points = '1';
-
-  factory _QuestionDraft.fromJson(Map<String, dynamic> question) {
-    final draft = _QuestionDraft(id: question['id'] as String)
-      ..body = question['body'] as String
-      ..answers = List<String>.from(question['answers'] as List<dynamic>)
-      ..correctAnswer = (question['correctAnswer'] as num).toInt()
-      ..points = '${question['points']}';
-    return draft;
-  }
-
-  Map<String, dynamic> toJson() => {
-    'body': body,
-    'answers': answers,
-    'correctAnswer': correctAnswer,
-    'points': points.replaceAll(',', '.'),
-  };
 }
 
 class _CreateExamScreenState extends State<CreateExamScreen> {
@@ -52,13 +33,19 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   String _status = 'draft';
   int _activeQuestionIndex = 0;
   DateTime? _lastSavedAt;
-  final List<_QuestionDraft> _questions = [];
+  bool _perQuestionTimerEnabled = false;
+
+  final List<QuestionDraft> _questions = [];
+
+  // Active controller and focus tracking for snippet insertion
+  TextEditingController? _activeTextController;
+  final Map<String, TextEditingController> _bodyControllers = {};
+  final Map<String, TextEditingController> _explanationControllers = {};
 
   double get _totalPoints => _questions.fold<double>(
-    0,
-    (sum, question) =>
-        sum + (double.tryParse(question.points.replaceAll(',', '.')) ?? 0),
-  );
+        0,
+        (sum, question) => sum + (double.tryParse(question.points.replaceAll(',', '.')) ?? 0),
+      );
 
   void _distributePointsEvenly() {
     if (_questions.isEmpty) return;
@@ -78,28 +65,33 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   void initState() {
     super.initState();
     _examId = widget.examId;
-    if (_examId != null) _loadExistingExam();
+    if (_examId != null) {
+      _loadExistingExam();
+    }
   }
 
   Future<void> _loadExistingExam() async {
     setState(() => _isLoading = true);
     final exam = await context.read<TeacherExamRepository>().draft(_examId!);
     if (!mounted) return;
+
     if (exam != null) {
       setState(() {
         _examNameController.text = exam['title'] as String;
         _durationController.text = '${exam['durationMinutes']}';
         _selectedSubject = exam['subject'] as String;
         _status = exam['status'] as String;
-        _questions
-          ..clear()
-          ..addAll(
-            (exam['questions'] as List<dynamic>).map(
-              (item) => _QuestionDraft.fromJson(
-                Map<String, dynamic>.from(item as Map),
-              ),
-            ),
-          );
+
+        _questions.clear();
+        final rawQuestions = exam['questions'] as List<dynamic>? ?? [];
+        for (var item in rawQuestions) {
+          _questions.add(QuestionDraft.fromJson(Map<String, dynamic>.from(item as Map)));
+        }
+
+        if (_questions.any((q) => q.timeLimitSeconds != null && q.timeLimitSeconds! > 0)) {
+          _perQuestionTimerEnabled = true;
+        }
+
         if (_questions.isEmpty) _addQuestion();
         _isConfigured = true;
         _isLoading = false;
@@ -113,6 +105,12 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   void dispose() {
     _examNameController.dispose();
     _durationController.dispose();
+    for (var c in _bodyControllers.values) {
+      c.dispose();
+    }
+    for (var c in _explanationControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -140,42 +138,72 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   }
 
   void _addQuestion() {
-    _questions.add(
-      _QuestionDraft(id: DateTime.now().microsecondsSinceEpoch.toString()),
-    );
-    _activeQuestionIndex = _questions.length - 1;
+    setState(() {
+      _questions.add(QuestionDraft(id: DateTime.now().microsecondsSinceEpoch.toString()));
+      _activeQuestionIndex = _questions.length - 1;
+    });
   }
 
-  void _removeQuestion() {
-    if (_questions.length == 1) {
+  void _duplicateQuestion(int index) {
+    final original = _questions[index];
+    final copy = original.copyWith(
+      id: '${DateTime.now().microsecondsSinceEpoch}_copy',
+    );
+    setState(() {
+      _questions.insert(index + 1, copy);
+      _activeQuestionIndex = index + 1;
+    });
+    _showMessage('Đã nhân bản câu hỏi ${index + 1}.');
+  }
+
+  void _removeQuestion(int index) {
+    if (_questions.length <= 1) {
       _showMessage('Đề cần có ít nhất một câu hỏi.', isError: true);
       return;
     }
     setState(() {
-      _questions.removeAt(_activeQuestionIndex);
-      _activeQuestionIndex = _activeQuestionIndex.clamp(
-        0,
-        _questions.length - 1,
-      );
+      _questions.removeAt(index);
+      _activeQuestionIndex = _activeQuestionIndex.clamp(0, _questions.length - 1);
+    });
+  }
+
+  void _reorderQuestions(int oldIndex, int newIndex) {
+    setState(() {
+      final item = _questions.removeAt(oldIndex);
+      _questions.insert(newIndex, item);
+      _activeQuestionIndex = newIndex;
+    });
+  }
+
+  void _handleBulkImport(List<QuestionDraft> importedQuestions) {
+    if (importedQuestions.isEmpty) return;
+    setState(() {
+      _questions.addAll(importedQuestions);
+      _activeQuestionIndex = _questions.length - 1;
+    });
+    _showMessage('Đã nhập thành công ${importedQuestions.length} câu hỏi vào đề!');
+  }
+
+  void _insertSnippetAtCursor(String template, int selectionOffset, int selectionLength) {
+    final q = _questions[_activeQuestionIndex];
+    setState(() {
+      q.body = q.body.isEmpty ? template : '${q.body} $template';
     });
   }
 
   Future<bool> _saveDraft() async {
     if (!context.read<AuthProvider>().hasSupabaseSession) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Bạn cần đăng nhập bằng tài khoản Supabase trước khi lưu đề.',
-            ),
-            backgroundColor: AppTheme.error,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Bạn cần đăng nhập bằng tài khoản Supabase trước khi lưu đề.'),
+          backgroundColor: AppTheme.error,
+        ));
         context.go('/greeting');
       }
       return false;
     }
     if (!_isConfigured) return false;
+
     setState(() => _isLoading = true);
     try {
       final savedId = await context.read<TeacherExamRepository>().saveDraft(
@@ -183,7 +211,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         title: _examNameController.text.trim(),
         subject: _selectedSubject ?? '',
         durationMinutes: int.tryParse(_durationController.text) ?? 45,
-        questions: _questions.map((question) => question.toJson()).toList(),
+        questions: _questions.map((q) => q.toJson()).toList(),
       );
       if (!mounted) return false;
       setState(() {
@@ -196,58 +224,39 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showMessage(
-          'Lỗi khi lưu đề: ${e.toString().replaceAll('PostgrestException: ', '')}',
-          isError: true,
-        );
+        _showMessage('Lỗi khi lưu đề: ${e.toString().replaceAll('PostgrestException: ', '')}', isError: true);
       }
       return false;
     }
   }
 
-  Future<void> _saveDraftOnly() async {
-    final success = await _saveDraft();
-    if (success && mounted) {
-      _showMessage('Đã lưu bản nháp thành công.');
-    }
-  }
-
   Future<void> _publishExam() async {
-    final invalidQuestion = _questions.indexWhere(
-      (question) =>
-          question.body.trim().isEmpty ||
-          question.answers.any((answer) => answer.trim().isEmpty),
-    );
-    if (invalidQuestion >= 0) {
-      setState(() => _activeQuestionIndex = invalidQuestion);
-      _showMessage(
-        'Hãy nhập nội dung và đủ đáp án cho Câu ${invalidQuestion + 1} trước khi xuất bản.',
-        isError: true,
-      );
-      return;
-    }
+    for (int i = 0; i < _questions.length; i++) {
+      final q = _questions[i];
+      if (q.body.trim().isEmpty) {
+        setState(() => _activeQuestionIndex = i);
+        _showMessage('Hãy nhập nội dung cho Câu ${i + 1} trước khi xuất bản.', isError: true);
+        return;
+      }
 
-    final invalidPoints = _questions.indexWhere((question) {
-      final value = double.tryParse(question.points.replaceAll(',', '.'));
-      return value == null ||
-          value <= 0 ||
-          value > 10 ||
-          (value * 100 - (value * 100).round()).abs() > .000001;
-    });
-    if (invalidPoints >= 0) {
-      setState(() => _activeQuestionIndex = invalidPoints);
-      _showMessage(
-        'Điểm mỗi câu phải lớn hơn 0, không quá 10 và có tối đa 2 chữ số thập phân.',
-        isError: true,
-      );
-      return;
-    }
-    if ((_totalPoints - 10).abs() > .001) {
-      _showMessage(
-        'Tổng điểm phải bằng 10. Hiện tại: ${_totalPoints.toStringAsFixed(2)}.',
-        isError: true,
-      );
-      return;
+      if (q.type == QuestionType.singleChoice || q.type == QuestionType.multipleChoice) {
+        if (q.answers.any((a) => a.trim().isEmpty)) {
+          setState(() => _activeQuestionIndex = i);
+          _showMessage('Hãy điền đầy đủ nội dung các đáp án cho Câu ${i + 1}.', isError: true);
+          return;
+        }
+        if (q.correctAnswers.isEmpty) {
+          setState(() => _activeQuestionIndex = i);
+          _showMessage('Hãy chọn ít nhất một đáp án đúng cho Câu ${i + 1}.', isError: true);
+          return;
+        }
+      } else if (q.type == QuestionType.shortAnswer) {
+        if (q.answers.isEmpty || q.answers.first.trim().isEmpty) {
+          setState(() => _activeQuestionIndex = i);
+          _showMessage('Hãy nhập đáp án chuẩn cho Câu điền khuyết số ${i + 1}.', isError: true);
+          return;
+        }
+      }
     }
 
     final success = await _saveDraft();
@@ -258,6 +267,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       final repo = context.read<TeacherExamRepository>();
       await repo.publish(_examId!);
       if (!mounted) return;
+
       setState(() {
         _status = 'published';
         _isLoading = false;
@@ -267,16 +277,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: AppTheme.success,
-                size: 28,
-              ),
+              Icon(Icons.check_circle_rounded, color: AppTheme.success, size: 28),
               SizedBox(width: 10),
               Text('Xuất bản thành công!'),
             ],
@@ -285,13 +289,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Đề "${_examNameController.text}" đã được công khai lên hệ thống.',
-              ),
+              Text('Đề "${_examNameController.text}" đã được công khai lên hệ thống.'),
               const SizedBox(height: 8),
-              const Text(
-                'Học sinh có thể tìm kiếm đề thi này hoặc bạn có thể mở phòng thi ngay bây giờ.',
-              ),
+              const Text('Học sinh có thể bắt đầu làm bài hoặc bạn có thể mở phòng thi ngay.'),
             ],
           ),
           actions: [
@@ -316,462 +316,418 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showMessage(
-          'Lỗi khi xuất bản: ${e.toString().replaceAll('PostgrestException: ', '')}',
-          isError: true,
-        );
+        _showMessage('Lỗi khi xuất bản: ${e.toString().replaceAll('PostgrestException: ', '')}', isError: true);
       }
     }
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? AppTheme.error : AppTheme.success,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: isError ? AppTheme.error : AppTheme.success,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading)
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_isLoading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     if (!_isConfigured) return _buildSetup();
+
     return Scaffold(
-      body: Row(
+      backgroundColor: AppTheme.background,
+      body: Column(
         children: [
-          _buildSidebar(),
-          Expanded(child: _buildEditor()),
+          _buildTopHeader(),
+          Expanded(
+            child: Row(
+              children: [
+                // 1. Left Sidebar (Question Navigation)
+                ExamLeftSidebar(
+                  questions: _questions,
+                  activeIndex: _activeQuestionIndex,
+                  onSelect: (idx) => setState(() => _activeQuestionIndex = idx),
+                  onAdd: _addQuestion,
+                  onDuplicate: _duplicateQuestion,
+                  onDelete: _removeQuestion,
+                  onReorder: _reorderQuestions,
+                  onOpenBulkImport: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => QuickBulkImportDialog(onImport: _handleBulkImport),
+                    );
+                  },
+                ),
+                // 2. Center Workspace (Editor + Bottom Scientific Toolbar)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(child: _buildCenterEditor()),
+                      ScientificBottomToolbar(onInsertSnippet: _insertSnippetAtCursor),
+                    ],
+                  ),
+                ),
+                // 3. Right Sidebar (Overview & Timer settings)
+                ExamRightSidebar(
+                  examTitle: _examNameController.text,
+                  subject: _selectedSubject ?? '',
+                  durationMinutes: int.tryParse(_durationController.text) ?? 45,
+                  questionCount: _questions.length,
+                  perQuestionTimerEnabled: _perQuestionTimerEnabled,
+                  onTogglePerQuestionTimer: (enabled) {
+                    setState(() {
+                      _perQuestionTimerEnabled = enabled;
+                      if (!enabled) {
+                        for (var q in _questions) {
+                          q.timeLimitSeconds = null;
+                        }
+                      }
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          _buildBottomStatusBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopHeader() {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppTheme.border)),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Quay lại',
+            icon: const Icon(Icons.arrow_back, color: AppTheme.textMain),
+            onPressed: () => context.go('/teacher_exams'),
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.edit_document, color: AppTheme.primary, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Row(
+              children: [
+                Text(
+                  _examNameController.text.isEmpty ? 'Soạn đề thi' : _examNameController.text,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _status == 'published'
+                        ? AppTheme.success.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _status == 'published' ? 'Đã xuất bản' : 'Bản nháp',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _status == 'published' ? AppTheme.success : Colors.orange.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => StudentExamPreviewDialog(
+                  examTitle: _examNameController.text,
+                  subject: _selectedSubject ?? '',
+                  durationMinutes: int.tryParse(_durationController.text) ?? 45,
+                  questions: _questions,
+                ),
+              );
+            },
+            icon: const Icon(Icons.visibility_outlined, size: 18),
+            label: const Text('Xem trước học sinh'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCenterEditor() {
+    if (_questions.isEmpty) return const SizedBox.shrink();
+    final question = _questions[_activeQuestionIndex];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(28),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Question Header & Type Selector
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'CÂU ${_activeQuestionIndex + 1}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 15),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      // Question Type Dropdown
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppTheme.border),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<QuestionType>(
+                            value: question.type,
+                            items: QuestionType.values.map((t) {
+                              return DropdownMenuItem(
+                                value: t,
+                                child: Row(
+                                  children: [
+                                    Icon(t.icon, size: 18, color: AppTheme.primary),
+                                    const SizedBox(width: 8),
+                                    Text(t.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (newType) {
+                              if (newType != null) {
+                                setState(() {
+                                  question.type = newType;
+                                  if (newType == QuestionType.trueFalse) {
+                                    question.answers = ['Đúng', 'Sai'];
+                                    question.correctAnswers = [0];
+                                  } else if (newType == QuestionType.shortAnswer && question.answers.isEmpty) {
+                                    question.answers = [''];
+                                  }
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      // Points input
+                      SizedBox(
+                        width: 90,
+                        child: TextField(
+                          controller: TextEditingController(text: question.points),
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Điểm',
+                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          ),
+                          onChanged: (val) => question.points = val,
+                        ),
+                      ),
+                      if (_perQuestionTimerEnabled) ...[
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 110,
+                          child: TextField(
+                            controller: TextEditingController(text: question.timeLimitSeconds?.toString() ?? ''),
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Giây / câu',
+                              suffixText: 's',
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            ),
+                            onChanged: (val) => question.timeLimitSeconds = int.tryParse(val),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      IconButton(
+                        tooltip: 'Nhân bản',
+                        onPressed: () => _duplicateQuestion(_activeQuestionIndex),
+                        icon: const Icon(Icons.copy_rounded, color: AppTheme.textSecondary),
+                      ),
+                      IconButton(
+                        tooltip: 'Xóa câu này',
+                        onPressed: () => _removeQuestion(_activeQuestionIndex),
+                        icon: const Icon(Icons.delete_outline, color: AppTheme.error),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 32),
+                  // Question Body input
+                  const Text('Nội dung câu hỏi * (hỗ trợ LaTeX như \$x^2 + 1\$):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 10),
+                  Focus(
+                    onFocusChange: (hasFocus) {
+                      if (hasFocus) _activeTextController = null;
+                    },
+                    child: TextFormField(
+                      key: ValueKey('question-${question.id}'),
+                      initialValue: question.body,
+                      maxLines: 4,
+                      onChanged: (val) {
+                        question.body = val;
+                        setState(() {});
+                      },
+                      decoration: const InputDecoration(
+                        hintText: 'Nhập nội dung câu hỏi, công thức toán/lý/hóa... Ví dụ: Cho hàm số \$f(x) = \\frac{1}{x}\$...',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Live Preview Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.auto_awesome, size: 16, color: AppTheme.primary),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Xem trước hiển thị trực tiếp (Live Preview):',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LatexMathView(
+                          text: question.body.isEmpty ? 'Bản xem trước đề bài sẽ xuất hiện tại đây khi bạn gõ.' : question.body,
+                          textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  // Answers Section
+                  QuestionAnswersEditor(
+                    question: question,
+                    onChanged: () => setState(() {}),
+                  ),
+                  const SizedBox(height: 28),
+                  // Explanation field
+                  const Text('Lời giải thích chi tiết (hiển thị khi học sinh xem lại bài):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    key: ValueKey('explanation-${question.id}'),
+                    initialValue: question.explanation,
+                    maxLines: 3,
+                    onChanged: (val) => question.explanation = val,
+                    decoration: const InputDecoration(
+                      hintText: 'Nhập các bước giải, hướng dẫn hoặc kiến thức liên quan...',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomStatusBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppTheme.border)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            _lastSavedAt == null
+                ? 'Chưa lưu nháp'
+                : 'Đã lưu nháp lúc ${TimeOfDay.fromDateTime(_lastSavedAt!).format(context)}',
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
+          const Spacer(),
+          OutlinedButton.icon(
+            onPressed: _isLoading ? null : _saveDraft,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: const Text('Lưu bản nháp'),
+          ),
+          const SizedBox(width: 12),
+          ElevatedButton.icon(
+            onPressed: _isLoading ? null : _publishExam,
+            icon: const Icon(Icons.rocket_launch_rounded, size: 18),
+            label: const Text('Lưu & Xuất bản ngay'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildSetup() => Scaffold(
-    backgroundColor: AppTheme.background,
-    body: Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(36),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.menu_book_rounded,
-                    color: AppTheme.primary,
-                    size: 36,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Tạo đề mới',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Nhập thông tin chung một lần. Sau đó bạn chỉ tập trung soạn câu hỏi.',
-                    style: TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 28),
-                  TextField(
-                    key: const Key('setup-name'),
-                    controller: _examNameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tên đề thi *',
-                      hintText: 'Ví dụ: Ôn tập Toán 12 chương 1',
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  DropdownButtonFormField<String>(
-                    key: const Key('setup-subject'),
-                    value: _selectedSubject,
-                    decoration: const InputDecoration(labelText: 'Môn học *'),
-                    items: const [
-                      DropdownMenuItem(value: 'Toán', child: Text('Toán')),
-                      DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
-                      DropdownMenuItem(
-                        value: 'Hóa học',
-                        child: Text('Hóa học'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Tiếng Anh',
-                        child: Text('Tiếng Anh'),
-                      ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _selectedSubject = value),
-                  ),
-                  const SizedBox(height: 18),
-                  TextField(
-                    controller: _durationController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Thời lượng (phút)',
-                      suffixText: 'phút',
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      key: const Key('setup-continue'),
-                      onPressed: _configureExam,
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Bắt đầu soạn câu hỏi'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  Widget _buildSidebar() => Container(
-    width: 256,
-    decoration: const BoxDecoration(
-      color: AppTheme.surface,
-      border: Border(right: BorderSide(color: AppTheme.border)),
-    ),
-    child: Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: AppTheme.border)),
-          ),
-          child: const Text(
-            'DANH SÁCH CÂU HỎI',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _questions.length,
-            itemBuilder: (_, index) => _questionListItem(index),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: OutlinedButton.icon(
-            key: const Key('add-question'),
-            onPressed: () => setState(_addQuestion),
-            icon: const Icon(Icons.add),
-            label: const Text('Thêm câu hỏi'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  Widget _questionListItem(int index) {
-    final question = _questions[index];
-    final active = index == _activeQuestionIndex;
-    final title = question.body.trim().isEmpty
-        ? 'Câu hỏi số ${index + 1}'
-        : question.body.trim();
-    return InkWell(
-      key: Key('question-list-$index'),
-      onTap: () => setState(() => _activeQuestionIndex = index),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: active
-              ? AppTheme.primary.withValues(alpha: .10)
-              : AppTheme.surface,
-          border: Border.all(
-            color: active ? AppTheme.primaryLight : Colors.transparent,
-          ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: active ? AppTheme.primary : AppTheme.border,
-              child: Text(
-                '${index + 1}',
-                style: TextStyle(
-                  color: active ? Colors.white : AppTheme.textSecondary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-                      color: active ? AppTheme.primary : AppTheme.textMain,
-                    ),
-                  ),
-                  const Text(
-                    'Trắc nghiệm',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEditor() {
-    final question = _questions[_activeQuestionIndex];
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(32).copyWith(bottom: 100),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: .08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.description_outlined,
-                                color: AppTheme.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  '${_examNameController.text} • $_selectedSubject • ${_durationController.text} phút',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'CÂU ${_activeQuestionIndex + 1}',
-                                  style: const TextStyle(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Chỉnh sửa nội dung',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                              onPressed: _removeQuestion,
-                              icon: const Icon(Icons.delete_outline),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 42),
-                        const Text(
-                          'Nội dung câu hỏi *',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 10),
-                        TextFormField(
-                          key: ValueKey('question-${question.id}'),
-                          initialValue: question.body,
-                          maxLines: 4,
-                          onChanged: (value) =>
-                              setState(() => question.body = value),
-                          decoration: const InputDecoration(
-                            hintText: 'Nhập nội dung câu hỏi tại đây...',
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                key: ValueKey('points-${question.id}'),
-                                initialValue: question.points,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                onChanged: (value) =>
-                                    setState(() => question.points = value),
-                                decoration: const InputDecoration(
-                                  labelText: 'Điểm câu hỏi',
-                                  suffixText: 'điểm',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'Tổng: ${_totalPoints.toStringAsFixed(2)}/10',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: (_totalPoints - 10).abs() < .001
-                                        ? AppTheme.success
-                                        : AppTheme.warning,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: _distributePointsEvenly,
-                                  child: const Text('Chia đều 10 điểm'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-                        const Text(
-                          'Các đáp án (chọn 1 đáp án đúng)',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 12),
-                        ...List.generate(
-                          question.answers.length,
-                          (index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _answerField(question, index),
-                          ),
-                        ),
-                        if (question.answers.length < 8)
-                          TextButton.icon(
-                            onPressed: () =>
-                                setState(() => question.answers.add('')),
-                            icon: const Icon(Icons.add_circle_outline),
-                            label: const Text('Thêm lựa chọn'),
-                          ),
+        backgroundColor: AppTheme.background,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(36),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Icon(Icons.menu_book_rounded, color: AppTheme.primary, size: 36),
+                    const SizedBox(height: 16),
+                    Text('Tạo đề mới', style: Theme.of(context).textTheme.headlineSmall),
+                    const SizedBox(height: 8),
+                    const Text('Nhập thông tin chung một lần. Sau đó bạn chỉ tập trung soạn câu hỏi.', style: TextStyle(color: AppTheme.textSecondary)),
+                    const SizedBox(height: 28),
+                    TextField(key: const Key('setup-name'), controller: _examNameController, decoration: const InputDecoration(labelText: 'Tên đề thi *', hintText: 'Ví dụ: Ôn tập Toán 12 chương 1')),
+                    const SizedBox(height: 18),
+                    DropdownButtonFormField<String>(
+                      key: const Key('setup-subject'),
+                      value: _selectedSubject,
+                      decoration: const InputDecoration(labelText: 'Môn học *'),
+                      items: const [
+                        DropdownMenuItem(value: 'Toán', child: Text('Toán')),
+                        DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
+                        DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
+                        DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
                       ],
+                      onChanged: (value) => setState(() => _selectedSubject = value),
                     ),
-                  ),
+                    const SizedBox(height: 18),
+                    TextField(controller: _durationController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Thời lượng (phút)', suffixText: 'phút')),
+                    const SizedBox(height: 28),
+                    SizedBox(width: double.infinity, child: ElevatedButton.icon(key: const Key('setup-continue'), onPressed: _configureExam, icon: const Icon(Icons.arrow_forward), label: const Text('Bắt đầu soạn câu hỏi'))),
+                  ]),
                 ),
               ),
             ),
           ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: AppTheme.border)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _lastSavedAt == null
-                          ? 'Chưa lưu nháp'
-                          : 'Đã lưu nháp lúc ${TimeOfDay.fromDateTime(_lastSavedAt!).format(context)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _isLoading ? null : _saveDraftOnly,
-                    icon: const Icon(Icons.save_outlined, size: 18),
-                    label: const Text('Lưu bản nháp'),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _publishExam,
-                    icon: const Icon(Icons.rocket_launch_rounded, size: 18),
-                    label: const Text('Lưu & Xuất bản ngay'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _answerField(_QuestionDraft question, int index) => Row(
-    children: [
-      Radio<int>(
-        value: index,
-        groupValue: question.correctAnswer,
-        onChanged: (value) => setState(() => question.correctAnswer = value!),
-      ),
-      Expanded(
-        child: TextFormField(
-          key: ValueKey('answer-${question.id}-$index'),
-          initialValue: question.answers[index],
-          onChanged: (value) => question.answers[index] = value,
-          decoration: InputDecoration(
-            labelText: '${String.fromCharCode(65 + index)}. Đáp án *',
-          ),
         ),
-      ),
-      IconButton(
-        onPressed: question.answers.length <= 2
-            ? null
-            : () => setState(() {
-                question.answers.removeAt(index);
-                if (question.correctAnswer >= question.answers.length)
-                  question.correctAnswer = 0;
-              }),
-        icon: const Icon(Icons.close),
-      ),
-    ],
-  );
+      );
 }
