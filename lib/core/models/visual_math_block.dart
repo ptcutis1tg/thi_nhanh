@@ -149,8 +149,10 @@ sealed class QuestionContentSegment {
 }
 
 class TextContentSegment extends QuestionContentSegment {
+  final String id;
   String text;
-  TextContentSegment(this.text);
+  TextContentSegment(this.text, {String? id})
+      : id = id ?? 'txt_${DateTime.now().microsecondsSinceEpoch}_${text.hashCode}';
 
   @override
   String toLatex() => text;

@@ -13,6 +13,8 @@ import 'widgets/question_answers_editor.dart';
 import 'widgets/quick_bulk_import_dialog.dart';
 import 'widgets/scientific_bottom_toolbar.dart';
 import 'widgets/student_exam_preview_dialog.dart';
+import 'widgets/inline_visual_math_editor.dart';
+import '../../core/models/visual_math_block.dart';
 
 class CreateExamScreen extends StatefulWidget {
   const CreateExamScreen({super.key, this.examId});
@@ -24,6 +26,7 @@ class CreateExamScreen extends StatefulWidget {
 }
 
 class _CreateExamScreenState extends State<CreateExamScreen> {
+  final _editorController = InlineVisualMathEditorController();
   final _examNameController = TextEditingController();
   final _durationController = TextEditingController(text: '45');
   String? _selectedSubject;
@@ -362,7 +365,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   child: Column(
                     children: [
                       Expanded(child: _buildCenterEditor()),
-                      ScientificBottomToolbar(onInsertSnippet: _insertSnippetAtCursor),
+                      ScientificBottomToolbar(
+                        onInsertSnippet: _insertSnippetAtCursor,
+                        onInsertMathBlock: (type) => _editorController.insertMathBlock(type),
+                      ),
                     ],
                   ),
                 ),
@@ -574,24 +580,16 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   ),
                   const Divider(height: 32),
                   // Question Body input
-                  const Text('Nội dung câu hỏi * (hỗ trợ LaTeX như \$x^2 + 1\$):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const Text('Nội dung câu hỏi * (hỗ trợ nhập công thức trực quan [ ] hoặc LaTeX):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 10),
-                  Focus(
-                    onFocusChange: (hasFocus) {
-                      if (hasFocus) _activeTextController = null;
+                  InlineVisualMathEditor(
+                    key: ValueKey('visual-editor-${question.id}'),
+                    initialLatex: question.body,
+                    controller: _editorController,
+                    onChanged: (val) {
+                      question.body = val;
+                      setState(() {});
                     },
-                    child: TextFormField(
-                      key: ValueKey('question-${question.id}'),
-                      initialValue: question.body,
-                      maxLines: 4,
-                      onChanged: (val) {
-                        question.body = val;
-                        setState(() {});
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Nhập nội dung câu hỏi, công thức toán/lý/hóa... Ví dụ: Cho hàm số \$f(x) = \\frac{1}{x}\$...',
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 14),
                   // Live Preview Card

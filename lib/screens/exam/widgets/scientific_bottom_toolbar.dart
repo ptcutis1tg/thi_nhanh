@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/models/visual_math_block.dart';
 import '../../../core/theme/app_theme.dart';
 
 class ScientificSnippet {
@@ -23,9 +24,11 @@ class ScientificBottomToolbar extends StatefulWidget {
   const ScientificBottomToolbar({
     super.key,
     required this.onInsertSnippet,
+    this.onInsertMathBlock,
   });
 
   final void Function(String template, int selectionOffset, int selectionLength) onInsertSnippet;
+  final void Function(MathBlockType type)? onInsertMathBlock;
 
   @override
   State<ScientificBottomToolbar> createState() => _ScientificBottomToolbarState();
@@ -281,6 +284,42 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
+                      if (widget.onInsertMathBlock != null) {
+                        if (item.label == '□/□') {
+                          widget.onInsertMathBlock!(MathBlockType.fraction);
+                          return;
+                        } else if (item.label == '√□') {
+                          widget.onInsertMathBlock!(MathBlockType.sqrt);
+                          return;
+                        } else if (item.label == 'ⁿ√□') {
+                          widget.onInsertMathBlock!(MathBlockType.nroot);
+                          return;
+                        } else if (item.label == 'xⁿ') {
+                          widget.onInsertMathBlock!(MathBlockType.power);
+                          return;
+                        } else if (item.label == 'xₙ') {
+                          widget.onInsertMathBlock!(MathBlockType.subscript);
+                          return;
+                        } else if (item.label == '∫') {
+                          widget.onInsertMathBlock!(MathBlockType.integral);
+                          return;
+                        } else if (item.label == 'lim') {
+                          widget.onInsertMathBlock!(MathBlockType.limit);
+                          return;
+                        } else if (item.label == 'log') {
+                          widget.onInsertMathBlock!(MathBlockType.logarithm);
+                          return;
+                        } else if (item.label == '∑') {
+                          widget.onInsertMathBlock!(MathBlockType.summation);
+                          return;
+                        } else if (item.label == '→') {
+                          widget.onInsertMathBlock!(MathBlockType.vector);
+                          return;
+                        } else if (item.label == '∠') {
+                          widget.onInsertMathBlock!(MathBlockType.angle);
+                          return;
+                        }
+                      }
                       final str = item.isLatex ? '\$${item.template}\$' : item.template;
                       widget.onInsertSnippet(str, item.selectionOffset, item.selectionLength);
                     },

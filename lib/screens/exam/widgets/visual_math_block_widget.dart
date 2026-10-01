@@ -63,6 +63,7 @@ class VisualMathBlockWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-num'),
               initialValue: block.slots['num'] ?? '',
               placeholder: 'tử số',
               autofocus: autofocusFirstSlot,
@@ -75,6 +76,7 @@ class VisualMathBlockWidget extends StatelessWidget {
               color: Colors.black87,
             ),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-den'),
               initialValue: block.slots['den'] ?? '',
               placeholder: 'mẫu số',
               onChanged: (val) => onSlotChanged('den', val),
@@ -94,6 +96,7 @@ class VisualMathBlockWidget extends StatelessWidget {
               ),
               padding: const EdgeInsets.only(top: 2),
               child: VisualSlotInput(
+                key: Key('slot-${block.type.name}-radicand'),
                 initialValue: block.slots['radicand'] ?? '',
                 placeholder: 'biểu thức',
                 autofocus: autofocusFirstSlot,
@@ -111,6 +114,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             Transform.translate(
               offset: const Offset(4, -8),
               child: VisualSlotInput(
+                key: Key('slot-${block.type.name}-index'),
                 initialValue: block.slots['index'] ?? '',
                 placeholder: 'n',
                 minWidth: 26,
@@ -126,6 +130,7 @@ class VisualMathBlockWidget extends StatelessWidget {
               ),
               padding: const EdgeInsets.only(top: 2),
               child: VisualSlotInput(
+                key: Key('slot-${block.type.name}-radicand'),
                 initialValue: block.slots['radicand'] ?? '',
                 placeholder: 'biểu thức',
                 onChanged: (val) => onSlotChanged('radicand', val),
@@ -140,6 +145,7 @@ class VisualMathBlockWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-base'),
               initialValue: block.slots['base'] ?? '',
               placeholder: 'cơ số',
               autofocus: autofocusFirstSlot,
@@ -148,6 +154,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             Transform.translate(
               offset: const Offset(0, -8),
               child: VisualSlotInput(
+                key: Key('slot-${block.type.name}-exp'),
                 initialValue: block.slots['exp'] ?? '',
                 placeholder: 'mũ',
                 fontSize: 11,
@@ -164,6 +171,7 @@ class VisualMathBlockWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-base'),
               initialValue: block.slots['base'] ?? '',
               placeholder: 'biến',
               autofocus: autofocusFirstSlot,
@@ -172,6 +180,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             Transform.translate(
               offset: const Offset(0, 8),
               child: VisualSlotInput(
+                key: Key('slot-${block.type.name}-sub'),
                 initialValue: block.slots['sub'] ?? '',
                 placeholder: 'chỉ số',
                 fontSize: 11,
@@ -191,6 +200,7 @@ class VisualMathBlockWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 VisualSlotInput(
+                  key: Key('slot-${block.type.name}-upper'),
                   initialValue: block.slots['upper'] ?? '',
                   placeholder: 'b',
                   fontSize: 11,
@@ -199,6 +209,7 @@ class VisualMathBlockWidget extends StatelessWidget {
                 ),
                 const Text('∫', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w300, color: AppTheme.primary)),
                 VisualSlotInput(
+                  key: Key('slot-${block.type.name}-lower'),
                   initialValue: block.slots['lower'] ?? '',
                   placeholder: 'a',
                   fontSize: 11,
@@ -210,6 +221,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-expr'),
               initialValue: block.slots['expr'] ?? '',
               placeholder: 'f(x)',
               onChanged: (val) => onSlotChanged('expr', val),
@@ -233,6 +245,7 @@ class VisualMathBlockWidget extends StatelessWidget {
                   children: [
                     const Text('x→', style: TextStyle(fontSize: 11)),
                     VisualSlotInput(
+                      key: Key('slot-${block.type.name}-to'),
                       initialValue: block.slots['to'] ?? '',
                       placeholder: 'x₀',
                       fontSize: 10,
@@ -246,6 +259,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-expr'),
               initialValue: block.slots['expr'] ?? '',
               placeholder: 'f(x)',
               onChanged: (val) => onSlotChanged('expr', val),
@@ -262,6 +276,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             Transform.translate(
               offset: const Offset(0, 6),
               child: VisualSlotInput(
+                key: Key('slot-${block.type.name}-base'),
                 initialValue: block.slots['base'] ?? '',
                 placeholder: 'a',
                 fontSize: 10,
@@ -272,6 +287,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             ),
             const Text('('),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-arg'),
               initialValue: block.slots['arg'] ?? '',
               placeholder: 'b',
               onChanged: (val) => onSlotChanged('arg', val),
@@ -289,6 +305,7 @@ class VisualMathBlockWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 VisualSlotInput(
+                  key: Key('slot-${block.type.name}-to'),
                   initialValue: block.slots['to'] ?? '',
                   placeholder: 'n',
                   fontSize: 10,
@@ -297,6 +314,7 @@ class VisualMathBlockWidget extends StatelessWidget {
                 ),
                 const Text('∑', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primary)),
                 VisualSlotInput(
+                  key: Key('slot-${block.type.name}-from'),
                   initialValue: block.slots['from'] ?? '',
                   placeholder: 'i=1',
                   fontSize: 10,
@@ -308,6 +326,7 @@ class VisualMathBlockWidget extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-expr'),
               initialValue: block.slots['expr'] ?? '',
               placeholder: 'f(i)',
               onChanged: (val) => onSlotChanged('expr', val),
@@ -321,6 +340,7 @@ class VisualMathBlockWidget extends StatelessWidget {
           children: [
             const Text('→', style: TextStyle(fontSize: 14, height: 0.8, fontWeight: FontWeight.bold, color: AppTheme.primary)),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-name'),
               initialValue: block.slots['name'] ?? '',
               placeholder: 'v',
               autofocus: autofocusFirstSlot,
@@ -335,6 +355,7 @@ class VisualMathBlockWidget extends StatelessWidget {
           children: [
             const Text('^', style: TextStyle(fontSize: 14, height: 0.8, fontWeight: FontWeight.bold, color: AppTheme.primary)),
             VisualSlotInput(
+              key: Key('slot-${block.type.name}-name'),
               initialValue: block.slots['name'] ?? '',
               placeholder: 'ABC',
               autofocus: autofocusFirstSlot,

@@ -215,20 +215,77 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
   }
 
   Widget _buildTextSegmentWidget(int index, TextContentSegment seg) {
-    return IntrinsicWidth(
-      child: TextField(
-        controller: TextEditingController(text: seg.text)..selection = TextSelection.collapsed(offset: seg.text.length),
-        style: const TextStyle(fontSize: 15, height: 1.5),
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-          border: InputBorder.none,
-          hintText: _segments.length <= 1 ? 'Nhập nội dung đề bài...' : '',
+    return _TextSegmentField(
+      key: Key('inline-math-text-segment-$index'),
+      initialText: seg.text,
+      hintText: _segments.length <= 1 ? 'Nhập nội dung câu hỏi, công thức toán...' : '',
+      onChanged: (val) {
+        seg.text = val;
+        _notifyChange();
+      },
+    );
+  }
+}
+
+class _TextSegmentField extends StatefulWidget {
+  const _TextSegmentField({
+    super.key,
+    required this.initialText,
+    required this.hintText,
+    required this.onChanged,
+  });
+
+  final String initialText;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  State<_TextSegmentField> createState() => _TextSegmentFieldState();
+}
+
+class _TextSegmentFieldState extends State<_TextSegmentField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TextSegmentField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialText != _controller.text && widget.initialText != oldWidget.initialText) {
+      _controller.value = TextEditingValue(
+        text: widget.initialText,
+        selection: TextSelection.collapsed(offset: widget.initialText.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 80),
+      child: IntrinsicWidth(
+        child: TextField(
+          controller: _controller,
+          maxLines: null,
+          style: const TextStyle(fontSize: 15, height: 1.5),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            border: InputBorder.none,
+            hintText: widget.hintText,
+          ),
+          onChanged: widget.onChanged,
         ),
-        onChanged: (val) {
-          seg.text = val;
-          _notifyChange();
-        },
       ),
     );
   }
