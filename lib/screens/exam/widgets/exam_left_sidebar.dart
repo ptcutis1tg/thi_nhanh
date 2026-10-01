@@ -104,6 +104,7 @@ class ExamLeftSidebar extends StatelessWidget {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
+                      key: Key('question-list-$index'),
                       borderRadius: BorderRadius.circular(10),
                       onTap: () => onSelect(index),
                       child: Padding(
