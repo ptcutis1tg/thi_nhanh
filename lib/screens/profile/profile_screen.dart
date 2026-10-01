@@ -1082,25 +1082,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onAction: () => context.go('/home'),
             )
           else ...[
-            for (int i = 0; i < _studentData.recentTests.length; i++) ...[
-              if (i > 0) const Divider(color: AppTheme.border, height: 24),
-              _buildTestHistoryRow(
-                subjectIcon: _studentData.recentTests[i].subjectIcon,
-                title: _studentData.recentTests[i].title,
-                date: _studentData.recentTests[i].date,
-                score: _studentData.recentTests[i].score,
-                scoreStatus: _studentData.recentTests[i].scoreValue >= 8.0
-                    ? _ScoreStatus.high
-                    : (_studentData.recentTests[i].scoreValue >= 5.0
-                        ? _ScoreStatus.medium
-                        : _ScoreStatus.low),
-              ),
-            ],
+            Builder(
+              builder: (context) {
+                final displayedTests = _studentData.recentTests.take(10).toList();
+                return Column(
+                  children: [
+                    for (int i = 0; i < displayedTests.length; i++) ...[
+                      if (i > 0) const Divider(color: AppTheme.border, height: 24),
+                      _buildTestHistoryRow(
+                        testId: displayedTests[i].id,
+                        subjectIcon: displayedTests[i].subjectIcon,
+                        title: displayedTests[i].title,
+                        date: displayedTests[i].date,
+                        score: displayedTests[i].score,
+                        scoreStatus: displayedTests[i].scoreValue >= 8.0
+                            ? _ScoreStatus.high
+                            : (displayedTests[i].scoreValue >= 5.0
+                                ? _ScoreStatus.medium
+                                : _ScoreStatus.low),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 20),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => _showSnackBar('Tất cả lịch sử bài thi đã được hiển thị'),
+                key: const Key('profile-view-all-history-button'),
+                onPressed: () => context.go('/student/history'),
                 icon: const Text(
                   'Xem tất cả lịch sử',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),
@@ -1115,6 +1126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildTestHistoryRow({
+    required String testId,
     required String subjectIcon,
     required String title,
     required String date,
@@ -1188,7 +1200,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(width: 16),
         InkWell(
-          onTap: () => _showSnackBar('Xem chi tiết bài thi: $title'),
+          key: Key('profile-test-detail-$testId'),
+          onTap: () => context.go('/result?attemptId=${Uri.encodeComponent(testId)}'),
           borderRadius: BorderRadius.circular(8),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
