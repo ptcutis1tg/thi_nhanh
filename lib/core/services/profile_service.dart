@@ -27,6 +27,11 @@ class StudentTestHistoryData {
   final double scoreValue;
   final String subject;
   final DateTime? submittedAt;
+  final String? roomId;
+  final String? roomCode;
+  final int? durationSeconds;
+  final bool isLiveRoom;
+  final bool resultReleased;
 
   StudentTestHistoryData({
     required this.id,
@@ -37,7 +42,21 @@ class StudentTestHistoryData {
     required this.scoreValue,
     this.subject = 'Khác',
     this.submittedAt,
+    this.roomId,
+    this.roomCode,
+    this.durationSeconds,
+    this.isLiveRoom = false,
+    this.resultReleased = true,
   });
+
+  String get durationFormatted {
+    if (durationSeconds == null || durationSeconds! <= 0) return '--:--';
+    final minutes = durationSeconds! ~/ 60;
+    final seconds = durationSeconds! % 60;
+    final minStr = minutes.toString().padLeft(2, '0');
+    final secStr = seconds.toString().padLeft(2, '0');
+    return '$minStr:$secStr';
+  }
 }
 
 class StudentProfileData {
@@ -276,9 +295,15 @@ class ProfileService {
         status,
         started_at,
         submitted_at,
+        result_released_at,
         exams (
           title,
           subject
+        ),
+        rooms (
+          code,
+          name,
+          status
         )
       ''');
 
@@ -298,7 +323,7 @@ class ProfileService {
       }
 
       final submittedAttempts = attemptsList
-          .where((a) => a['status'] == 'submitted' && a['score'] != null)
+          .where((a) => (a['status'] == 'submitted' || a['status'] == 'expired') && a['score'] != null)
           .toList();
 
       final completedTestsCount = submittedAttempts.length;
@@ -445,6 +470,20 @@ class ProfileService {
         }
 
         final scoreVal = (a['score'] as num).toDouble();
+        final roomMap = a['rooms'] as Map<String, dynamic>?;
+        final roomCode = roomMap?['code'] as String?;
+        final roomId = a['room_id']?.toString();
+        final isLiveRoom = roomId != null && roomId.isNotEmpty;
+        final resultReleased = a['result_released_at'] != null || (roomMap?['status'] == 'closed') || !isLiveRoom;
+
+        int? durationSec;
+        if (a['started_at'] != null && a['submitted_at'] != null) {
+          final start = DateTime.tryParse(a['started_at'].toString());
+          final end = DateTime.tryParse(a['submitted_at'].toString());
+          if (start != null && end != null && end.isAfter(start)) {
+            durationSec = end.difference(start).inSeconds;
+          }
+        }
 
         recentTests.add(
           StudentTestHistoryData(
@@ -456,6 +495,11 @@ class ProfileService {
             scoreValue: scoreVal,
             subject: subject,
             submittedAt: submittedAt,
+            roomId: roomId,
+            roomCode: roomCode,
+            durationSeconds: durationSec,
+            isLiveRoom: isLiveRoom,
+            resultReleased: resultReleased,
           ),
         );
       }
