@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../shared/widgets/top_nav_bar.dart';
+import 'widgets/countdown_overlay_widget.dart';
 
 class StudentWaitingRoomScreen extends StatefulWidget {
   const StudentWaitingRoomScreen({
@@ -28,6 +29,7 @@ class StudentWaitingRoomScreen extends StatefulWidget {
 class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
   StudentRoomState? _roomState;
   bool _isLoading = true;
+  bool _isCountingDown = false;
   String? _errorMessage;
   Timer? _pollingTimer;
 
@@ -107,19 +109,25 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
   }
 
   Future<void> _checkAndTransitionToExam(StudentRoomState state) async {
-    if (state.isLive && state.attemptId != null) {
+    if (state.isLive && state.attemptId != null && !_isCountingDown) {
       _pollingTimer?.cancel();
-      if (widget.guestToken != null) {
-        await context.read<AssessmentRepository>().rememberGuestToken(
-          state.attemptId!,
-          widget.guestToken!,
-        );
-        if (!mounted) return;
-      }
-      context.go(
-        '/taking_exam?attemptId=${state.attemptId}&roomId=${widget.roomId}',
-      );
+      setState(() {
+        _isCountingDown = true;
+      });
     }
+  }
+
+  Future<void> _navigateToExam(StudentRoomState state) async {
+    if (widget.guestToken != null) {
+      await context.read<AssessmentRepository>().rememberGuestToken(
+        state.attemptId!,
+        widget.guestToken!,
+      );
+      if (!mounted) return;
+    }
+    context.go(
+      '/taking_exam?attemptId=${state.attemptId}&roomId=${widget.roomId}',
+    );
   }
 
   @override
@@ -127,53 +135,63 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
     return Scaffold(
       appBar: const TopNavBar(),
       backgroundColor: AppTheme.background,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 900),
-                  child: Column(
-                    children: [
-                      if (_errorMessage != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.error.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppTheme.error.withValues(alpha: 0.3),
+      body: Stack(
+        children: [
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: Column(
+                        children: [
+                          if (_errorMessage != null) ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.error.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppTheme.error.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(
+                                  color: AppTheme.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(
-                              color: AppTheme.error,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
+                            const SizedBox(height: 24),
+                          ],
 
-                      // Hero Banner
-                      _buildHeroBanner(),
-                      const SizedBox(height: 32),
+                          // Hero Banner
+                          _buildHeroBanner(),
+                          const SizedBox(height: 32),
 
-                      // Info Grid
-                      _buildInfoGrid(),
-                      const SizedBox(height: 32),
+                          // Info Grid
+                          _buildInfoGrid(),
+                          const SizedBox(height: 32),
 
-                      // Participants Section
-                      _buildParticipantsSection(),
-                    ],
+                          // Participants Section
+                          _buildParticipantsSection(),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
+          if (_isCountingDown && _roomState != null)
+            Positioned.fill(
+              child: CountdownOverlayWidget(
+                onCountdownComplete: () => _navigateToExam(_roomState!),
               ),
             ),
+        ],
+      ),
     );
   }
 
