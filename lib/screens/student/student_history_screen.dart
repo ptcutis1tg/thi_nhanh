@@ -259,6 +259,42 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                     ),
                     const SizedBox(height: 20),
 
+                    // Guest Reminder Banner
+                    if (!context.watch<AuthProvider>().isAuthenticated) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFDE68A)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.cloud_off_rounded, color: Color(0xFFD97706), size: 24),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: const Text(
+                                'Bạn đang duyệt ở chế độ khách. Đăng nhập để lưu trữ và đồng bộ toàn bộ lịch sử thi vĩnh viễn trên đám mây!',
+                                style: TextStyle(color: Color(0xFF92400E), fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton(
+                              onPressed: () => context.go('/greeting'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD97706),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: const Text('Đăng nhập'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     // Metrics Row
                     Row(
                       children: [

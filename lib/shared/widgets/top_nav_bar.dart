@@ -154,11 +154,53 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     )
                   else
-                    InkWell(
-                      onTap: () {
-                        context.go('/profile');
+                    PopupMenuButton<String>(
+                      offset: const Offset(0, 48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      tooltip: 'Tài khoản',
+                      onSelected: (value) async {
+                        if (value == 'profile') {
+                          context.go('/profile');
+                        } else if (value == 'history') {
+                          context.go('/student/history');
+                        } else if (value == 'logout') {
+                          await authProvider.signOut();
+                          if (context.mounted) context.go('/greeting');
+                        }
                       },
-                      borderRadius: BorderRadius.circular(100),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'profile',
+                          child: Row(
+                            children: [
+                              Icon(Icons.person_outline_rounded, size: 20, color: AppTheme.primary),
+                              SizedBox(width: 12),
+                              Text('Hồ sơ cá nhân', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'history',
+                          child: Row(
+                            children: [
+                              Icon(Icons.history_edu_rounded, size: 20, color: AppTheme.primary),
+                              SizedBox(width: 12),
+                              Text('Lịch sử làm bài', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                        const PopupMenuItem(
+                          value: 'logout',
+                          child: Row(
+                            children: [
+                              Icon(Icons.logout_rounded, size: 20, color: AppTheme.error),
+                              SizedBox(width: 12),
+                              Text('Đăng xuất', style: TextStyle(color: AppTheme.error, fontWeight: FontWeight.w600)),
+                            ],
+                          ),
+                        ),
+                      ],
                       child: CircleAvatar(
                         radius: 18,
                         backgroundColor: AppTheme.border,
