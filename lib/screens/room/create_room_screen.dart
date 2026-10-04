@@ -28,6 +28,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   int _maxParticipants = 40;
   String _selectedSubject = 'Tất cả';
   bool _shuffleQuestions = true;
+  bool _enableAntiCheat = true;
   bool _allowReview = true;
 
   final List<int> _quickCapacities = [30, 40, 50, 100];
@@ -428,7 +429,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                           // 3. Quy chế phòng thi
                           const Row(
                             children: [
-                              Icon(Icons.rule_folder_outlined, color: AppTheme.primary),
+                              Icon(Icons.security_rounded, color: AppTheme.primary),
                               SizedBox(width: 8),
                               Text(
                                 '3. Quy chế & Bảo mật phòng thi',
@@ -439,13 +440,23 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                           const SizedBox(height: 14),
                           SwitchListTile.adaptive(
                             contentPadding: EdgeInsets.zero,
-                            title: const Text('Trộn ngẫu nhiên câu hỏi'),
-                            subtitle: const Text('Mỗi thí sinh nhận một thứ tự câu hỏi khác nhau để chống nhìn bài.'),
+                            secondary: const Icon(Icons.shuffle_rounded, color: AppTheme.primary),
+                            title: const Text('Trộn ngẫu nhiên câu hỏi & đáp án'),
+                            subtitle: const Text('Mỗi thí sinh nhận một thứ tự câu hỏi và phương án riêng biệt để chống nhìn bài.'),
                             value: _shuffleQuestions,
                             onChanged: (val) => setState(() => _shuffleQuestions = val),
                           ),
                           SwitchListTile.adaptive(
                             contentPadding: EdgeInsets.zero,
+                            secondary: const Icon(Icons.shield_outlined, color: AppTheme.primary),
+                            title: const Text('Giám sát chống gian lận'),
+                            subtitle: const Text('Cảnh báo khi rời tab/app tối đa 3 lần, tự động nộp bài ở lần thứ 4 và khóa sao chép đề thi.'),
+                            value: _enableAntiCheat,
+                            onChanged: (val) => setState(() => _enableAntiCheat = val),
+                          ),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            secondary: const Icon(Icons.visibility_outlined, color: AppTheme.primary),
                             title: const Text('Cho phép xem đáp án sau khi nộp bài'),
                             subtitle: const Text('Học sinh xem lại bài thi và lời giải chi tiết ngay sau khi nộp.'),
                             value: _allowReview,

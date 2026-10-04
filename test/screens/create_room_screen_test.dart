@@ -72,6 +72,6 @@ void main() {
     expect(find.text('Sĩ số tối đa'), findsOneWidget);
     expect(find.text('40 thí sinh'), findsOneWidget);
     expect(find.text('Tìm kiếm đề thi...'), findsOneWidget);
-    expect(find.text('Trộn ngẫu nhiên câu hỏi'), findsOneWidget);
+    expect(find.textContaining('Trộn ngẫu nhiên câu hỏi'), findsOneWidget);
   });
 }
