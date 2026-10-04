@@ -6,7 +6,8 @@ import '../../shared/widgets/top_nav_bar.dart';
 
 class LiveDashboardScreen extends StatefulWidget {
   final String? roomCode;
-  const LiveDashboardScreen({super.key, this.roomCode});
+  final List<Map<String, dynamic>>? initialStudents;
+  const LiveDashboardScreen({super.key, this.roomCode, this.initialStudents});
 
   @override
   State<LiveDashboardScreen> createState() => _LiveDashboardScreenState();
@@ -23,7 +24,12 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLiveRoomData();
+    if (widget.initialStudents != null) {
+      _students = List.of(widget.initialStudents!);
+      _isLoading = false;
+    } else {
+      _loadLiveRoomData();
+    }
   }
 
   Future<void> _loadLiveRoomData() async {
@@ -52,7 +58,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
         // Query attempts in this room
         final aRes = await client
             .from('attempts')
-            .select('id, guest_name, score, status, started_at, submitted_at')
+            .select('id, guest_name, score, status, started_at, submitted_at, violations')
             .eq('room_id', roomId);
 
         final aList = aRes as List<dynamic>;
@@ -61,6 +67,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
           final initials = gName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase();
           final isDone = a['status'] == 'submitted';
           final scoreNum = (a['score'] as num?)?.toDouble() ?? 0.0;
+          final violations = (a['violations'] as num?)?.toInt() ?? 0;
 
           return {
             'name': gName,
@@ -70,6 +77,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
             'wrong': isDone ? 20 - (scoreNum / 10 * 20).round() : 4,
             'completed': isDone,
             'score': scoreNum,
+            'violations': violations,
           };
         }).toList();
       }
@@ -124,8 +132,11 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
           BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 16,
+        runSpacing: 16,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,39 +191,65 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   Widget _buildMetricsRow() {
     final completedCount = _students.where((s) => s['completed'] == true).length;
     final inProgressCount = _students.length - completedCount;
+    final violationCount = _students.where((s) => (s['violations'] ?? 0) > 0).length;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildMetricCard(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+        final cards = [
+          _buildMetricCard(
             title: 'SỐ HỌC SINH',
             value: '${_students.length}',
             subtitle: 'Đang kết nối phòng',
             icon: Icons.people,
             color: AppTheme.primary,
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildMetricCard(
+          _buildMetricCard(
             title: 'ĐANG LÀM BÀI',
             value: '$inProgressCount',
             subtitle: 'Đang tương tác làm bài',
             icon: Icons.edit_note,
             color: AppTheme.warning,
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildMetricCard(
+          _buildMetricCard(
             title: 'ĐÃ NỘP BÀI',
             value: '$completedCount',
             subtitle: 'Hoàn thành bài thi',
             icon: Icons.task_alt,
             color: AppTheme.success,
           ),
-        ),
-      ],
+          if (violationCount > 0)
+            _buildMetricCard(
+              title: 'CẢNH BÁO VI PHẠM',
+              value: '$violationCount',
+              subtitle: 'Thí sinh rời màn hình',
+              icon: Icons.warning_amber_rounded,
+              color: AppTheme.error,
+            ),
+        ];
+
+        if (isMobile) {
+          return Column(
+            children: cards
+                .map((c) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: c,
+                    ))
+                .toList(),
+          );
+        }
+
+        return Row(
+          children: cards
+              .map((c) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: c,
+                    ),
+                  ))
+              .toList(),
+        );
+      },
     );
   }
 
@@ -243,23 +280,25 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
             child: Icon(icon, color: color, size: 28),
           ),
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -293,42 +332,113 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
             separatorBuilder: (context, index) => const Divider(height: 1, color: AppTheme.border),
             itemBuilder: (context, index) {
               final student = _students[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40, height: 40,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF0ECFF),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        student['initials'],
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final isNarrow = constraints.maxWidth < 550;
+                  final hasViolations = (student['violations'] ?? 0) > 0;
+                  final isDisqualified = (student['violations'] ?? 0) >= 4;
+
+                  final violationBadge = hasViolations
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isDisqualified
+                                ? AppTheme.error.withValues(alpha: 0.15)
+                                : const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: isDisqualified
+                                  ? AppTheme.error
+                                  : const Color(0xFFF59E0B),
+                            ),
+                          ),
+                          child: Text(
+                            isDisqualified
+                                ? '⛔ Thu bài (Vi phạm)'
+                                : '🚩 ${student['violations']} vi phạm',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isDisqualified
+                                  ? AppTheme.error
+                                  : const Color(0xFFB45309),
+                            ),
+                          ),
+                        )
+                      : null;
+
+                  final statusChip = Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: student['completed']
+                          ? AppTheme.success.withValues(alpha: 0.1)
+                          : AppTheme.warning.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      student['completed'] ? 'Đã nộp' : 'Đang làm',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: student['completed'] ? AppTheme.success : AppTheme.warning,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        student['name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
+                  );
+
+                  if (isNarrow) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF0ECFF),
+                                  shape: BoxShape.circle,
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  student['initials'],
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 13),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      student['name'],
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (violationBadge != null) ...[
+                                      const SizedBox(height: 3),
+                                      violationBadge,
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              statusChip,
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Đã trả lời: ${student['answered']}/20 câu',
-                                style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                              Expanded(
+                                child: Text(
+                                  'Đã trả lời: ${student['answered']}/20',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 student['completed']
                                     ? 'Điểm: ${student['score']} đ'
@@ -341,12 +451,12 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: student['answered'] / 20,
-                              minHeight: 8,
+                              minHeight: 6,
                               backgroundColor: AppTheme.surface,
                               valueColor: AlwaysStoppedAnimation<Color>(
                                 student['completed'] ? AppTheme.success : AppTheme.primary,
@@ -355,27 +465,93 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 24),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: student['completed']
-                            ? AppTheme.success.withOpacity(0.1)
-                            : AppTheme.warning.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Text(
-                        student['completed'] ? 'Đã nộp bài' : 'Đang làm...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: student['completed'] ? AppTheme.success : AppTheme.warning,
+                    );
+                  }
+
+                  // Desktop / Wide layout
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFF0ECFF),
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            student['initials'],
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                student['name'],
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                              if (violationBadge != null) ...[
+                                const SizedBox(height: 4),
+                                violationBadge,
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      'Đã trả lời: ${student['answered']}/20',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                    ),
+                                  ),
+                                  Text(
+                                    student['completed']
+                                        ? 'Điểm: ${student['score']} đ'
+                                        : '${((student['answered'] / 20) * 100).toInt()}%',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: student['completed'] ? AppTheme.success : AppTheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: student['answered'] / 20,
+                                  minHeight: 8,
+                                  backgroundColor: AppTheme.surface,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    student['completed'] ? AppTheme.success : AppTheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        statusChip,
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           ),

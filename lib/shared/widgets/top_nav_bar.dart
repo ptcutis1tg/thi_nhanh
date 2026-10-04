@@ -24,10 +24,11 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 1100;
         final isVeryCompact = constraints.maxWidth < 850;
+        final isMobile = constraints.maxWidth < 600;
 
         return Container(
           height: 72,
-          padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 28),
+          padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : (isCompact ? 16 : 28)),
           decoration: BoxDecoration(
             color: AppTheme.surface,
             boxShadow: [
@@ -60,15 +61,17 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Thi Nhanh',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primary,
+                    if (!isMobile) ...[
+                      const SizedBox(width: 10),
+                      const Text(
+                        'Thi Nhanh',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primary,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -128,16 +131,23 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     ),
                   const SizedBox(width: 6),
-                  IconButton(
-                    tooltip: 'Hướng dẫn sử dụng',
-                    onPressed: () => _showQuickGuide(context),
-                    icon: const Icon(Icons.help_outline_rounded, color: AppTheme.primary, size: 22),
-                  ),
+                  if (!isMobile)
+                    IconButton(
+                      tooltip: 'Hướng dẫn sử dụng',
+                      onPressed: () => _showQuickGuide(context),
+                      icon: const Icon(Icons.help_outline_rounded, color: AppTheme.primary, size: 22),
+                    ),
                   const SizedBox(width: 6),
                   if (!authProvider.isAuthenticated)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
-                      child: ElevatedButton.icon(
+                      child: isMobile
+                          ? IconButton(
+                              onPressed: () => context.go('/greeting'),
+                              icon: const Icon(Icons.login_rounded, color: AppTheme.primary),
+                              tooltip: 'Đăng nhập',
+                            )
+                          : ElevatedButton.icon(
                         onPressed: () => context.go('/greeting'),
                         icon: const Icon(Icons.login_rounded, size: 16),
                         label: const Text(

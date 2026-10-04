@@ -8,5 +8,5 @@ Started: 2026-10-04
 - [x] Task 3: Bổ Sung Tùy Chọn Anti-Cheat & Shuffle trong CreateRoomScreen
 - [x] Task 4: Tích Hợp Đếm Ngược 3-2-1 vào StudentWaitingRoomScreen
 - [x] Task 5: Chống Gian Lận Đa Tầng trong TakingExamScreen (Focus Monitor, Cảnh Báo, Thu Bài & Chặn Copy)
-- [ ] Task 6: Hiển Thị Giám Sát Vi Phạm trên Live Dashboard Giáo Viên
+- [x] Task 6: Hiển Thị Giám Sát Vi Phạm trên Live Dashboard Giáo Viên
 - [ ] Task 7: Kiểm Thử Toàn Diện Bộ Hồi Quy (Full Regression Suite) & Tổng Kết
