@@ -236,9 +236,15 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                     Row(
                       children: [
                         IconButton(
-                          onPressed: () => context.go('/profile'),
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/profile');
+                            }
+                          },
                           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
-                          tooltip: 'Quay lại Hồ sơ cá nhân',
+                          tooltip: 'Quay lại',
                         ),
                         const SizedBox(width: 8),
                         const Text(

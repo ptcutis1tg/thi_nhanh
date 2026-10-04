@@ -82,4 +82,61 @@ void main() {
     await tester.pump();
     expect(find.text('Hình học'), findsNothing);
   });
+
+  testWidgets('StudentHistoryScreen back button pops back to previous screen when canPop is true', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final router = GoRouter(
+      initialLocation: '/result',
+      routes: [
+        GoRoute(
+          path: '/result',
+          builder: (ctx, _) => Scaffold(
+            body: ElevatedButton(
+              onPressed: () => ctx.push('/student/history'),
+              child: const Text('Go To History'),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/student/history',
+          builder: (_, __) => const StudentHistoryScreen(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (_, __) => const Scaffold(body: Text('Profile Screen')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Navigate to history from /result
+    await tester.tap(find.text('Go To History'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('📊 Lịch Sử Làm Bài Thi'), findsOneWidget);
+
+    // Tap back button
+    final backBtn = find.byTooltip('Quay lại');
+    expect(backBtn, findsOneWidget);
+    await tester.tap(backBtn);
+    await tester.pumpAndSettle();
+
+    // Should return to Result Screen, NOT Profile Screen
+    expect(find.text('Go To History'), findsOneWidget);
+    expect(find.text('Profile Screen'), findsNothing);
+  });
 }
+
