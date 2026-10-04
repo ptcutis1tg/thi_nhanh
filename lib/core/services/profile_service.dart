@@ -891,4 +891,151 @@ class ProfileService {
     );
     return profile.recentRooms;
   }
+
+  /// Fetch student submissions for teacher's exams and rooms securely
+  static Future<List<Map<String, dynamic>>> fetchTeacherStudentResultsSecure({
+    String? userId,
+    String? userEmail,
+    String? userName,
+  }) async {
+    final client = _client;
+    if (client == null) return [];
+
+    // 1. Try RPC teacher_student_results if available
+    try {
+      final res = await SupabaseRetryHelper.run(() => client.rpc('teacher_student_results'));
+      if (res is List) {
+        return List<Map<String, dynamic>>.from(
+          res.map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+      }
+    } catch (_) {
+      // RPC not defined or not exposed, fall back to safe direct queries below
+    }
+
+    // 2. Direct table fallback with retry helper
+    try {
+      final effectiveUserId = userId ?? client.auth.currentUser?.id;
+      final effectiveUserEmail = userEmail ?? client.auth.currentUser?.email;
+
+      String? teacherId;
+      if (effectiveUserId != null) {
+        final tResOwner = await SupabaseRetryHelper.run(() => client
+            .from('teachers')
+            .select('id')
+            .eq('owner_user_id', effectiveUserId)
+            .maybeSingle());
+        if (tResOwner != null) {
+          teacherId = tResOwner['id']?.toString();
+        }
+      }
+      if (teacherId == null && effectiveUserEmail != null) {
+        final tResEmail = await SupabaseRetryHelper.run(() => client
+            .from('teachers')
+            .select('id')
+            .eq('email', effectiveUserEmail)
+            .maybeSingle());
+        if (tResEmail != null) {
+          teacherId = tResEmail['id']?.toString();
+        }
+      }
+      if (teacherId == null && userName != null && userName.isNotEmpty) {
+        final tResName = await SupabaseRetryHelper.run(() => client
+            .from('teachers')
+            .select('id')
+            .ilike('display_name', userName)
+            .maybeSingle());
+        if (tResName != null) {
+          teacherId = tResName['id']?.toString();
+        }
+      }
+
+      if (teacherId == null) {
+        final firstTeacher = await SupabaseRetryHelper.run(() => client
+            .from('teachers')
+            .select('id')
+            .limit(1)
+            .maybeSingle());
+        if (firstTeacher != null) {
+          teacherId = firstTeacher['id']?.toString();
+        }
+      }
+
+      if (teacherId == null) return [];
+      final effectiveTeacherId = teacherId;
+
+      // Fetch exams created by this teacher
+      final examsRes = await SupabaseRetryHelper.run(() => client
+          .from('exams')
+          .select('id, title, subject')
+          .eq('teacher_id', effectiveTeacherId));
+      final examMap = <String, Map<String, dynamic>>{};
+      for (final ex in (examsRes as List<dynamic>)) {
+        final id = ex['id']?.toString();
+        if (id != null) examMap[id] = Map<String, dynamic>.from(ex as Map);
+      }
+      final examIds = examMap.keys.toList();
+      if (examIds.isEmpty) return [];
+
+      // Query attempts WITHOUT invalid relationship 'profiles(display_name)'
+      final attemptsRes = await SupabaseRetryHelper.run(() => client
+          .from('attempts')
+          .select('id, user_id, room_id, exam_id, score, status, submitted_at, guest_name')
+          .inFilter('exam_id', examIds)
+          .inFilter('status', ['submitted', 'expired'])
+          .not('score', 'is', null)
+          .order('submitted_at', ascending: false));
+
+      final attemptsList = attemptsRes as List<dynamic>;
+      if (attemptsList.isEmpty) return [];
+
+      // Lookup profile names for all user_ids without requiring PostgREST FK join
+      final userIds = attemptsList
+          .map((a) => a['user_id']?.toString())
+          .where((uid) => uid != null && uid.isNotEmpty)
+          .toSet()
+          .toList();
+
+      Map<String, String> profileNames = {};
+      if (userIds.isNotEmpty) {
+        try {
+          final profilesRes = await SupabaseRetryHelper.run(() => client
+              .from('profiles')
+              .select('id, display_name')
+              .inFilter('id', userIds));
+          for (final p in (profilesRes as List<dynamic>)) {
+            final pid = p['id']?.toString();
+            final dName = p['display_name']?.toString();
+            if (pid != null && dName != null && dName.isNotEmpty) {
+              profileNames[pid] = dName;
+            }
+          }
+        } catch (eProf) {
+          debugPrint('Không thể tải tên profiles: $eProf');
+        }
+      }
+
+      return attemptsList.map((a) {
+        final ex = examMap[a['exam_id']?.toString()];
+        final uid = a['user_id']?.toString();
+        final guestName = a['guest_name']?.toString();
+        final studentName = (uid != null ? profileNames[uid] : null) ??
+            (guestName != null && guestName.isNotEmpty ? guestName : 'Học sinh');
+
+        return {
+          'attemptId': a['id'],
+          'roomId': a['room_id'],
+          'studentName': studentName,
+          'score': a['score'],
+          'status': a['status'],
+          'submittedAt': a['submitted_at'],
+          'examTitle': ex?['title'] ?? 'Đề thi',
+          'subject': ex?['subject'] ?? '',
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Lỗi truy vấn kết quả làm bài trực tiếp từ bảng: $e');
+      return [];
+    }
+  }
 }
