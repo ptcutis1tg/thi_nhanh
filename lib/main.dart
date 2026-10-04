@@ -25,6 +25,7 @@ import 'screens/exam/taking_exam_screen.dart';
 import 'screens/exam/live_dashboard_screen.dart';
 import 'screens/exam/result_screen.dart';
 import 'screens/exam/exam_detail_screen.dart';
+import 'screens/exam/wrong_questions_practice_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/student/student_history_screen.dart';
 import 'screens/student/student_achievements_screen.dart';
@@ -275,6 +276,16 @@ final GoRouter _router = GoRouter(
             context: context,
             state: state,
             child: const StudentHistoryScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/practice/wrong_questions',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: WrongQuestionsPracticeScreen(
+              attemptId: state.uri.queryParameters['attemptId'],
+            ),
           ),
         ),
         GoRoute(
