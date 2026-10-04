@@ -1308,7 +1308,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => _showSnackBar('Tất cả phòng thi đã được hiển thị'),
+                onPressed: () => context.go('/teacher/rooms'),
                 icon: const Text(
                   'Xem tất cả phòng thi',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.primary),

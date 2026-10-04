@@ -62,6 +62,7 @@ void main() {
     // Verify popup menu items
     expect(find.text('Hồ sơ cá nhân'), findsOneWidget);
     expect(find.text('Lịch sử làm bài'), findsOneWidget);
+    expect(find.text('Phòng thi đã tạo'), findsOneWidget);
     expect(find.text('Đăng xuất'), findsOneWidget);
   });
 }
