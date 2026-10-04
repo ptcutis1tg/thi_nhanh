@@ -1,6 +1,11 @@
-# Progress Ledger
+# SDD Progress Ledger: Teacher Room History
 
-Plan: `docs/superpowers/plans/2026-08-08-reset-password-otp-plan.md`
+Feature Plan: `docs/superpowers/plans/2026-10-04-teacher-room-history.md`
+Started: 2026-10-04
 
-- [x] Task 1: Extend AuthProvider with OTP Verification and Password Update (commit c9dbc84)
-- [x] Task 2: Create ResetPasswordScreen & Wire Routing (commit 9519a94)
+- [ ] Task 1: Mở Rộng Model TeacherRoomData & Data Service
+- [ ] Task 2: Đăng Ký Tuyến Đường /teacher/rooms & Smart Back Navigation
+- [ ] Task 3: Kết Nối Điểm Truy Cập (ProfileScreen & TopNavBar Avatar Menu)
+- [ ] Task 4: Bộ Lọc Trạng Thái (4 Tabs), Tìm Kiếm & Bố Cục Mobile Responsive
+- [ ] Task 5: Thiết Kế Thẻ Phòng Thi (TeacherRoomCard), Sao Chép Mã & Nút Hành Động
+- [ ] Task 6: Kiểm Thử Toàn Diện & Toàn Bộ Hệ Thống (Regression Suite)

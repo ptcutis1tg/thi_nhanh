@@ -134,6 +134,9 @@ class TeacherRoomData {
   final int studentsCount;
   final String statusLabel;
   final String statusType; // 'live', 'ended', 'upcoming'
+  final String? examTitle;
+  final String? examSubject;
+  final int? durationMinutes;
 
   TeacherRoomData({
     required this.id,
@@ -143,6 +146,9 @@ class TeacherRoomData {
     required this.studentsCount,
     required this.statusLabel,
     required this.statusType,
+    this.examTitle,
+    this.examSubject,
+    this.durationMinutes,
   });
 }
 
@@ -870,5 +876,19 @@ class ProfileService {
       debugPrint('Lỗi tải dữ liệu Hồ sơ Giáo viên từ Supabase: $e');
       return TeacherProfileData.empty();
     }
+  }
+
+  /// Fetch all created rooms for teacher
+  static Future<List<TeacherRoomData>> fetchTeacherRoomsSecure({
+    String? userId,
+    String? userEmail,
+    String? userName,
+  }) async {
+    final profile = await fetchTeacherDataSecure(
+      userId: userId,
+      userEmail: userEmail,
+      userName: userName,
+    );
+    return profile.recentRooms;
   }
 }
