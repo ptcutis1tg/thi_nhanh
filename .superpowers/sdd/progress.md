@@ -9,4 +9,4 @@ Started: 2026-10-04
 - [x] Task 4: Tích Hợp Đếm Ngược 3-2-1 vào StudentWaitingRoomScreen
 - [x] Task 5: Chống Gian Lận Đa Tầng trong TakingExamScreen (Focus Monitor, Cảnh Báo, Thu Bài & Chặn Copy)
 - [x] Task 6: Hiển Thị Giám Sát Vi Phạm trên Live Dashboard Giáo Viên
-- [ ] Task 7: Kiểm Thử Toàn Diện Bộ Hồi Quy (Full Regression Suite) & Tổng Kết
+- [x] Task 7: Kiểm Thử Toàn Diện Bộ Hồi Quy (Full Regression Suite) & Tổng Kết
