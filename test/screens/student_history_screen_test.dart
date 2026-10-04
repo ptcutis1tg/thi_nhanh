@@ -138,5 +138,43 @@ void main() {
     expect(find.text('Go To History'), findsOneWidget);
     expect(find.text('Profile Screen'), findsNothing);
   });
+
+  testWidgets('StudentHistoryScreen renders without overflow on 360x640 mobile screen and has 3 mode tabs', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            initialLocation: '/student/history',
+            routes: [
+              GoRoute(path: '/student/history', builder: (_, __) => const StudentHistoryScreen()),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify 3 mode tabs exist
+    expect(find.text('Tất cả bài thi'), findsOneWidget);
+    expect(find.text('Phòng thi trực tiếp'), findsOneWidget);
+    expect(find.text('Tự luyện tập'), findsOneWidget);
+
+    // Tap 'Phòng thi trực tiếp'
+    final tabFinder = find.text('Phòng thi trực tiếp');
+    expect(tabFinder, findsOneWidget);
+    await tester.ensureVisible(tabFinder);
+    await tester.tap(tabFinder);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }
 

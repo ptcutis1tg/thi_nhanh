@@ -28,6 +28,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
   DateTimeRange? _customDateRange;
   String _scoreFilter = 'all'; // all, high (>=8), medium (5-7.9), low (<5)
   String _sort = 'newest'; // newest, oldest, highest, lowest
+  String _modeFilter = 'all'; // all, room, practice
 
   // Pagination
   static const int _pageSize = 20;
@@ -127,6 +128,10 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
         if (item.scoreValue >= 5.0) return false;
       }
 
+      // Mode filter
+      if (_modeFilter == 'room' && !item.isLiveRoom) return false;
+      if (_modeFilter == 'practice' && item.isLiveRoom) return false;
+
       return true;
     }).toList();
 
@@ -169,9 +174,18 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
       _customDateRange = null;
       _scoreFilter = 'all';
       _sort = 'newest';
+      _modeFilter = 'all';
       _currentPage = 1;
     });
   }
+
+  bool get _hasActiveFilters =>
+      _selectedSubject != 'Tất cả' ||
+      _dateFilter != 'all' ||
+      _scoreFilter != 'all' ||
+      _sort != 'newest' ||
+      _searchQuery.isNotEmpty ||
+      _modeFilter != 'all';
 
   Future<void> _pickDateRange() async {
     final picked = await showDateRangePicker(
@@ -247,12 +261,15 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                           tooltip: 'Quay lại',
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          '📊 Lịch Sử Làm Bài Thi',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.textMain,
+                        Expanded(
+                          child: Text(
+                            '📊 Lịch Sử Làm Bài Thi',
+                            style: TextStyle(
+                              fontSize: compact ? 20 : 24,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.textMain,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -269,144 +286,172 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: const Color(0xFFFDE68A)),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.cloud_off_rounded, color: Color(0xFFD97706), size: 24),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: const Text(
-                                'Bạn đang duyệt ở chế độ khách. Đăng nhập để lưu trữ và đồng bộ toàn bộ lịch sử thi vĩnh viễn trên đám mây!',
-                                style: TextStyle(color: Color(0xFF92400E), fontSize: 13, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
-                              onPressed: () => context.go('/greeting'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD97706),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                              child: const Text('Đăng nhập'),
-                            ),
-                          ],
+                        child: LayoutBuilder(
+                          builder: (context, bannerConstraints) {
+                            final isBannerNarrow = bannerConstraints.maxWidth < 500;
+                            if (isBannerNarrow) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: const [
+                                      Icon(Icons.cloud_off_rounded, color: Color(0xFFD97706), size: 22),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Chế độ khách',
+                                        style: TextStyle(color: Color(0xFF92400E), fontSize: 14, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Đăng nhập để lưu trữ và đồng bộ toàn bộ lịch sử thi vĩnh viễn trên đám mây!',
+                                    style: TextStyle(color: Color(0xFF92400E), fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () => context.go('/greeting'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFD97706),
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                      child: const Text('Đăng nhập ngay'),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            return Row(
+                              children: [
+                                const Icon(Icons.cloud_off_rounded, color: Color(0xFFD97706), size: 24),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Bạn đang duyệt ở chế độ khách. Đăng nhập để lưu trữ và đồng bộ toàn bộ lịch sử thi vĩnh viễn trên đám mây!',
+                                    style: TextStyle(color: Color(0xFF92400E), fontSize: 13, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  onPressed: () => context.go('/greeting'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFD97706),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  child: const Text('Đăng nhập'),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                     ],
 
                     // Metrics Row
-                    Row(
-                      children: [
-                        _buildMetricCard(
-                          'Tổng số bài đã làm',
-                          '${_data.completedTestsCount} bài',
-                          Icons.assignment_turned_in_outlined,
-                          const Color(0xFF7C3AED),
-                        ),
-                        const SizedBox(width: 14),
-                        _buildMetricCard(
-                          'Điểm trung bình',
-                          '${_data.averageScore.toStringAsFixed(1)} / 10',
-                          Icons.analytics_outlined,
-                          const Color(0xFF2563EB),
-                        ),
-                        const SizedBox(width: 14),
-                        _buildMetricCard(
-                          'Điểm cao nhất',
-                          '${_data.highestScore.toStringAsFixed(1)} / 10',
-                          Icons.star_outline_rounded,
-                          const Color(0xFFD97706),
-                        ),
-                      ],
+                    LayoutBuilder(
+                      builder: (context, metricConstraints) {
+                        final isNarrow = metricConstraints.maxWidth < 650;
+                        if (isNarrow) {
+                          return Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildMetricCard(
+                                      'Đã làm',
+                                      '${_data.completedTestsCount} bài',
+                                      Icons.assignment_turned_in_outlined,
+                                      const Color(0xFF7C3AED),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _buildMetricCard(
+                                      'Điểm TB',
+                                      '${_data.averageScore.toStringAsFixed(1)} / 10',
+                                      Icons.analytics_outlined,
+                                      const Color(0xFF2563EB),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              _buildMetricCard(
+                                'Điểm cao nhất',
+                                '${_data.highestScore.toStringAsFixed(1)} / 10',
+                                Icons.star_outline_rounded,
+                                const Color(0xFFD97706),
+                              ),
+                            ],
+                          );
+                        }
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: _buildMetricCard(
+                                'Tổng số bài đã làm',
+                                '${_data.completedTestsCount} bài',
+                                Icons.assignment_turned_in_outlined,
+                                const Color(0xFF7C3AED),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _buildMetricCard(
+                                'Điểm trung bình',
+                                '${_data.averageScore.toStringAsFixed(1)} / 10',
+                                Icons.analytics_outlined,
+                                const Color(0xFF2563EB),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: _buildMetricCard(
+                                'Điểm cao nhất',
+                                '${_data.highestScore.toStringAsFixed(1)} / 10',
+                                Icons.star_outline_rounded,
+                                const Color(0xFFD97706),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 
                     // Search Box
                     _buildSearchBox(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // Mode Tabs
+                    _buildModeTabs(),
 
                     // Main Layout: Filter Panel + Results List
-                    Flex(
-                      direction: compact ? Axis.vertical : Axis.horizontal,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Left Filter Panel
-                        SizedBox(
-                          width: compact ? double.infinity : 270,
-                          child: _buildFilterPanel(),
-                        ),
-                        SizedBox(width: compact ? 0 : 28, height: compact ? 24 : 0),
-
-                        // Right Content Panel
-                        Expanded(
-                          child: _isLoading
-                              ? const Center(
-                                  child: Padding(
-                                    padding: EdgeInsets.all(48.0),
-                                    child: CircularProgressIndicator(color: AppTheme.primary),
-                                  ),
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Status Summary Bar
-                                    if (filteredItems.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(bottom: 16),
-                                        child: Row(
-                                          children: [
-                                            const Icon(Icons.find_in_page_outlined, size: 18, color: AppTheme.textSecondary),
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: Text(
-                                                'Tìm thấy ${filteredItems.length} bài thi • Đang hiện ${startIndex + 1} - ${math.min(startIndex + _pageSize, filteredItems.length)} (Trang $_currentPage / $totalPages)',
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppTheme.textSecondary,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                    // Attempt Cards List
-                                    if (pageItems.isEmpty)
-                                      _buildEmptyState()
-                                    else
-                                      ListView.separated(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        itemCount: pageItems.length,
-                                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                        itemBuilder: (context, index) {
-                                          return _buildHistoryCard(pageItems[index]);
-                                        },
-                                      ),
-
-                                    // Pagination Bar
-                                    if (totalPages > 1) ...[
-                                      const SizedBox(height: 24),
-                                      GooglePaginationBar(
-                                        currentPage: _currentPage,
-                                        totalPages: totalPages,
-                                        onPageChanged: (page) {
-                                          setState(() => _currentPage = page);
-                                          _scrollController.animateTo(
-                                            0,
-                                            duration: const Duration(milliseconds: 350),
-                                            curve: Curves.easeOutCubic,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                        ),
-                      ],
-                    ),
+                    if (compact) ...[
+                      _buildMobileQuickFilterBar(),
+                      const SizedBox(height: 16),
+                      _buildResultsContent(filteredItems, pageItems, startIndex, totalPages),
+                    ] else ...[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 270,
+                            child: _buildFilterPanel(),
+                          ),
+                          const SizedBox(width: 28),
+                          Expanded(
+                            child: _buildResultsContent(filteredItems, pageItems, startIndex, totalPages),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -802,45 +847,299 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+  Widget _buildModeTabs() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFEBE6FC)),
+      ),
+      child: Row(
+        children: [
+          _buildModeTab('Tất cả bài thi', 'all', Icons.all_inclusive_rounded),
+          _buildModeTab('Phòng thi trực tiếp', 'room', Icons.meeting_room_outlined),
+          _buildModeTab('Tự luyện tập', 'practice', Icons.fitness_center_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeTab(String label, String value, IconData icon) {
+    final isSelected = _modeFilter == value;
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+      child: InkWell(
+        onTap: () => setState(() {
+          _modeFilter = value;
+          _currentPage = 1;
+        }),
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? AppTheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Row(
+      ),
+    );
+  }
+
+  Widget _buildMobileQuickFilterBar() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 38,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _availableSubjects.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final sub = _availableSubjects[index];
+              final isSelected = _selectedSubject == sub;
+              return ChoiceChip(
+                label: Text(sub, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : AppTheme.textMain)),
+                selected: isSelected,
+                selectedColor: AppTheme.primary,
+                backgroundColor: Colors.white,
+                showCheckmark: false,
+                onSelected: (val) {
+                  setState(() {
+                    _selectedSubject = sub;
+                    _currentPage = 1;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 22),
-            ),
-            const SizedBox(width: 14),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary), overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 2),
-                  Text(value, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppTheme.textMain)),
-                ],
+              child: OutlinedButton.icon(
+                onPressed: _showMobileFilterBottomSheet,
+                icon: const Icon(Icons.tune_rounded, size: 18),
+                label: Text(
+                  _hasActiveFilters ? 'Bộ lọc nâng cao (Đang lọc)' : 'Bộ lọc nâng cao',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primary,
+                  side: const BorderSide(color: AppTheme.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
               ),
             ),
+            if (_hasActiveFilters) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Đặt lại bộ lọc',
+                onPressed: _resetFilters,
+                icon: const Icon(Icons.refresh_rounded, color: AppTheme.textSecondary),
+              ),
+            ],
           ],
         ),
+      ],
+    );
+  }
+
+  void _showMobileFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.8,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: _buildFilterPanel(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('Áp dụng bộ lọc', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultsContent(
+    List<StudentTestHistoryData> filteredItems,
+    List<StudentTestHistoryData> pageItems,
+    int startIndex,
+    int totalPages,
+  ) {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: CircularProgressIndicator(color: AppTheme.primary),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Status Summary Bar
+        if (filteredItems.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.find_in_page_outlined, size: 18, color: AppTheme.textSecondary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tìm thấy ${filteredItems.length} bài thi • Đang hiện ${startIndex + 1} - ${math.min(startIndex + _pageSize, filteredItems.length)} (Trang $_currentPage / $totalPages)',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // Attempt Cards List
+        if (pageItems.isEmpty)
+          _buildEmptyState()
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: pageItems.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              return _buildHistoryCard(pageItems[index]);
+            },
+          ),
+
+        // Pagination Bar
+        if (totalPages > 1) ...[
+          const SizedBox(height: 24),
+          GooglePaginationBar(
+            currentPage: _currentPage,
+            totalPages: totalPages,
+            onPageChanged: (page) {
+              setState(() => _currentPage = page);
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary), overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textMain), overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
