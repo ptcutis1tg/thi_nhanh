@@ -274,8 +274,9 @@ class RoomRepository {
         ),
       );
 
-  Future<TeacherRoomDashboard> close(String roomId) async =>
-      TeacherRoomDashboard.fromJson(
+  Future<TeacherRoomDashboard> close(String roomId) async {
+    try {
+      return TeacherRoomDashboard.fromJson(
         _map(
           await SupabaseRetryHelper.run(
             () => _client.rpc(
@@ -285,6 +286,16 @@ class RoomRepository {
           ),
         ),
       );
+    } on PostgrestException catch (e) {
+      if (e.code == 'PGRST202') {
+        throw Exception(
+          'Hàm SQL `close_teacher_room` chưa được cài đặt trên cơ sở dữ liệu Supabase. '
+          'Vui lòng chạy file migration `supabase/migrations/202610040001_close_teacher_room_rpc.sql` trong SQL Editor của Supabase.',
+        );
+      }
+      rethrow;
+    }
+  }
 
   Future<String?> findHostedRoomId(String code) async {
     try {

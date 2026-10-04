@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../core/utils/avatar_helper.dart';
+import '../../screens/room/widgets/join_room_guest_dialog.dart';
 
 class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   const TopNavBar({super.key});
@@ -299,7 +300,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Future<void> _handleQuickJoinRoom(BuildContext context, String rawCode) async {
-    final code = rawCode.trim();
+    final code = rawCode.trim().toUpperCase();
     if (code.isEmpty) return;
 
     final authProvider = context.read<AuthProvider>();
@@ -310,7 +311,9 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
       roomRepo = null;
     }
 
-    if (roomRepo != null && authProvider.isAuthenticated) {
+    if (roomRepo == null) return;
+
+    if (authProvider.isAuthenticated) {
       try {
         final hostedRoomId = await roomRepo.findHostedRoomId(code);
         if (hostedRoomId != null && context.mounted) {
@@ -320,8 +323,62 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
       } catch (_) {}
     }
 
-    if (context.mounted) {
-      context.go('/student_waiting_room?roomId=$code');
+    if (!context.mounted) return;
+
+    if (!authProvider.isAuthenticated) {
+      showDialog(
+        context: context,
+        builder: (ctx) => JoinRoomGuestDialog(
+          roomCode: code,
+          onJoin: (guestName, password) async {
+            final result = await roomRepo!.joinRoom(
+              code: code,
+              password: password,
+              guestName: guestName,
+            );
+            if (context.mounted) {
+              context.go(
+                '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
+              );
+            }
+          },
+        ),
+      );
+    } else {
+      try {
+        final result = await roomRepo.joinRoom(code: code);
+        if (context.mounted) {
+          context.go(
+            '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        if (errorMsg.toLowerCase().contains('password') || errorMsg.toLowerCase().contains('mật khẩu')) {
+          showDialog(
+            context: context,
+            builder: (ctx) => JoinRoomGuestDialog(
+              roomCode: code,
+              onJoin: (guestName, password) async {
+                final result = await roomRepo!.joinRoom(
+                  code: code,
+                  password: password,
+                );
+                if (context.mounted) {
+                  context.go(
+                    '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
+                  );
+                }
+              },
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(errorMsg), backgroundColor: AppTheme.error),
+          );
+        }
+      }
     }
   }
 }

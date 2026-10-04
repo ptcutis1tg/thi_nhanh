@@ -8,6 +8,7 @@ import 'package:onthi_community/core/providers/auth_provider.dart';
 import 'package:onthi_community/core/repositories/room_repository.dart';
 import 'package:onthi_community/screens/home/home_screen.dart';
 import 'package:onthi_community/screens/room/widgets/join_room_guest_dialog.dart';
+import 'package:onthi_community/shared/widgets/top_nav_bar.dart';
 
 class FakeRoomRepo implements RoomRepository {
   final String? hostedRoomId;
@@ -125,13 +126,128 @@ void main() {
 
     // Find quick room input TextField
     final inputField = find.widgetWithText(TextField, 'Nhập mã phòng PTxxxxxx...');
-    expect(inputField, findsOneWidget);
-
     await tester.enterText(inputField, 'PT888999');
     await tester.tap(find.text('Vào ngay'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(navigatedRoute, equals('/teacher_waiting_room?roomId=hosted-room-uuid-999'));
+  });
+
+  testWidgets('TopNavBar quick room input joins room and routes with participantId', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    SharedPreferences.setMockInitialValues({'active_user_email': 'student@example.com'});
+    final auth = AuthProvider(isSupabaseInitialized: false);
+    await auth.init();
+    final fakeRepo = FakeRoomRepo(); // Not host
+
+    String? navigatedRoute;
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (ctx, state) => const Scaffold(
+            appBar: TopNavBar(),
+            body: Text('Main Screen'),
+          ),
+        ),
+        GoRoute(
+          path: '/student_waiting_room',
+          builder: (ctx, state) {
+            final params = state.uri.queryParameters;
+            navigatedRoute = '/student_waiting_room?roomId=${params['roomId']}&participantId=${params['participantId']}';
+            return const Scaffold(body: Text('Student Waiting Room'));
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: auth),
+          Provider<RoomRepository>.value(value: fakeRepo),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Find TopNavBar quick room TextField (hint: 'Nhập mã PT...')
+    final topNavInput = find.widgetWithText(TextField, 'Nhập mã PT...');
+    expect(topNavInput, findsOneWidget);
+
+    await tester.enterText(topNavInput, 'PT123456');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(navigatedRoute, equals('/student_waiting_room?roomId=room-student-123&participantId=part-456'));
+  });
+
+  testWidgets('TopNavBar quick room input for guest prompts JoinRoomGuestDialog', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    SharedPreferences.setMockInitialValues({});
+    final auth = AuthProvider(isSupabaseInitialized: false);
+    await auth.init(); // unauthenticated
+    final fakeRepo = FakeRoomRepo();
+
+    String? navigatedRoute;
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (ctx, state) => const Scaffold(
+            appBar: TopNavBar(),
+            body: Text('Main Screen'),
+          ),
+        ),
+        GoRoute(
+          path: '/student_waiting_room',
+          builder: (ctx, state) {
+            final params = state.uri.queryParameters;
+            navigatedRoute = '/student_waiting_room?roomId=${params['roomId']}&participantId=${params['participantId']}';
+            return const Scaffold(body: Text('Student Waiting Room'));
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: auth),
+          Provider<RoomRepository>.value(value: fakeRepo),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final topNavInput = find.widgetWithText(TextField, 'Nhập mã PT...');
+    await tester.enterText(topNavInput, 'PT123456');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vào phòng thi'), findsOneWidget);
+    expect(find.text('Mã phòng: PT123456'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).first, 'Học sinh Khách');
+    await tester.tap(find.text('Tham gia'));
+    await tester.pumpAndSettle();
+
+    expect(navigatedRoute, equals('/student_waiting_room?roomId=room-student-123&participantId=part-456'));
   });
 }

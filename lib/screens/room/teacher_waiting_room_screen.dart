@@ -142,9 +142,10 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
       );
     } catch (error) {
       if (mounted) {
+        final message = error.toString().replaceFirst(RegExp(r'^Exception:\s*'), '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Không thể kết thúc phòng: $error'),
+            content: Text('Không thể kết thúc phòng: $message'),
             backgroundColor: AppTheme.error,
           ),
         );
