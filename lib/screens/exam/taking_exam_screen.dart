@@ -9,12 +9,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/models/assessment.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/exam_shuffle_helper.dart';
 
 class TakingExamScreen extends StatefulWidget {
   final String? examId;
   final String? attemptId;
   final String? roomId;
   final bool isAuthorPreview;
+  final bool enableAntiCheat;
+  final bool shuffleQuestions;
   final List<Map<String, dynamic>>? initialQuestions;
   final Future<void> Function(Map<String, dynamic> attemptPayload)?
   onSubmitAttempt;
@@ -25,6 +28,8 @@ class TakingExamScreen extends StatefulWidget {
     this.attemptId,
     this.roomId,
     this.isAuthorPreview = false,
+    this.enableAntiCheat = true,
+    this.shuffleQuestions = true,
     this.initialQuestions,
     this.onSubmitAttempt,
   });
@@ -33,7 +38,7 @@ class TakingExamScreen extends StatefulWidget {
   State<TakingExamScreen> createState() => _TakingExamScreenState();
 }
 
-class _TakingExamScreenState extends State<TakingExamScreen> {
+class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _hasSubmitted = false;
@@ -44,6 +49,9 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   int _remainingSeconds = 45 * 60;
   Timer? _timer;
 
+  int _violationCount = 0;
+  bool _isShowingViolationDialog = false;
+
   List<Map<String, dynamic>> _questions = [];
   int _currentQuestionIndex = 0;
   final Map<int, String> _selectedAnswers =
@@ -53,6 +61,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _isAuthorPreview = widget.isAuthorPreview;
     _resolvedExamId = widget.examId;
     if (widget.initialQuestions != null) {
@@ -60,16 +69,160 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       if (_resolvedExamId == null && _questions.isNotEmpty) {
         _resolvedExamId = _questions.first['exam_id']?.toString();
       }
+      _maybeShuffleQuestions();
       _isLoading = false;
     } else {
       _loadExamAndQuestions();
     }
   }
 
+  void _maybeShuffleQuestions() {
+    if (widget.shuffleQuestions && _questions.isNotEmpty) {
+      final seed = (widget.attemptId ?? widget.roomId ?? widget.examId ?? 'anti_cheat_seed').hashCode;
+      _questions = ExamShuffleHelper.shuffleQuestionsAndOptions(
+        _questions,
+        seed: seed,
+      );
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (!widget.enableAntiCheat || _isAuthorPreview || _hasSubmitted || _isLoading) {
+      return;
+    }
+
+    final isLeaving = state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden;
+
+    if (isLeaving && !_isShowingViolationDialog) {
+      _handleViolation();
+    }
+  }
+
+  void _handleViolation() {
+    if (!mounted || _hasSubmitted) return;
+
+    _violationCount++;
+
+    if (_violationCount <= 3) {
+      _isShowingViolationDialog = true;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: AppTheme.error, width: 2),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.warning_amber_rounded, color: AppTheme.error, size: 28),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'CẢNH BÁO VI PHẠM',
+                  style: TextStyle(
+                    color: AppTheme.error,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Phát hiện bạn vừa rời khỏi màn hình bài thi hoặc chuyển tab!',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.error.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.flag_rounded, color: AppTheme.error, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Lần vi phạm: $_violationCount/3',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.error,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Quy chế phòng thi: Nếu vi phạm quá 3 lần, bài thi sẽ bị hệ thống tự động thu hồi và nộp bài ngay lập tức!',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.error,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  _isShowingViolationDialog = false;
+                  Navigator.of(ctx).pop();
+                },
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Tôi đã hiểu & Quay lại làm bài'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ).then((_) {
+        _isShowingViolationDialog = false;
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⛔ BÀI THI ĐÃ BỊ THU HỒI DO VI PHẠM QUÁ 3 LẦN!'),
+          backgroundColor: AppTheme.error,
+          duration: Duration(seconds: 5),
+        ),
+      );
+      _submitExam();
+    }
   }
 
   void _startTimer() {
@@ -162,6 +315,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
 
         if (qList.isNotEmpty) {
           _questions = qList;
+          _maybeShuffleQuestions();
         }
       }
     } catch (e) {
@@ -201,6 +355,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           },
         )
         .toList();
+    _maybeShuffleQuestions();
     _selectedAnswers.clear();
     for (var index = 0; index < _questions.length; index++) {
       final selected = attempt.answers[_questions[index]['id'] as String];
@@ -374,6 +529,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           .toIso8601String(),
       'submitted_at': DateTime.now().toIso8601String(),
       'score': finalScore,
+      'violations': _violationCount,
       'is_author_preview': _isAuthorPreview,
     };
 
@@ -399,6 +555,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                 'status': 'submitted',
                 'score': finalScore,
                 'submitted_at': DateTime.now().toIso8601String(),
+                'violations': _violationCount,
               })
               .eq('id', widget.attemptId!);
           savedToCloud = true;
@@ -527,21 +684,23 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                   horizontal: 16,
                 ),
                 color: const Color(0xFFFEF3C7),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.visibility_outlined,
                       color: Color(0xFFD97706),
                       size: 18,
                     ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Chế độ xem trước của tác giả (không tính vào Bảng xếp hạng công khai)',
-                      style: TextStyle(
-                        color: Color(0xFF92400E),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Chế độ xem trước của tác giả (không tính vào Bảng xếp hạng công khai)',
+                        style: TextStyle(
+                          color: Color(0xFF92400E),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -551,24 +710,35 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1200),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 700;
+                      if (isMobile) {
+                        return Padding(
+                          padding: const EdgeInsets.all(12),
                           child: _buildQuestionArea(),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: _buildSidebarNavigator(),
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            flex: 3,
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: _buildQuestionArea(),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 1,
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: _buildSidebarNavigator(),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -585,57 +755,58 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       backgroundColor: Colors.white,
       elevation: 0,
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.edit_square, color: AppTheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            _examTitle,
-            style: const TextStyle(
-              color: AppTheme.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          const Icon(Icons.edit_square, color: AppTheme.primary, size: 20),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              _examTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
             ),
           ),
         ],
       ),
       actions: [
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: AppTheme.primary,
             borderRadius: BorderRadius.circular(100),
           ),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.timer, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
+              const Icon(Icons.timer, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
               Text(
                 _remainingTime,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 16),
-        TextButton.icon(
+        IconButton(
+          tooltip: 'Thoát',
+          icon: const Icon(Icons.logout, color: AppTheme.textSecondary),
           onPressed: () async {
             final shouldPop = await _onWillPop();
             if (shouldPop && mounted) {
               context.pop();
             }
           },
-          icon: const Icon(Icons.logout, color: AppTheme.textSecondary),
-          label: const Text(
-            'Thoát',
-            style: TextStyle(color: AppTheme.textSecondary),
-          ),
         ),
-        const SizedBox(width: 16),
       ],
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(1),
@@ -651,6 +822,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       );
     }
 
+    final isMobile = MediaQuery.of(context).size.width < 600;
     final q = _questions[_currentQuestionIndex];
     final qBody = q['body']?.toString() ?? '';
     final options =
@@ -658,16 +830,19 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
             ?.cast<Map<String, dynamic>>() ??
         (q['options'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
         [];
-    options.sort(
-      (a, b) =>
-          (a['position'] as int? ?? 0).compareTo(b['position'] as int? ?? 0),
-    );
+    if (!widget.shuffleQuestions) {
+      options.sort(
+        (a, b) =>
+            (a['position'] as int? ?? 0).compareTo(b['position'] as int? ?? 0),
+      );
+    }
 
     final isFlagged = _flaggedQuestions[_currentQuestionIndex] == true;
     final isLastQuestion = _currentQuestionIndex >= _questions.length - 1;
 
-    return Container(
-      padding: const EdgeInsets.all(32),
+    return SelectionContainer.disabled(
+      child: Container(
+        padding: EdgeInsets.all(isMobile ? 16 : 32),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -682,8 +857,11 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -709,6 +887,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
                   });
                 },
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       isFlagged ? Icons.flag : Icons.flag_outlined,
@@ -744,10 +923,10 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
 
           Expanded(
             child: GridView.count(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 4,
+              crossAxisCount: isMobile ? 1 : 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: isMobile ? 5 : 4,
               children: List.generate(options.length, (optIdx) {
                 final opt = options[optIdx];
                 final optId =
@@ -763,8 +942,11 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           ),
 
           const Divider(height: 32, color: AppTheme.border),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
             children: [
               OutlinedButton.icon(
                 onPressed: _currentQuestionIndex > 0 && !_isSubmitting
@@ -819,8 +1001,9 @@ class _TakingExamScreenState extends State<TakingExamScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildOptionTile(String optId, String letter, String text) {
     final isSelected = _selectedAnswers[_currentQuestionIndex] == optId;
