@@ -31,6 +31,7 @@ import 'screens/student/student_history_screen.dart';
 import 'screens/student/student_achievements_screen.dart';
 import 'screens/student/student_leaderboard_screen.dart';
 import 'screens/teacher/teacher_exams_screen.dart';
+import 'screens/teacher/teacher_rooms_history_screen.dart';
 import 'screens/teacher/teacher_student_results_screen.dart';
 import 'screens/teacher/teacher_analytics_screen.dart';
 import 'screens/main_layout_screen.dart';
@@ -302,6 +303,14 @@ final GoRouter _router = GoRouter(
             context: context,
             state: state,
             child: const StudentLeaderboardScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/teacher/rooms',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const TeacherRoomsHistoryScreen(),
           ),
         ),
         GoRoute(
