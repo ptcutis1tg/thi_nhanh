@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:onthi_community/core/providers/auth_provider.dart';
+import 'package:onthi_community/core/services/profile_service.dart';
 import 'package:onthi_community/screens/student/student_history_screen.dart';
 import 'package:onthi_community/shared/widgets/google_pagination_bar.dart';
 
@@ -174,6 +175,151 @@ void main() {
     await tester.tap(tabFinder);
     await tester.pumpAndSettle();
 
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('History card renders exam mode badge, duration, and pending release state correctly', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final sampleData = StudentProfileData(
+      completedTestsCount: 2,
+      averageScore: 6.75,
+      highestScore: 9.0,
+      streakDays: 2,
+      chartValues: [9.0, 4.5],
+      chartLabels: ['Bài 1', 'Bài 2'],
+      totalTimeSpent: const Duration(minutes: 35),
+      achievements: [],
+      recentTests: [
+        StudentTestHistoryData(
+          id: 'attempt-1',
+          subjectIcon: '📐',
+          title: 'Đề Toán Nâng Cao',
+          date: '04/10/2026',
+          score: '9.0 điểm',
+          scoreValue: 9.0,
+          subject: 'Toán',
+          isLiveRoom: true,
+          roomId: 'room-1',
+          roomCode: 'PT999888',
+          durationSeconds: 1200,
+          resultReleased: true,
+        ),
+        StudentTestHistoryData(
+          id: 'attempt-2',
+          subjectIcon: '🧪',
+          title: 'Đề Hóa Hữu Cơ',
+          date: '03/10/2026',
+          score: '4.5 điểm',
+          scoreValue: 4.5,
+          subject: 'Hóa học',
+          isLiveRoom: false,
+          durationSeconds: 900,
+          resultReleased: false,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            initialLocation: '/student/history',
+            routes: [
+              GoRoute(
+                path: '/student/history',
+                builder: (_, __) => StudentHistoryScreen(testData: sampleData),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify item 1 (Live Room):
+    expect(find.text('Phòng thi: PT999888'), findsOneWidget);
+    expect(find.text('20:00'), findsOneWidget);
+    expect(find.text('9.0 điểm'), findsOneWidget);
+    expect(find.text('Luyện lại câu sai'), findsOneWidget);
+
+    // Verify item 2 (Practice mode & pending release):
+    expect(find.text('Chờ công bố'), findsOneWidget);
+  });
+
+  testWidgets('History card renders without overflow on 360x640 mobile screen with items', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final sampleData = StudentProfileData(
+      completedTestsCount: 2,
+      averageScore: 6.75,
+      highestScore: 9.0,
+      streakDays: 2,
+      chartValues: [9.0, 4.5],
+      chartLabels: ['Bài 1', 'Bài 2'],
+      totalTimeSpent: const Duration(minutes: 35),
+      achievements: [],
+      recentTests: [
+        StudentTestHistoryData(
+          id: 'attempt-1',
+          subjectIcon: '📐',
+          title: 'Đề Kiểm Tra Toán Giữa Kỳ 1 Năm Học 2026',
+          date: '04/10/2026',
+          score: '9.0 điểm',
+          scoreValue: 9.0,
+          subject: 'Toán',
+          isLiveRoom: true,
+          roomId: 'room-1',
+          roomCode: 'PT999888',
+          durationSeconds: 1200,
+          resultReleased: true,
+        ),
+        StudentTestHistoryData(
+          id: 'attempt-2',
+          subjectIcon: '🧪',
+          title: 'Đề Hóa Hữu Cơ Lớp 12 Chương 3',
+          date: '03/10/2026',
+          score: '4.5 điểm',
+          scoreValue: 4.5,
+          subject: 'Hóa học',
+          isLiveRoom: false,
+          durationSeconds: 900,
+          resultReleased: false,
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
+        ],
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            initialLocation: '/student/history',
+            routes: [
+              GoRoute(
+                path: '/student/history',
+                builder: (_, __) => StudentHistoryScreen(testData: sampleData),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Phòng thi: PT999888'), findsOneWidget);
+    expect(find.text('Chờ công bố'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

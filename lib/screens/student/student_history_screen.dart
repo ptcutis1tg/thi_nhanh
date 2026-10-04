@@ -8,7 +8,8 @@ import '../../core/services/profile_service.dart';
 import '../../shared/widgets/google_pagination_bar.dart';
 
 class StudentHistoryScreen extends StatefulWidget {
-  const StudentHistoryScreen({super.key});
+  final StudentProfileData? testData;
+  const StudentHistoryScreen({super.key, this.testData});
 
   @override
   State<StudentHistoryScreen> createState() => _StudentHistoryScreenState();
@@ -62,6 +63,13 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
   }
 
   Future<void> _loadData() async {
+    if (widget.testData != null) {
+      setState(() {
+        _data = widget.testData!;
+        _isLoading = false;
+      });
+      return;
+    }
     setState(() => _isLoading = true);
     final authProvider = context.read<AuthProvider>();
     final data = await ProfileService.fetchStudentData(
@@ -707,18 +715,36 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
   }
 
   Widget _buildHistoryCard(StudentTestHistoryData item) {
-    Color pillBg;
-    Color pillText;
-    if (item.scoreValue >= 8.0) {
-      pillBg = const Color(0xFFDCFCE7);
-      pillText = const Color(0xFF166534);
+    Color scoreBg;
+    Color scoreBorder;
+    Color scoreText;
+    if (!item.resultReleased) {
+      scoreBg = const Color(0xFFFEF3C7);
+      scoreBorder = const Color(0xFFFDE68A);
+      scoreText = const Color(0xFFB45309);
+    } else if (item.scoreValue >= 8.0) {
+      scoreBg = const Color(0xFFDCFCE7);
+      scoreBorder = const Color(0xFFBBF7D0);
+      scoreText = const Color(0xFF166534);
     } else if (item.scoreValue >= 5.0) {
-      pillBg = const Color(0xFFF0ECFF);
-      pillText = AppTheme.primary;
+      scoreBg = const Color(0xFFEFF6FF);
+      scoreBorder = const Color(0xFFBFDBFE);
+      scoreText = const Color(0xFF1D4ED8);
     } else {
-      pillBg = const Color(0xFFFFEDD5);
-      pillText = const Color(0xFFC2410C);
+      scoreBg = const Color(0xFFFFEDD5);
+      scoreBorder = const Color(0xFFFED7AA);
+      scoreText = const Color(0xFFC2410C);
     }
+
+    final modeLabel = item.isLiveRoom
+        ? (item.roomCode != null && item.roomCode!.isNotEmpty
+            ? 'Phòng thi: ${item.roomCode}'
+            : 'Phòng thi trực tiếp')
+        : 'Tự luyện tập';
+    final modeBg = item.isLiveRoom ? const Color(0xFFEFF6FF) : const Color(0xFFF5F3FF);
+    final modeBorder = item.isLiveRoom ? const Color(0xFFBFDBFE) : const Color(0xFFDDD6FE);
+    final modeColor = item.isLiveRoom ? const Color(0xFF1D4ED8) : const Color(0xFF6D28D9);
+    final modeIcon = item.isLiveRoom ? Icons.meeting_room_outlined : Icons.fitness_center_rounded;
 
     return Card(
       elevation: 0,
@@ -732,83 +758,247 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
         borderRadius: BorderRadius.circular(16),
         onTap: () => context.go('/result?attemptId=${Uri.encodeComponent(item.id)}'),
         child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
+          padding: const EdgeInsets.all(16),
+          child: LayoutBuilder(
+            builder: (context, cardConstraints) {
+              final isNarrowCard = cardConstraints.maxWidth < 650;
+
+              // Score Widget
+              final scoreWidget = Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0ECFF),
-                  borderRadius: BorderRadius.circular(14),
+                  color: scoreBg,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: scoreBorder),
                 ),
-                alignment: Alignment.center,
-                child: Text(item.subjectIcon, style: const TextStyle(fontSize: 24)),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
+                    if (!item.resultReleased) ...[
+                      const Icon(Icons.hourglass_top_rounded, size: 14, color: Color(0xFFB45309)),
+                      const SizedBox(width: 4),
+                      const Flexible(
+                        child: Text(
+                          'Chờ công bố',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFB45309),
                           ),
-                          child: Text(
-                            item.subject,
-                            style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          item.date,
-                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                      ),
+                    ] else ...[
+                      Flexible(
+                        child: Text(
+                          item.score,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: scoreText,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+
+              // Action Buttons
+              final actionButtons = Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: isNarrowCard ? WrapAlignment.start : WrapAlignment.end,
+                children: [
+                  if (item.resultReleased && item.scoreValue < 10.0)
+                    OutlinedButton.icon(
+                      key: Key('history-wrong-questions-${item.id}'),
+                      onPressed: () => context.go('/practice/wrong_questions?attemptId=${Uri.encodeComponent(item.id)}'),
+                      icon: const Icon(Icons.replay_rounded, size: 14),
+                      label: const Text('Luyện lại câu sai', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFD97706),
+                        side: const BorderSide(color: Color(0xFFFDE68A)),
+                        backgroundColor: const Color(0xFFFEF3C7).withValues(alpha: 0.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ElevatedButton.icon(
+                    key: Key('history-view-result-${item.id}'),
+                    onPressed: () => context.go('/result?attemptId=${Uri.encodeComponent(item.id)}'),
+                    icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                    label: const Text('Xem kết quả', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ],
+              );
+
+              // Metadata Row (Subject, Mode, Date, Duration)
+              final badgesAndMeta = Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  // Mode Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: modeBg,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: modeBorder),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(modeIcon, size: 12, color: modeColor),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            modeLabel,
+                            style: TextStyle(color: modeColor, fontSize: 11, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: pillBg,
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  item.score,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: pillText,
                   ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              ElevatedButton.icon(
-                key: Key('history-view-result-${item.id}'),
-                onPressed: () => context.go('/result?attemptId=${Uri.encodeComponent(item.id)}'),
-                icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                label: const Text('Xem kết quả', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-              ),
-            ],
+                  // Subject Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      item.subject,
+                      style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  // Date
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today_outlined, size: 12, color: AppTheme.textSecondary),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          item.date,
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Duration
+                  if (item.durationFormatted != null)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.timer_outlined, size: 12, color: AppTheme.textSecondary),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            item.durationFormatted!,
+                            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              );
+
+              if (isNarrowCard) {
+                // Mobile layout: Column
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0ECFF),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(item.subjectIcon, style: const TextStyle(fontSize: 20)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.title,
+                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                              ),
+                              const SizedBox(height: 6),
+                              badgesAndMeta,
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1, color: Color(0xFFF3F0FC)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        scoreWidget,
+                        const Spacer(),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    actionButtons,
+                  ],
+                );
+              }
+
+              // Desktop layout: Row
+              return Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0ECFF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(item.subjectIcon, style: const TextStyle(fontSize: 24)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        badgesAndMeta,
+                        const SizedBox(height: 6),
+                        Text(
+                          item.title,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  scoreWidget,
+                  const SizedBox(width: 16),
+                  actionButtons,
+                ],
+              );
+            },
           ),
         ),
       ),
