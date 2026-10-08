@@ -15,9 +15,7 @@ class ExamDetailScreen extends StatefulWidget {
 }
 
 class _ExamDetailScreenState extends State<ExamDetailScreen> {
-  static const _demoExamId = '10000000-0000-4000-8000-000000000002';
   final _roomCodeController = TextEditingController();
-  bool _saved = false;
   bool _isStarting = false;
   bool _isLoading = true;
   Map<String, dynamic>? _examData;
@@ -112,7 +110,20 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
       return;
     }
     setState(() => _isStarting = true);
-    final currentExamId = _examData?['id']?.toString() ?? widget.examId ?? _demoExamId;
+    final currentExamId = _examData?['id']?.toString() ?? widget.examId;
+    if (currentExamId == null || currentExamId.isEmpty) {
+      if (mounted) {
+        setState(() => _isStarting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Không tìm thấy thông tin đề thi hợp lệ.'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+      return;
+    }
+
     AssessmentRepository? repo;
     try {
       repo = context.read<AssessmentRepository>();
@@ -134,6 +145,15 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
     } finally {
       if (mounted) setState(() => _isStarting = false);
     }
+  }
+
+  void _onBookmark() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tính năng lưu đề vào bộ sưu tập cá nhân sẽ sớm được hỗ trợ.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -185,10 +205,9 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> {
                   );
                   final action = _ActionPanel(
                     controller: _roomCodeController,
-                    saved: _saved,
                     isStarting: _isStarting,
                     onStart: _start,
-                    onSaved: () => setState(() => _saved = !_saved),
+                    onSaved: _onBookmark,
                   );
                   return Column(
                     children: [
@@ -291,14 +310,12 @@ class _Fact extends StatelessWidget {
 class _ActionPanel extends StatelessWidget {
   const _ActionPanel({
     required this.controller,
-    required this.saved,
     required this.isStarting,
     required this.onStart,
     required this.onSaved,
   });
 
   final TextEditingController controller;
-  final bool saved;
   final bool isStarting;
   final Future<void> Function() onStart;
   final VoidCallback onSaved;
@@ -332,8 +349,8 @@ class _ActionPanel extends StatelessWidget {
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: onSaved,
-              icon: Icon(saved ? Icons.bookmark : Icons.bookmark_border),
-              label: Text(saved ? 'Đã lưu vào yêu thích' : 'Lưu vào yêu thích'),
+              icon: const Icon(Icons.bookmark_border_rounded),
+              label: const Text('Lưu vào yêu thích'),
             ),
           ],
         ),
