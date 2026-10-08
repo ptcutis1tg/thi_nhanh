@@ -7,6 +7,10 @@ import 'package:onthi_community/shared/widgets/top_nav_bar.dart';
 
 void main() {
   testWidgets('TopNavBar displays all 4 core hot bar items for all users', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
     final authProvider = AuthProvider(isSupabaseInitialized: false);
 
     await tester.pumpWidget(
@@ -29,6 +33,11 @@ void main() {
     // Verify replaced / removed items are not present
     expect(find.text('Tạo đề thi'), findsNothing);
     expect(find.text('Đề của tôi'), findsNothing);
+
+    // Verify PIN input hint exists
+    expect(find.byType(TextField), findsOneWidget);
+    final textField = tester.widget<TextField>(find.byType(TextField));
+    expect(textField.decoration?.hintText, 'Nhập mã PT...');
   });
 
   testWidgets('TopNavBar avatar shows popup menu with Profile, History, and Logout options', (tester) async {

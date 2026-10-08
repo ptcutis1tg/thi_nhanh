@@ -31,11 +31,14 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
           padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : (isCompact ? 16 : 28)),
           decoration: BoxDecoration(
             color: AppTheme.surface,
-            boxShadow: [
+            border: const Border(
+              bottom: BorderSide(color: AppTheme.border, width: 1),
+            ),
+            boxShadow: const [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                offset: const Offset(0, 2),
-                blurRadius: 10,
+                color: Color(0x08000000),
+                offset: Offset(0, 2),
+                blurRadius: 8,
               ),
             ],
           ),
@@ -45,30 +48,43 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
               // Logo & Title
               InkWell(
                 onTap: () => context.go('/home'),
+                borderRadius: BorderRadius.circular(10),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 32,
-                      height: 32,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
-                        color: AppTheme.primary,
-                        borderRadius: BorderRadius.circular(8),
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primary, AppTheme.primaryDark],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x336557E8),
+                            blurRadius: 8,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
                       ),
                       child: const Icon(
-                        Icons.check,
+                        Icons.check_rounded,
                         color: Colors.white,
-                        size: 20,
+                        size: 22,
                       ),
                     ),
                     if (!isMobile) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 12),
                       const Text(
                         'Thi Nhanh',
                         style: TextStyle(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textMain,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -109,28 +125,43 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   if (!isVeryCompact)
                     ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: isCompact ? 130 : 160),
+                      constraints: BoxConstraints(maxWidth: isCompact ? 135 : 170),
                       child: TextField(
                         onSubmitted: (code) => _handleQuickJoinRoom(context, code),
+                        style: AppTheme.firaCodeStyle.copyWith(
+                          fontSize: 13,
+                          letterSpacing: 0.5,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Nhập mã PT...',
-                          hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          hintStyle: const TextStyle(fontSize: 12, color: AppTheme.textPlaceholder),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                           filled: true,
                           fillColor: AppTheme.background,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(100),
+                            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             borderSide: const BorderSide(color: AppTheme.border),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(100),
+                            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             borderSide: const BorderSide(color: AppTheme.border),
                           ),
-                          suffixIcon: const Icon(Icons.arrow_forward, size: 16),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                            borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                          ),
+                          suffixIcon: Container(
+                            margin: const EdgeInsets.all(5),
+                            decoration: const BoxDecoration(
+                              color: AppTheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
+                          ),
                         ),
                       ),
                     ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   if (!isMobile)
                     IconButton(
                       tooltip: 'Hướng dẫn sử dụng',
@@ -148,20 +179,20 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                               tooltip: 'Đăng nhập',
                             )
                           : ElevatedButton.icon(
-                        onPressed: () => context.go('/greeting'),
-                        icon: const Icon(Icons.login_rounded, size: 16),
-                        label: const Text(
-                          'Đăng nhập',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-                        ),
-                      ),
+                              onPressed: () => context.go('/greeting'),
+                              icon: const Icon(Icons.login_rounded, size: 16),
+                              label: const Text(
+                                'Đăng nhập',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                              ),
+                            ),
                     )
                   else
                     PopupMenuButton<String>(
@@ -231,14 +262,21 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                           ),
                         ),
                       ],
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppTheme.border,
-                        backgroundImage: avatarImage,
-                        onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
-                        child: avatarImage == null
-                            ? const Icon(Icons.person, color: AppTheme.textSecondary, size: 18)
-                            : null,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.primaryLight, width: 1.5),
+                        ),
+                        child: CircleAvatar(
+                          radius: 17,
+                          backgroundColor: AppTheme.border,
+                          backgroundImage: avatarImage,
+                          onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
+                          child: avatarImage == null
+                              ? const Icon(Icons.person, color: AppTheme.textSecondary, size: 18)
+                              : null,
+                        ),
                       ),
                     ),
                 ],
@@ -305,17 +343,25 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
           context.go(route);
         }
       },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        margin: EdgeInsets.symmetric(horizontal: isCompact ? 4 : 8),
-        padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 10, vertical: 6),
+      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: EdgeInsets.symmetric(horizontal: isCompact ? 3 : 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 10 : 16,
+          vertical: 8,
+        ),
         decoration: BoxDecoration(
-          border: isActive ? const Border(bottom: BorderSide(color: AppTheme.primary, width: 2)) : null,
+          color: isActive ? AppTheme.surfaceLavender : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+          border: isActive
+              ? Border.all(color: AppTheme.primary.withValues(alpha: 0.25), width: 1.2)
+              : Border.all(color: Colors.transparent, width: 1.2),
         ),
         child: Text(
           title,
           style: TextStyle(
-            fontSize: isCompact ? 14 : 15,
+            fontSize: isCompact ? 13 : 14,
             fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             color: isActive ? AppTheme.primary : AppTheme.textSecondary,
           ),
