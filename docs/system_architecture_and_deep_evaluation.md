@@ -1,6 +1,6 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 08/10/2026 *(Cập nhật chuẩn hóa sau khi hoàn tất loại bỏ Mock Data và nâng cao trải nghiệm điều hướng)*  
+> **Ngày thực hiện:** 08/10/2026 *(Cập nhật sau khi quét sạch Widget thừa, loại bỏ mã mồ côi và chuẩn hóa logic)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
 > **Trạng thái kiểm thử:** **173 / 173 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu kiến trúc, hệ thống chống gian lận, điều hướng động và quy trình kiểm thử tự động.
@@ -222,12 +222,18 @@ graph TD
   - [x] Triển khai điều hướng thông minh cho "Bài Đang Làm" và "Phòng Đang Diễn Ra" trên `HomeScreen`.
   - [x] Chuẩn hóa dữ liệu bảng xếp hạng `StudentLeaderboardScreen` (xóa fake email, phân giải `profiles`, nhãn `(Khách)`).
   - [x] 100% kiểm thử hồi quy đạt 173/173 tests PASS.
+- ✅ **Giai đoạn 3: Dọn Dẹp Widget Thừa & Loại Bỏ Mã Chết (Widget Cleanup & Dead Code Elimination):**
+  - [x] Xóa sạch 3 tệp widget/utility mồ côi 0 tham chiếu: `profile_dialog.dart` (337 dòng), `topic_chip.dart` (39 dòng), `otp_mailer.dart` (42 dòng).
+  - [x] Loại bỏ tệp màn hình di sản trùng lặp `screens/exam/teacher_exams_screen.dart` (85 dòng), cập nhật bài test trỏ về màn hình chuẩn `screens/teacher/teacher_exams_screen.dart`.
+  - [x] Triệt tiêu fallback UUID demo ảo `_demoExamId` và dọn dẹp bookmark RAM giả lập tại `ExamDetailScreen`.
+  - [x] Khắc phục triệt để cảnh báo `use_build_context_synchronously` trên `HomeScreen` bằng cách sử dụng `State.context` và `if (!mounted) return;`.
+  - [x] Duy trì 100% kiểm thử hồi quy đạt 173/173 tests PASS, mã nguồn sạch sẽ, không thêm tính năng mới.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 3: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 4: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
-2. **Giai đoạn 4: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+2. **Giai đoạn 5: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 5: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 6: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
