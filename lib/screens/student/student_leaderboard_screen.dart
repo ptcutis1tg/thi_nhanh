@@ -4,25 +4,48 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/utils/supabase_retry_helper.dart';
 
 class LeaderboardUser {
+  final String id;
   final String name;
-  final String email;
+  final String? email;
+  final bool isGuest;
   final double avgScore;
   final int totalTests;
   final int rank;
 
   LeaderboardUser({
+    required this.id,
     required this.name,
-    required this.email,
+    this.email,
+    this.isGuest = false,
     required this.avgScore,
     required this.totalTests,
     required this.rank,
   });
 }
 
+class _LeaderboardAccumulator {
+  final String id;
+  final String name;
+  final bool isGuest;
+  final List<double> scores = [];
+
+  _LeaderboardAccumulator({
+    required this.id,
+    required this.name,
+    required this.isGuest,
+  });
+}
+
 class StudentLeaderboardScreen extends StatefulWidget {
-  const StudentLeaderboardScreen({super.key});
+  final List<LeaderboardUser>? initialUsers;
+
+  const StudentLeaderboardScreen({
+    super.key,
+    this.initialUsers,
+  });
 
   @override
   State<StudentLeaderboardScreen> createState() => _StudentLeaderboardScreenState();
@@ -35,35 +58,99 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
   @override
   void initState() {
     super.initState();
-    _loadLeaderboard();
+    if (widget.initialUsers != null) {
+      _leaderboard = widget.initialUsers!;
+      _isLoading = false;
+    } else {
+      _loadLeaderboard();
+    }
   }
 
   Future<void> _loadLeaderboard() async {
     setState(() => _isLoading = true);
     try {
       final client = Supabase.instance.client;
-      final response = await client
-          .from('attempts')
-          .select('user_id, guest_name, score')
-          .eq('status', 'submitted');
+      final response = await SupabaseRetryHelper.run(() async {
+        return await client
+            .from('attempts')
+            .select('user_id, guest_name, score')
+            .eq('status', 'submitted');
+      });
 
-      final Map<String, List<double>> userScores = {};
       final List<dynamic> list = response as List<dynamic>;
 
+      // Thu thập user_ids để truy vấn tên hiển thị thực tế từ bảng profiles
+      final userIds = list
+          .map((a) => a['user_id']?.toString())
+          .where((id) => id != null && id.isNotEmpty)
+          .toSet()
+          .toList();
+
+      Map<String, String> profileNames = {};
+      if (userIds.isNotEmpty) {
+        try {
+          final pRes = await SupabaseRetryHelper.run(() => client
+              .from('profiles')
+              .select('id, display_name')
+              .inFilter('id', userIds));
+          for (final p in (pRes as List<dynamic>)) {
+            final pid = p['id']?.toString();
+            final dName = p['display_name']?.toString();
+            if (pid != null && dName != null && dName.isNotEmpty) {
+              profileNames[pid] = dName;
+            }
+          }
+        } catch (eProf) {
+          debugPrint('Không thể tải tên profiles: $eProf');
+        }
+      }
+
+      // Gom nhóm điểm số theo từng thí sinh
+      final Map<String, _LeaderboardAccumulator> userMap = {};
+
       for (var item in list) {
-        final key = (item['guest_name'] as String?) ?? (item['user_id'] as String?) ?? 'Học sinh';
+        final userId = item['user_id']?.toString();
+        final guestName = item['guest_name']?.toString();
         final score = (item['score'] as num?)?.toDouble() ?? 0.0;
-        userScores.putIfAbsent(key, () => []).add(score);
+
+        String key;
+        String displayName;
+        bool isGuest;
+
+        if (userId != null && userId.isNotEmpty) {
+          key = 'user:$userId';
+          displayName = profileNames[userId] ?? 'Học sinh';
+          isGuest = false;
+        } else if (guestName != null && guestName.isNotEmpty) {
+          key = 'guest:$guestName';
+          displayName = '$guestName (Khách)';
+          isGuest = true;
+        } else {
+          key = 'guest:anonymous';
+          displayName = 'Khách ẩn danh';
+          isGuest = true;
+        }
+
+        userMap.putIfAbsent(
+          key,
+          () => _LeaderboardAccumulator(
+            id: userId ?? key,
+            name: displayName,
+            isGuest: isGuest,
+          ),
+        ).scores.add(score);
       }
 
       final List<LeaderboardUser> users = [];
-      userScores.forEach((nameKey, scores) {
-        final avg = scores.reduce((a, b) => a + b) / scores.length;
+      userMap.forEach((_, acc) {
+        if (acc.scores.isEmpty) return;
+        final avg = acc.scores.reduce((a, b) => a + b) / acc.scores.length;
         users.add(LeaderboardUser(
-          name: nameKey.contains('@') ? nameKey.split('@').first : nameKey,
-          email: nameKey.contains('@') ? nameKey : 'hocsinh@gmail.com',
+          id: acc.id,
+          name: acc.name,
+          isGuest: acc.isGuest,
           avgScore: avg,
-          totalTests: scores.length,
+          totalTests: acc.scores.length,
           rank: 0,
         ));
       });
@@ -74,8 +161,9 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
       for (int i = 0; i < users.length; i++) {
         final u = users[i];
         rankedUsers.add(LeaderboardUser(
+          id: u.id,
           name: u.name,
-          email: u.email,
+          isGuest: u.isGuest,
           avgScore: u.avgScore,
           totalTests: u.totalTests,
           rank: i + 1,
@@ -99,7 +187,9 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final currentUserId = authProvider.user?.id;
     final currentUserEmail = authProvider.userEmail;
+    final currentUserName = authProvider.userName;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5FE),
@@ -163,7 +253,10 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
                       separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF0ECFF)),
                       itemBuilder: (context, index) {
                         final user = _leaderboard[index];
-                        final isMe = user.email.toLowerCase() == currentUserEmail.toLowerCase();
+                        final isMe = !user.isGuest &&
+                            ((currentUserId != null && user.id == currentUserId) ||
+                             (currentUserEmail.isNotEmpty && user.email == currentUserEmail) ||
+                             (currentUserName.isNotEmpty && user.name.toLowerCase() == currentUserName.toLowerCase()));
 
                         return Container(
                           color: isMe ? const Color(0xFFF0ECFF).withValues(alpha: 0.5) : Colors.transparent,
