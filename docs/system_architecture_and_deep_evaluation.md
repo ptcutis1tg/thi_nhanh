@@ -82,9 +82,14 @@ graph TD
    - Giữ nguyên tuyệt đối 100% 4 phân hệ cốt lõi: `Home` (`/home`), `Tìm kiếm` (`/search`), `Quản lí đề` (`/teacher_exams`), `Tạo phòng thi` (`/create_room`).
    - Tab con nhộng active pill hiện đại hóa (`surfaceLavender` + viền violet nhẹ + `pillRadius`), biểu tượng squircle gradient với hiệu ứng phát sáng nhẹ, thanh nhập mã PIN phòng thi nhanh phong cách Fira Code và vòng nhẫn avatar người dùng tím thanh lịch.
 2. **Trang chủ ([`HomeScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/home_screen.dart)):**
-   - **Hàng 8 Chips Môn Học Trực Quan (Stitch Subject Chips Row):** Tích hợp 8 môn học phổ thông (Toán, Vật lý, Hóa học, Tiếng Anh, Sinh học, Lịch sử, Địa lý, Ngữ văn) dạng thẻ pill bo tròn với icon đặc trưng, click vào chuyển hướng trực tiếp sang `/search?subject=...`.
+   - **Hero Banner Gradient Tím Sâu (Stitch Hero Banner):** Nền gradient tím cao cấp (`#6557E8` $\rightarrow$ `#4C3BCE` $\rightarrow$ `#3828A8`), bo góc 24px với bóng luminescence 24px. Bên trái là Avatar viền sáng, lời chào cá nhân hóa và huy hiệu con nhộng "Tài khoản Toàn quyền".
+   - **Thanh Chuyển Đổi Không Gian Làm Việc Con Nhộng Kính Mờ (Embedded Workspace Capsule Switcher):** Được tích hợp tinh gọn trực tiếp bên trong Hero Banner với nền kính mờ (`rgba(255,255,255,0.15)`), tab active nền trắng chữ tím nổi bật, cho phép chuyển đổi tức thì giữa `🎓 Học tập & Thi thử` và `📝 Soạn đề & Quản lý`.
+   - **Lưới Điều Hướng Thông Minh 2 Thẻ (Stitch Smart Navigation Grid):**
+     - *Thẻ 1 — Tiến Độ Học Tập / Bài Thi Dở Dang:* Thẻ bo góc 22px, hiển thị trạng thái bài làm chưa nộp gần nhất từ `ProfileService.fetchActiveAttempt()`, nhãn cảnh báo vàng amber, hiệu ứng nhịp tim `ScaleTransition` và nút "Tiếp tục làm bài" / "Khám phá đề thi".
+     - *Thẻ 2 — Phòng Thi Trực Tiếp & Vào Nhanh:* Thẻ bo góc 22px, hiển thị phòng thi đang mở từ `ProfileService.fetchActiveLiveRoom()`, chỉ báo xanh lục nhấp nháy realtime và tích hợp trực tiếp ô nhập mã PIN phòng thi chuẩn Fira Code (`Nhập mã phòng PTxxxxxx...`) kèm nút "Vào ngay".
+   - **Hàng 8 Chips Môn Học Trực Quan (`📚 Danh Mục Môn Học`):** Tích hợp 8 môn học phổ thông (Toán, Vật lý, Hóa học, Tiếng Anh, Sinh học, Lịch sử, Địa lý, Ngữ văn) dạng thẻ pill bo tròn với icon đặc trưng, click vào chuyển hướng trực tiếp sang `/search?subject=...`.
+   - **Thanh Chỉ Số Nhanh (Quick Stats Bar):** Đồng bộ dữ liệu thực tế Supabase (`_studentStats`, `_teacherStats`).
    - Danh sách đề thi nổi bật và đề thi mới nhất được nâng cấp với `cardRadius` (16px) và `cardShadow` đa tầng mềm mại.
-   - **Điều hướng thông minh theo thời gian thực:** Thẻ "Bài Đang Làm" và "Phòng Đang Diễn Ra" tự động truy vấn `ProfileService` (`fetchActiveAttempt`, `fetchActiveLiveRoom`) đưa học sinh quay lại đúng bài thi hoặc phòng thi dở dang.
 3. **Tìm kiếm & Bộ lọc ([`SearchScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
    - Thẻ kết quả thi dạng Card hiện đại hóa, chip chọn môn và bộ lọc cấp độ dạng con nhộng mềm mại.
    - Định dạng thời gian tương đối động (`formatRelativeTime`).

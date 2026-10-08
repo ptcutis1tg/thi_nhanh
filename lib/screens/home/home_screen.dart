@@ -271,13 +271,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final authProvider = context.watch<AuthProvider>();
     final isStudent = _workspaceMode == 'learning';
     final avatarUrl = authProvider.userAvatarUrl;
-
     final avatarImage = parseAvatarImage(avatarUrl);
-
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE), // Light purple tinted background
+      backgroundColor: const Color(0xFFF8F8FC), // Stitch clean paper background
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           vertical: 32,
@@ -289,27 +287,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 1. HEADER SECTION (User Profile & Quick Room Entry)
-                _buildHeaderSection(context, authProvider, avatarImage, isMobile),
-
-                if (isStudent) ...[
-                  const SizedBox(height: 18),
-                  _buildSubjectChipsRow(context),
-                ],
-
-                const SizedBox(height: 20),
-
-                // WORKSPACE MODE SWITCHER (Học tập & Thi thử ⇄ Soạn đề & Quản lý)
-                _buildWorkspaceModeSwitcher(isMobile),
+                // 1. HERO BANNER (Stitch Violet Gradient + User Profile + Embedded Capsule Mode Switcher)
+                _buildHeroBanner(context, authProvider, avatarImage, isMobile),
 
                 const SizedBox(height: 24),
 
-                // 2. QUICK STATS BAR (REAL SUPABASE DATA)
+                // 2. SMART NAVIGATION GRID (Stitch Screen 2: Active Attempt Card & Live Room Card with Quick Room Entry)
+                _buildSmartNavGrid(context, isMobile),
+
+                const SizedBox(height: 28),
+
+                // 3. SUBJECT CHIPS SECTION (Student Mode)
+                if (isStudent) ...[
+                  _buildSubjectChipsSection(context),
+                  const SizedBox(height: 28),
+                ],
+
+                // 4. QUICK STATS BAR (REAL SUPABASE DATA)
                 _buildQuickStatsBar(isStudent, isMobile),
 
                 const SizedBox(height: 32),
 
-                // 3. MAIN SECTION TITLE
+                // 5. MAIN SECTION TITLE
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -333,22 +332,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 16),
 
-                // 4. MAIN FEATURE CARDS GRID (6 Cards with Dedicated Screen Routes)
+                // 6. MAIN FEATURE CARDS GRID (6 Gamified Cards)
                 _buildFeatureCardsGrid(context, isStudent, isMobile),
 
                 const SizedBox(height: 40),
 
-                // 5. RECENT ACTIVITY SECTION (REAL SUPABASE DATA)
+                // 7. RECENT ACTIVITY SECTION (REAL SUPABASE DATA)
                 _buildRecentSection(context, isStudent),
 
                 const SizedBox(height: 40),
 
-                // 6. NOTIFICATIONS & GUIDES SECTION
+                // 8. NOTIFICATIONS & GUIDES SECTION
                 _buildInfoAndHelpSection(context, isStudent, isMobile),
 
                 const SizedBox(height: 32),
 
-                // 7. BOTTOM UTILITY BAR
+                // 9. BOTTOM UTILITY BAR
                 _buildBottomUtilityBar(context, authProvider),
               ],
             ),
@@ -358,40 +357,53 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- HEADER SECTION ---
-  Widget _buildHeaderSection(
+  // --- 1. HERO BANNER (STITCH DEEP VIOLET GRADIENT & EMBEDDED WORKSPACE CAPSULE) ---
+  Widget _buildHeroBanner(
     BuildContext context,
     AuthProvider authProvider,
     ImageProvider? avatarImage,
     bool isMobile,
   ) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: EdgeInsets.all(isMobile ? 20 : 28),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6557E8), // Stitch Primary Violet
+            Color(0xFF4C3BCE), // Deep Violet
+            Color(0xFF3828A8), // Rich Indigo Violet
+          ],
+        ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color(0xFF6B46C1).withValues(alpha: 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+            color: Color(0x336557E8),
+            blurRadius: 24,
+            offset: Offset(0, 8),
           ),
         ],
       ),
       child: isMobile
           ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildUserInfoRow(authProvider, avatarImage),
-                const SizedBox(height: 16),
-                _buildQuickRoomInput(),
+                const SizedBox(height: 18),
+                _buildWorkspaceModeSwitcher(isMobile),
               ],
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(child: _buildUserInfoRow(authProvider, avatarImage)),
+                Expanded(
+                  child: _buildUserInfoRow(authProvider, avatarImage),
+                ),
                 const SizedBox(width: 24),
-                SizedBox(width: 420, child: _buildQuickRoomInput()),
+                _buildWorkspaceModeSwitcher(isMobile),
               ],
             ),
     );
@@ -399,54 +411,75 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildUserInfoRow(AuthProvider authProvider, ImageProvider? avatarImage) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
-          backgroundImage: avatarImage,
-          onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
-          child: avatarImage == null
-              ? const Icon(Icons.person, size: 28, color: AppTheme.primary)
-              : null,
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            backgroundImage: avatarImage,
+            onBackgroundImageError: avatarImage != null ? (e, s) {} : null,
+            child: avatarImage == null
+                ? const Icon(Icons.person, size: 30, color: Colors.white)
+                : null,
+          ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 18),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Xin chào, ${authProvider.userName} 👋',
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textMain,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  letterSpacing: -0.3,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0ECFF),
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: const Color(0xFFE4DFFF)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, size: 14, color: AppTheme.primary),
-                    SizedBox(width: 6),
-                    Text(
-                      'Tài khoản Toàn quyền',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.primary,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                     ),
-                  ],
-                ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text(
+                          'Tài khoản Toàn quyền',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -455,42 +488,225 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- WORKSPACE MODE SWITCHER ---
+  // --- EMBEDDED WORKSPACE MODE SWITCHER (CAPSULE PILL) ---
   Widget _buildWorkspaceModeSwitcher(bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6B46C1).withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: isMobile ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          _buildCapsuleTab(
+            mode: 'learning',
+            title: '🎓 Học tập & Thi thử',
+            isSelected: _workspaceMode == 'learning',
+            isMobile: isMobile,
+          ),
+          const SizedBox(width: 4),
+          _buildCapsuleTab(
+            mode: 'authoring',
+            title: '📝 Soạn đề & Quản lý',
+            isSelected: _workspaceMode == 'authoring',
+            isMobile: isMobile,
           ),
         ],
       ),
-      child: Row(
+    );
+  }
+
+  Widget _buildCapsuleTab({
+    required String mode,
+    required String title,
+    required bool isSelected,
+    required bool isMobile,
+  }) {
+    final content = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 18,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white : Colors.transparent,
+        borderRadius: BorderRadius.circular(100),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
+      child: Center(
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: isMobile ? 12 : 14,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            color: isSelected ? AppTheme.primary : Colors.white.withValues(alpha: 0.9),
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+
+    return isMobile
+        ? Expanded(
+            child: InkWell(
+              onTap: () => _setWorkspaceMode(mode),
+              borderRadius: BorderRadius.circular(100),
+              child: content,
+            ),
+          )
+        : InkWell(
+            onTap: () => _setWorkspaceMode(mode),
+            borderRadius: BorderRadius.circular(100),
+            child: content,
+          );
+  }
+
+  // --- 2. SMART NAVIGATION GRID (STITCH SCREEN 2: 2 CARDS) ---
+  Widget _buildSmartNavGrid(BuildContext context, bool isMobile) {
+    return isMobile
+        ? Column(
+            children: [
+              _buildActiveAttemptCard(context),
+              const SizedBox(height: 16),
+              _buildLiveRoomCard(context),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _buildActiveAttemptCard(context)),
+              const SizedBox(width: 20),
+              Expanded(child: _buildLiveRoomCard(context)),
+            ],
+          );
+  }
+
+  Widget _buildActiveAttemptCard(BuildContext context) {
+    final hasActive = _activeAttemptId != null && _activeAttemptId!.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: hasActive ? const Color(0xFFFDE68A) : AppTheme.border,
+          width: hasActive ? 1.5 : 1,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: _buildModeTab(
-              mode: 'learning',
-              icon: Icons.school_rounded,
-              title: '🎓 Học tập & Thi thử',
-              subtitle: 'Làm bài thi, tích lũy điểm & xem thành tích',
-              isSelected: _workspaceMode == 'learning',
-              isMobile: isMobile,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: hasActive ? const Color(0xFFFEF3C7) : const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.bolt_rounded,
+                      size: 14,
+                      color: hasActive ? const Color(0xFFD97706) : AppTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      hasActive ? 'BÀI THI CHƯA HOÀN TẤT' : 'TIẾN ĐỘ HỌC TẬP',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: hasActive ? const Color(0xFFB45309) : AppTheme.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasActive)
+                ScaleTransition(
+                  scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF59E0B),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            hasActive ? 'Bạn đang có bài thi chưa nộp' : 'Không có bài thi dở dang',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textMain,
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildModeTab(
-              mode: 'authoring',
-              icon: Icons.edit_calendar_rounded,
-              title: '📝 Soạn đề & Quản lý',
-              subtitle: 'Tạo đề thi, mở phòng & theo dõi thí sinh',
-              isSelected: _workspaceMode == 'authoring',
-              isMobile: isMobile,
+          const SizedBox(height: 6),
+          Text(
+            hasActive
+                ? 'Hệ thống đã tự động lưu lại tiến trình bài làm. Bạn có thể tiếp tục ngay.'
+                : 'Mọi tiến trình thi sẽ tự động được lưu nháp để bạn có thể làm tiếp bất cứ lúc nào.',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+              height: 1.4,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => _onCardTap('Bài Đang Làm', '/taking_exam'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: hasActive ? const Color(0xFFD97706) : AppTheme.surfaceLavender,
+                foregroundColor: hasActive ? Colors.white : AppTheme.primary,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                  side: hasActive ? BorderSide.none : const BorderSide(color: Color(0xFFE9E4FA)),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    hasActive ? 'Tiếp tục làm bài' : 'Khám phá đề thi',
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_rounded, size: 15),
+                ],
+              ),
             ),
           ),
         ],
@@ -498,72 +714,98 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildModeTab({
-    required String mode,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    required bool isMobile,
-  }) {
-    return InkWell(
-      onTap: () => _setWorkspaceMode(mode),
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 10 : 14,
-          horizontal: isMobile ? 8 : 16,
+  Widget _buildLiveRoomCard(BuildContext context) {
+    final hasActiveRoom = _activeLiveRoomCode != null && _activeLiveRoomCode!.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: hasActiveRoom ? const Color(0xFFA7F3D0) : AppTheme.border,
+          width: hasActiveRoom ? 1.5 : 1,
         ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary : const Color(0xFFF7F5FE),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? AppTheme.primary : const Color(0xFFE9E4FA),
-            width: 1.5,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 16,
+            offset: Offset(0, 4),
           ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: isMobile ? 18 : 22,
-              color: isSelected ? Colors.white : AppTheme.primary,
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: isMobile ? 13 : 15,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white : AppTheme.textMain,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: hasActiveRoom ? const Color(0xFFD1FAE5) : const Color(0xFFF3F0FF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      hasActiveRoom ? Icons.sensors_rounded : Icons.meeting_room_outlined,
+                      size: 14,
+                      color: hasActiveRoom ? const Color(0xFF059669) : AppTheme.primary,
                     ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (!isMobile) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(width: 4),
                     Text(
-                      subtitle,
+                      hasActiveRoom ? 'PHÒNG THI ĐANG MỞ' : 'PHÒNG THI TRỰC TIẾP',
                       style: TextStyle(
                         fontSize: 11,
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.85)
-                            : AppTheme.textSecondary,
+                        fontWeight: FontWeight.w700,
+                        color: hasActiveRoom ? const Color(0xFF047857) : AppTheme.primary,
+                        letterSpacing: 0.5,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ],
+                ),
               ),
+              if (hasActiveRoom)
+                ScaleTransition(
+                  scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            hasActiveRoom ? 'Phòng thi $_activeLiveRoomCode đang trực tiếp' : 'Vào phòng thi nhanh với mã PIN',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textMain,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasActiveRoom
+                ? 'Giáo viên đang mở phòng thi. Nhập mã phòng hoặc bấm để tham gia phòng chờ.'
+                : 'Nhập mã phòng do Thầy/Cô cung cấp để vào phòng thi trực tiếp.',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+              height: 1.4,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          _buildQuickRoomInput(),
+        ],
       ),
     );
   }
@@ -578,18 +820,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       child: Row(
         children: [
-          const SizedBox(width: 16),
-          const Icon(Icons.meeting_room_outlined, color: AppTheme.primary, size: 20),
+          const SizedBox(width: 14),
+          const Icon(Icons.tag_rounded, color: AppTheme.primary, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: _joinRoomController,
               onSubmitted: (_) => _handleJoinRoom(),
+              style: const TextStyle(
+                fontFamily: 'FiraCode',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textMain,
+              ),
               decoration: const InputDecoration(
                 hintText: 'Nhập mã phòng PTxxxxxx...',
-                hintStyle: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                hintStyle: TextStyle(
+                  fontFamily: 'BeVietnamPro',
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                  fontWeight: FontWeight.normal,
+                ),
                 border: InputBorder.none,
                 isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
               ),
             ),
           ),
@@ -615,6 +869,38 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ],
       ),
+    );
+  }
+
+  // --- 3. SUBJECT CHIPS SECTION ---
+  Widget _buildSubjectChipsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              '📚 Danh Mục Môn Học',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textMain,
+              ),
+            ),
+            Text(
+              '8 Môn Chuẩn GDPT',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primary.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildSubjectChipsRow(context),
+      ],
     );
   }
 
@@ -676,7 +962,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- QUICK STATS BAR (REAL DATA) ---
+  // --- 4. QUICK STATS BAR (REAL DATA) ---
   Widget _buildQuickStatsBar(bool isStudent, bool isMobile) {
     if (_isLoadingStats) {
       return Container(
@@ -800,7 +1086,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- 6 FEATURE CARDS GRID ---
+  // --- 5. 6 FEATURE CARDS GRID ---
   Widget _buildFeatureCardsGrid(BuildContext context, bool isStudent, bool isMobile) {
     final List<Map<String, dynamic>> items = isStudent
         ? [
@@ -1088,7 +1374,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- RECENT SECTION (REAL SUPABASE DATA) ---
+  // --- 6. RECENT SECTION (REAL SUPABASE DATA) ---
   Widget _buildRecentSection(BuildContext context, bool isStudent) {
     if (isStudent) {
       final tests = _studentStats.recentTests;
@@ -1104,7 +1390,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.border),
+              ),
               child: const Text('Chưa có lịch sử làm bài thi nào.', style: TextStyle(color: AppTheme.textSecondary)),
             )
           else
@@ -1143,7 +1433,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.border),
+              ),
               child: const Text('Chưa có phòng thi nào được tạo.', style: TextStyle(color: AppTheme.textSecondary)),
             )
           else
@@ -1171,7 +1465,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  // --- INFORMATION & HELP CARDS ---
+  // --- 7. INFORMATION & HELP CARDS ---
   Widget _buildInfoAndHelpSection(BuildContext context, bool isStudent, bool isMobile) {
     final infoCards = [
       {
@@ -1239,7 +1533,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- BOTTOM UTILITY BAR ---
+  // --- 8. BOTTOM UTILITY BAR ---
   Widget _buildBottomUtilityBar(BuildContext context, AuthProvider authProvider) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
