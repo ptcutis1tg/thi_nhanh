@@ -256,14 +256,6 @@ final GoRouter _router = GoRouter(
           ),
         ),
         GoRoute(
-          path: '/exam/physics-12',
-          pageBuilder: (context, state) => buildPageWithSlideTransition(
-            context: context,
-            state: state,
-            child: const ExamDetailScreen(),
-          ),
-        ),
-        GoRoute(
           path: '/profile',
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,

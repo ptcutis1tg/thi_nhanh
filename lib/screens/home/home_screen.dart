@@ -684,7 +684,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'desc': 'Tiếp tục hoàn thành bài thi chưa nộp',
               'icon': Icons.edit_note_rounded,
               'gradient': const [Color(0xFF059669), Color(0xFF047857)],
-              'route': '/exam/physics-12',
+              'route': '/taking_exam',
               'isLive': true,
             },
             {

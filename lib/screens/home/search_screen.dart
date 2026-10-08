@@ -7,6 +7,17 @@ import '../../shared/widgets/google_pagination_bar.dart';
 
 enum SearchItemType { exam, room }
 
+String formatRelativeTime(DateTime dateTime) {
+  final now = DateTime.now();
+  final diff = now.difference(dateTime);
+  if (diff.isNegative || diff.inSeconds < 60) return 'Vừa xong';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} phút trước';
+  if (diff.inHours < 24) return '${diff.inHours} giờ trước';
+  if (diff.inDays == 1) return 'Hôm qua';
+  if (diff.inDays < 7) return '${diff.inDays} ngày trước';
+  return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year}';
+}
+
 class SearchExamItem {
   const SearchExamItem({
     required this.id,
@@ -98,7 +109,9 @@ class _SearchScreenState extends State<SearchScreen> {
           type: SearchItemType.exam,
           questions: qCount,
           duration: duration,
-          activity: 'Mới tạo',
+          activity: item['created_at'] != null
+              ? formatRelativeTime(DateTime.tryParse(item['created_at'].toString())?.toLocal() ?? DateTime.now())
+              : 'Mới tạo',
         ));
       }
 
