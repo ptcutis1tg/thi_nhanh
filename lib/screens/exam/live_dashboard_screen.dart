@@ -41,16 +41,24 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
       // Query room
       final rRes = await client
           .from('rooms')
-          .select('id, code, name, status, exam_id, exams(title, subject)')
+          .select('id, code, name, status, exam_id, exams(id, title, subject, questions(count))')
           .ilike('code', targetCode)
           .maybeSingle();
 
       if (rRes != null) {
         _roomCodeStr = rRes['code'] ?? targetCode;
         _roomTitle = rRes['name'] ?? 'Phòng thi';
+        int totalQuestions = 20;
         final examMap = rRes['exams'] as Map<String, dynamic>?;
         if (examMap != null) {
           _subjectName = examMap['subject'] ?? 'Toán Học';
+          final questionsData = examMap['questions'] as List<dynamic>?;
+          if (questionsData != null && questionsData.isNotEmpty) {
+            final count = (questionsData.first as Map<String, dynamic>?)?['count'] as num?;
+            if (count != null && count.toInt() > 0) {
+              totalQuestions = count.toInt();
+            }
+          }
         }
 
         final roomId = rRes['id'].toString();
@@ -62,24 +70,41 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
             .eq('room_id', roomId);
 
         final aList = aRes as List<dynamic>;
-        _students = aList.map((a) {
+        final List<Map<String, dynamic>> loadedStudents = [];
+        for (final a in aList) {
           final gName = a['guest_name']?.toString() ?? 'Học sinh';
           final initials = gName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('').toUpperCase();
           final isDone = a['status'] == 'submitted';
           final scoreNum = (a['score'] as num?)?.toDouble() ?? 0.0;
           final violations = (a['violations'] as num?)?.toInt() ?? 0;
+          final attemptId = a['id']?.toString() ?? '';
 
-          return {
+          int answeredCount = isDone ? totalQuestions : 0;
+          if (!isDone && attemptId.isNotEmpty) {
+            try {
+              final ansRes = await client
+                  .from('attempt_answers')
+                  .select('id')
+                  .eq('attempt_id', attemptId);
+              answeredCount = (ansRes as List<dynamic>).length;
+            } catch (_) {}
+          }
+
+          final correctCount = isDone ? (scoreNum / 10 * totalQuestions).round() : null;
+
+          loadedStudents.add({
             'name': gName,
             'initials': initials.isEmpty ? 'HS' : initials,
-            'answered': isDone ? 20 : 12,
-            'correct': isDone ? (scoreNum / 10 * 20).round() : 8,
-            'wrong': isDone ? 20 - (scoreNum / 10 * 20).round() : 4,
+            'answered': answeredCount,
+            'totalQuestions': totalQuestions,
+            'correct': correctCount,
+            'wrong': isDone ? (totalQuestions - (correctCount ?? 0)) : null,
             'completed': isDone,
             'score': scoreNum,
             'violations': violations,
-          };
-        }).toList();
+          });
+        }
+        _students = loadedStudents;
       }
     } catch (e) {
       debugPrint('Lỗi tải Live Dashboard từ Supabase: $e');
@@ -385,6 +410,10 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                     ),
                   );
 
+                  final totalQ = (student['totalQuestions'] as num?)?.toInt() ?? 20;
+                  final answered = (student['answered'] as num?)?.toInt() ?? 0;
+                  final progress = totalQ > 0 ? (answered / totalQ).clamp(0.0, 1.0) : 0.0;
+
                   if (isNarrow) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -433,7 +462,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  'Đã trả lời: ${student['answered']}/20',
+                                  'Đã trả lời: $answered/$totalQ',
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                                 ),
@@ -442,7 +471,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                               Text(
                                 student['completed']
                                     ? 'Điểm: ${student['score']} đ'
-                                    : '${((student['answered'] / 20) * 100).toInt()}%',
+                                    : '${(progress * 100).toInt()}%',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
@@ -455,7 +484,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
-                              value: student['answered'] / 20,
+                              value: progress,
                               minHeight: 6,
                               backgroundColor: AppTheme.surface,
                               valueColor: AlwaysStoppedAnimation<Color>(
@@ -514,7 +543,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                                 children: [
                                   Flexible(
                                     child: Text(
-                                      'Đã trả lời: ${student['answered']}/20',
+                                      'Đã trả lời: $answered/$totalQ',
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
                                     ),
@@ -522,7 +551,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                                   Text(
                                     student['completed']
                                         ? 'Điểm: ${student['score']} đ'
-                                        : '${((student['answered'] / 20) * 100).toInt()}%',
+                                        : '${(progress * 100).toInt()}%',
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
@@ -535,7 +564,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: LinearProgressIndicator(
-                                  value: student['answered'] / 20,
+                                  value: progress,
                                   minHeight: 8,
                                   backgroundColor: AppTheme.surface,
                                   valueColor: AlwaysStoppedAnimation<Color>(
