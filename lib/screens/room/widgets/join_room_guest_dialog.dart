@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/app_error_reporter.dart';
 
 class JoinRoomGuestDialog extends StatefulWidget {
   const JoinRoomGuestDialog({
@@ -47,7 +48,7 @@ class _JoinRoomGuestDialogState extends State<JoinRoomGuestDialog> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = AppErrorReporter.formatErrorMessage(e, roomCode: widget.roomCode);
           _isLoading = false;
         });
       }

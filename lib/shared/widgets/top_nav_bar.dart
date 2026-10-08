@@ -4,14 +4,29 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/room_repository.dart';
+import '../../core/services/developer_mode_service.dart';
+import '../../core/utils/app_error_reporter.dart';
 import '../../core/utils/avatar_helper.dart';
 import '../../screens/room/widgets/join_room_guest_dialog.dart';
 
-class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
+class TopNavBar extends StatefulWidget implements PreferredSizeWidget {
   const TopNavBar({super.key});
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
+
+  @override
+  State<TopNavBar> createState() => _TopNavBarState();
+}
+
+class _TopNavBarState extends State<TopNavBar> {
+  final TextEditingController _roomCodeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _roomCodeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +142,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                     ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: isCompact ? 135 : 170),
                       child: TextField(
+                        controller: _roomCodeController,
                         onSubmitted: (code) => _handleQuickJoinRoom(context, code),
                         style: AppTheme.firaCodeStyle.copyWith(
                           fontSize: 13,
@@ -150,13 +166,20 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                             borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
                           ),
-                          suffixIcon: Container(
-                            margin: const EdgeInsets.all(5),
-                            decoration: const BoxDecoration(
-                              color: AppTheme.primary,
-                              shape: BoxShape.circle,
+                          suffixIcon: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _handleQuickJoinRoom(context, _roomCodeController.text),
+                              borderRadius: BorderRadius.circular(100),
+                              child: Container(
+                                margin: const EdgeInsets.all(5),
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
+                              ),
                             ),
-                            child: const Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.white),
                           ),
                         ),
                       ),
@@ -418,7 +441,28 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Future<void> _handleQuickJoinRoom(BuildContext context, String rawCode) async {
-    final code = rawCode.trim().toUpperCase();
+    final trimmedRaw = rawCode.trim();
+    if (trimmedRaw.isEmpty) return;
+
+    // Kiểm tra mã bí mật kích hoạt chế độ nhà phát triển (18366767, 67676767)
+    DeveloperModeService? devService;
+    try {
+      devService = context.read<DeveloperModeService>();
+    } catch (_) {
+      devService = null;
+    }
+
+    if (devService != null) {
+      try {
+        final isSecret = await devService.handleRoomCode(trimmedRaw);
+        if (isSecret) {
+          _roomCodeController.clear();
+          return;
+        }
+      } catch (_) {}
+    }
+
+    final code = AppErrorReporter.normalizeRoomCode(rawCode);
     if (code.isEmpty) return;
 
     final authProvider = context.read<AuthProvider>();
@@ -435,6 +479,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
       try {
         final hostedRoomId = await roomRepo.findHostedRoomId(code);
         if (hostedRoomId != null && context.mounted) {
+          _roomCodeController.clear();
           context.go('/teacher_waiting_room?roomId=$hostedRoomId');
           return;
         }
@@ -455,6 +500,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
               guestName: guestName,
             );
             if (context.mounted) {
+              _roomCodeController.clear();
               context.go(
                 '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
               );
@@ -466,13 +512,14 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
       try {
         final result = await roomRepo.joinRoom(code: code);
         if (context.mounted) {
+          _roomCodeController.clear();
           context.go(
             '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
           );
         }
       } catch (e) {
         if (!context.mounted) return;
-        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        final errorMsg = AppErrorReporter.formatErrorMessage(e, roomCode: rawCode.trim());
         if (errorMsg.toLowerCase().contains('password') || errorMsg.toLowerCase().contains('mật khẩu')) {
           showDialog(
             context: context,
@@ -484,6 +531,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
                   password: password,
                 );
                 if (context.mounted) {
+                  _roomCodeController.clear();
                   context.go(
                     '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
                   );
@@ -492,9 +540,7 @@ class TopNavBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg), backgroundColor: AppTheme.error),
-          );
+          AppErrorReporter.showErrorSnackBar(context, errorMsg, error: e);
         }
       }
     }

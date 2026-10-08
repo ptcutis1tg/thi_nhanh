@@ -8,6 +8,7 @@ import '../../core/repositories/room_repository.dart';
 import '../room/widgets/join_room_guest_dialog.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/services/developer_mode_service.dart';
+import '../../core/utils/app_error_reporter.dart';
 import '../../core/utils/avatar_helper.dart';
 import '../../shared/widgets/exam_card.dart';
 
@@ -148,11 +149,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Future<void> _handleJoinRoom() async {
-    final code = _joinRoomController.text.trim();
-    if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập mã phòng')),
-      );
+    final rawCode = _joinRoomController.text.trim();
+    if (rawCode.isEmpty) {
+      AppErrorReporter.showErrorSnackBar(context, 'Vui lòng nhập mã phòng');
       return;
     }
 
@@ -166,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     if (devService != null) {
       try {
-        final isSecret = await devService.handleRoomCode(code);
+        final isSecret = await devService.handleRoomCode(rawCode);
         if (isSecret) {
           _joinRoomController.clear();
           return;
@@ -174,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       } catch (_) {}
     }
 
+    final code = AppErrorReporter.normalizeRoomCode(rawCode);
     if (!mounted) return;
 
     AuthProvider? authProvider;
@@ -199,6 +199,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     try {
       final hostedRoomId = await roomRepo.findHostedRoomId(code);
       if (hostedRoomId != null && mounted) {
+        _joinRoomController.clear();
         context.go('/teacher_waiting_room?roomId=$hostedRoomId');
         return;
       }
@@ -219,6 +220,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               guestName: guestName,
             );
             if (mounted) {
+              _joinRoomController.clear();
               context.go(
                 '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
               );
@@ -230,13 +232,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       try {
         final result = await roomRepo.joinRoom(code: code);
         if (mounted) {
+          _joinRoomController.clear();
           context.go(
             '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
           );
         }
       } catch (e) {
         if (!mounted) return;
-        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        final errorMsg = AppErrorReporter.formatErrorMessage(e, roomCode: rawCode);
         if (errorMsg.toLowerCase().contains('password') || errorMsg.toLowerCase().contains('mật khẩu')) {
           showDialog(
             context: context,
@@ -248,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   password: password,
                 );
                 if (mounted) {
+                  _joinRoomController.clear();
                   context.go(
                     '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
                   );
@@ -256,9 +260,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg), backgroundColor: AppTheme.error),
-          );
+          AppErrorReporter.showErrorSnackBar(context, errorMsg, error: e);
         }
       }
     }

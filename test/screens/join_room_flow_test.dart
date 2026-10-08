@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:onthi_community/core/providers/auth_provider.dart';
 import 'package:onthi_community/core/repositories/room_repository.dart';
@@ -250,4 +251,127 @@ void main() {
 
     expect(navigatedRoute, equals('/student_waiting_room?roomId=room-student-123&participantId=part-456'));
   });
+
+  testWidgets('TopNavBar quick room input auto-normalizes numeric PIN and submits when tapping arrow button', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    SharedPreferences.setMockInitialValues({'active_user_email': 'student@example.com'});
+    final auth = AuthProvider(isSupabaseInitialized: false);
+    await auth.init();
+
+    String? joinedCode;
+    final fakeRepo = _RecordingRoomRepo(onJoin: (code) => joinedCode = code);
+
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (ctx, state) => const Scaffold(
+            appBar: TopNavBar(),
+            body: Text('Main Screen'),
+          ),
+        ),
+        GoRoute(
+          path: '/student_waiting_room',
+          builder: (ctx, state) => const Scaffold(body: Text('Student Waiting Room')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: auth),
+          Provider<RoomRepository>.value(value: fakeRepo),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final topNavInput = find.widgetWithText(TextField, 'Nhập mã PT...');
+    await tester.enterText(topNavInput, '892341'); // Numeric only!
+    await tester.pump();
+
+    // Tap the arrow forward button
+    final arrowBtn = find.byIcon(Icons.arrow_forward_rounded);
+    expect(arrowBtn, findsOneWidget);
+    await tester.tap(arrowBtn);
+    await tester.pumpAndSettle();
+
+    // Code was auto-normalized to PT892341
+    expect(joinedCode, equals('PT892341'));
+  });
+
+  testWidgets('TopNavBar quick room input displays friendly Vietnamese error when room not found', (tester) async {
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    SharedPreferences.setMockInitialValues({'active_user_email': 'student@example.com'});
+    final auth = AuthProvider(isSupabaseInitialized: false);
+    await auth.init();
+
+    final failingRepo = _ErrorRoomRepo();
+
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (ctx, state) => const Scaffold(
+            appBar: TopNavBar(),
+            body: Text('Main Screen'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>.value(value: auth),
+          Provider<RoomRepository>.value(value: failingRepo),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final topNavInput = find.widgetWithText(TextField, 'Nhập mã PT...');
+    await tester.enterText(topNavInput, '67664');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    // Friendly Vietnamese error displayed
+    expect(find.textContaining('Không tìm thấy phòng thi với mã "67664"'), findsOneWidget);
+    // Raw PostgrestException never displayed
+    expect(find.textContaining('PostgrestException'), findsNothing);
+  });
 }
+
+class _RecordingRoomRepo extends FakeRoomRepo {
+  final void Function(String code) onJoin;
+
+  _RecordingRoomRepo({required this.onJoin});
+
+  @override
+  Future<StudentJoinResult> joinRoom({required String code, String? password, String? guestName}) async {
+    onJoin(code);
+    return super.joinRoom(code: code, password: password, guestName: guestName);
+  }
+}
+
+class _ErrorRoomRepo extends FakeRoomRepo {
+  @override
+  Future<StudentJoinResult> joinRoom({required String code, String? password, String? guestName}) async {
+    throw PostgrestException(
+      message: 'Room not found with code: PT067664',
+      code: 'P0001',
+    );
+  }
+}
+

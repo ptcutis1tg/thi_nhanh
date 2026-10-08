@@ -2,7 +2,7 @@
 
 > **Ngày thực hiện:** 09/10/2026 *(Cập nhật sau khi hoàn thành Hiện Đại Hóa Toàn Diện Giao Diện Flutter Theo Ngôn Ngữ Thiết Kế Stitch EdTech Modern)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **177 / 177 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
+> **Trạng thái kiểm thử:** **186 / 186 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động.
 
 ---
@@ -160,12 +160,16 @@ graph TD
 - **RLS Bật Trên Tất Cả Các Bảng:** Đảm bảo học sinh không thể truy vấn trái phép đáp án đúng (`question_options.is_correct`) khi chưa nộp bài.
 - **RPC `security definer` với `set search_path = public`:** Chống tấn công chiếm quyền search_path, bảo vệ các giao dịch nhạy cảm như chấm điểm và mở/kết thúc phòng thi.
 
-### 3.4. Tầng Resilience & Chống Lỗi Kỹ Thuật
+### 3.4. Tầng Resilience, Chống Lỗi Kỹ Thuật & Trải Nghiệm Người Dùng (UX Resilience)
 - **`SupabaseRetryHelper`:** Tự động bắt và xử lý 3 loại sự cố phổ biến nhất trên môi trường production:
   1. `PGRST303 (JWT issued at future)`: Tự động tính toán độ lệch đồng hồ máy chủ và chờ thử lại.
   2. `PGRST301 (JWT expired)`: Tự động refresh phiên làm việc và gọi lại RPC.
   3. `SocketException / Connection closed`: Tự động thử lại với lũy thừa thời gian chờ (exponential backoff).
-- **`DeveloperModeService` & `DeveloperLogOverlay`:** Ghi lại toàn bộ stack trace runtime và cung cấp màn hình theo dõi log trực tiếp ngay trong app.
+- **`DeveloperModeService` & `DeveloperLogOverlay`:** Ghi lại toàn bộ stack trace runtime và cung cấp màn hình theo dõi log trực tiếp ngay trong app (hỗ trợ nhập mã bí mật `18366767` hoặc `67676767` tại cả `TopNavBar` và `HomeScreen`).
+- **`AppErrorReporter` (Xử lý & Thông Báo Lỗi Thân Thiện):**
+  - **Tự động chuẩn hóa mã phòng (`normalizeRoomCode`):** Cho phép người dùng nhập mã phòng dạng chỉ có số (VD: `892341` hoặc `67664`) tự động chuyển thành chuẩn hệ thống `PT892341` / `PT067664`.
+  - **Chuyển ngữ lỗi Supabase (`formatErrorMessage`):** Bắt triệt để `PostgrestException` và lỗi kỹ thuật, chuyển thể sang thông báo tiếng Việt thanh lịch (không để lộ exception code thô như `P0001` hay `PostgrestException(...)` ra giao diện).
+  - **Thông báo nổi (`showErrorSnackBar`):** SnackBar dạng floating màu đỏ dịu mắt, đồng thời ghi log trực tiếp về `DeveloperModeService`.
 
 ---
 
@@ -199,7 +203,7 @@ graph TD
 2. **Bảo Mật Học Thuật & Chống Gian Lận Hàng Đầu (New High-Water Mark):** Học sinh không thể copy đề bài ra ngoài, đề thi được xáo trộn thứ tự tất định cho từng người, và việc rời tab/chuyển ứng dụng được giám sát chặt chẽ với cơ chế cưỡng chế nộp bài ở lần thứ 4 và phát cờ đỏ trực tiếp lên dashboard của giáo viên.
 3. **Khả Năng Chống Lỗi Tuyệt Vời (High Resilience):** Tầng `SupabaseRetryHelper` giải quyết triệt để vấn đề lệch đồng hồ và rớt mạng. Các màn hình đều có fallback bảng trực tiếp nếu RPC gặp sự cố.
 4. **Giao Diện Hiện Đại Chuẩn Stitch EdTech Modern:** Bảng màu tím violet cao cấp (`#6557E8`), typography kép `Be Vietnam Pro` & `Fira Code`, đổ bóng luminescence ánh tím dịu mắt, các tab và nút bấm con nhộng mềm mại, hỗ trợ responsive hoàn hảo từ mobile 360px đến desktop 1920px.
-5. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **177 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100% (PASS), tuân thủ nghiêm ngặt chuẩn TDD.
+5. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **186 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100% (PASS), tuân thủ nghiêm ngặt chuẩn TDD.
 6. **Sẵn Sàng Tái Thiết Kế & Nâng Cấp Giao Diện Với AI (AI-Ready Design Bridge):** Bộ 11 tệp HTML Semantic `stitch_design_export/` giúp các công cụ tạo sinh giao diện như Stitch hiểu chính xác cây phân cấp DOM, ngữ nghĩa nút bấm, công thức toán và trạng thái tương tác mà không bị cản trở bởi canvas Flutter Web.
 
 ### 5.2. Các Rủi Ro Tiềm Ẩn & Nút Thắt Cần Lưu Ý (Risks & Bottlenecks)
@@ -244,7 +248,8 @@ graph TD
   - [x] Hiện đại hóa luồng khám phá học sinh (`HomeScreen`, `SearchScreen`, `ExamDetailScreen`, `GreetingScreen`): Thêm hàng 8 chips môn học chuyển hướng nhanh, card shadow đa tầng, nút bấm pill con nhộng.
   - [x] Hiện đại hóa phòng thi & kết quả (`TakingExamScreen`, `ResultScreen`, `StudentLeaderboardScreen`): Sidebar câu hỏi 3 màu Stitch, timer & score typography Fira Code, tích hợp TopNavBar trên bảng xếp hạng.
   - [x] Hiện đại hóa quản lý giáo viên & giám sát phòng thi (`TeacherExamsScreen`, `CreateExamScreen`, `CreateRoomScreen`, `RoomQrDialog`, `LiveDashboardScreen`): 3 tab con nhộng, khung cấu hình luminescence shadow, dialog QR phát sáng, dashboard sẫm màu với cờ đỏ vi phạm.
-  - [x] Duy trì tỷ lệ kiểm thử tuyệt đối: **177 / 177 bài kiểm thử tự động đạt 100% PASS**.
+  - [x] Tối ưu hóa trải nghiệm nhập mã phòng thi & xử lý lỗi thân thiện: Tự động chuẩn hóa mã số PIN (VD: nhập 67664 / 892341 tự động chuyển thành PT067664 / PT892341), nút mũi tên tương tác trực tiếp, hỗ trợ mã kích hoạt Developer Mode ngay tại `TopNavBar`, triệt tiêu hoàn toàn `PostgrestException` thô và hiển thị thông báo tiếng Việt thanh lịch qua `AppErrorReporter.showErrorSnackBar`.
+  - [x] Duy trì tỷ lệ kiểm thử tuyệt đối: **186 / 186 bài kiểm thử tự động đạt 100% PASS**.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
 1. **Giai đoạn 6: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**

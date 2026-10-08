@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_error_reporter.dart';
 
 class RoomPasswordScreen extends StatefulWidget {
   const RoomPasswordScreen({super.key, this.roomCode});
@@ -50,8 +51,9 @@ class _RoomPasswordScreenState extends State<RoomPasswordScreen> {
         return;
       }
 
+      final normalizedCode = AppErrorReporter.normalizeRoomCode(code);
       final result = await repo.joinRoom(
-        code: code.trim(),
+        code: normalizedCode,
         password: password,
       );
 
@@ -63,12 +65,7 @@ class _RoomPasswordScreenState extends State<RoomPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
-        final msg = e.toString().toLowerCase();
-        if (msg.contains('invalid room password') || msg.contains('mật khẩu')) {
-          setState(() => _error = 'Mật khẩu phòng thi không chính xác.');
-        } else {
-          setState(() => _error = e.toString().replaceAll('Exception: ', ''));
-        }
+        setState(() => _error = AppErrorReporter.formatErrorMessage(e, roomCode: code));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
