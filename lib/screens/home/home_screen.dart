@@ -12,7 +12,22 @@ import '../../core/utils/avatar_helper.dart';
 import '../../shared/widgets/exam_card.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String? initialActiveAttemptId;
+  final String? initialActiveExamId;
+  final String? initialActiveRoomId;
+  final String? initialActiveLiveRoomCode;
+  final String? initialActiveLiveRoomId;
+  final String? initialActiveLiveRoomStatus;
+
+  const HomeScreen({
+    super.key,
+    this.initialActiveAttemptId,
+    this.initialActiveExamId,
+    this.initialActiveRoomId,
+    this.initialActiveLiveRoomCode,
+    this.initialActiveLiveRoomId,
+    this.initialActiveLiveRoomStatus,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -27,9 +42,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   StudentProfileData _studentStats = StudentProfileData.empty();
   TeacherProfileData _teacherStats = TeacherProfileData.empty();
 
+  String? _activeAttemptId;
+  String? _activeExamId;
+  String? _activeRoomId;
+  String? _activeLiveRoomCode;
+  String? _activeLiveRoomId;
+  String? _activeLiveRoomStatus;
+
   @override
   void initState() {
     super.initState();
+    _activeAttemptId = widget.initialActiveAttemptId;
+    _activeExamId = widget.initialActiveExamId;
+    _activeRoomId = widget.initialActiveRoomId;
+    _activeLiveRoomCode = widget.initialActiveLiveRoomCode;
+    _activeLiveRoomId = widget.initialActiveLiveRoomId;
+    _activeLiveRoomStatus = widget.initialActiveLiveRoomStatus;
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -72,12 +101,40 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       userEmail: authProvider.userEmail,
       userName: authProvider.userName,
     );
+    final activeAttemptFuture = ProfileService.fetchActiveAttempt(
+      userId: authProvider.user?.id,
+      userEmail: authProvider.userEmail,
+    );
+    final activeLiveRoomFuture = ProfileService.fetchActiveLiveRoom(
+      userId: authProvider.user?.id,
+      userEmail: authProvider.userEmail,
+      userName: authProvider.userName,
+    );
 
-    final results = await Future.wait([studentDataFuture, teacherDataFuture]);
+    final results = await Future.wait([
+      studentDataFuture,
+      teacherDataFuture,
+      activeAttemptFuture,
+      activeLiveRoomFuture,
+    ]);
+
     if (mounted) {
+      final activeAttempt = results[2] as Map<String, String?>?;
+      final activeLiveRoom = results[3] as Map<String, String?>?;
+
       setState(() {
         _studentStats = results[0] as StudentProfileData;
         _teacherStats = results[1] as TeacherProfileData;
+        if (widget.initialActiveAttemptId == null && activeAttempt != null) {
+          _activeAttemptId = activeAttempt['attemptId'];
+          _activeExamId = activeAttempt['examId'];
+          _activeRoomId = activeAttempt['roomId'];
+        }
+        if (widget.initialActiveLiveRoomCode == null && activeLiveRoom != null) {
+          _activeLiveRoomCode = activeLiveRoom['code'];
+          _activeLiveRoomId = activeLiveRoom['roomId'];
+          _activeLiveRoomStatus = activeLiveRoom['status'];
+        }
         _isLoadingStats = false;
       });
     }
@@ -681,11 +738,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             },
             {
               'title': 'Bài Đang Làm',
-              'desc': 'Tiếp tục hoàn thành bài thi chưa nộp',
+              'desc': _activeAttemptId != null
+                  ? 'Đang có bài làm dở dang - Bấm để tiếp tục'
+                  : 'Tiếp tục hoàn thành bài thi chưa nộp',
               'icon': Icons.edit_note_rounded,
               'gradient': const [Color(0xFF059669), Color(0xFF047857)],
               'route': '/taking_exam',
-              'isLive': true,
+              'isLive': _activeAttemptId != null,
             },
             {
               'title': 'Lịch Sử & Kết Quả',
@@ -739,11 +798,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             },
             {
               'title': 'Phòng Đang Diễn Ra',
-              'desc': 'Theo dõi tiến độ làm bài trực tiếp của Học sinh',
+              'desc': _activeLiveRoomCode != null
+                  ? 'Phòng $_activeLiveRoomCode đang mở - Bấm để giám sát'
+                  : 'Theo dõi tiến độ làm bài trực tiếp của Học sinh',
               'icon': Icons.sensors_rounded,
               'gradient': const [Color(0xFFDC2626), Color(0xFFB91C1C)],
               'route': '/teacher_waiting_room',
-              'isLive': true,
+              'isLive': _activeLiveRoomCode != null,
             },
             {
               'title': 'Kết Quả Học Sinh',
@@ -788,6 +849,49 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  void _onCardTap(String title, String defaultRoute) {
+    if (title == 'Bài Đang Làm') {
+      if (_activeAttemptId != null && _activeAttemptId!.isNotEmpty) {
+        final queryParams = <String>[
+          'attemptId=$_activeAttemptId',
+          if (_activeExamId != null && _activeExamId!.isNotEmpty) 'examId=$_activeExamId',
+          if (_activeRoomId != null && _activeRoomId!.isNotEmpty) 'roomId=$_activeRoomId',
+        ].join('&');
+        context.go('/taking_exam?$queryParams');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bạn không có bài thi nào đang làm dở dang. Chuyển sang tìm đề luyện tập.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/search');
+      }
+      return;
+    }
+
+    if (title == 'Phòng Đang Diễn Ra') {
+      if (_activeLiveRoomCode != null && _activeLiveRoomCode!.isNotEmpty) {
+        if (_activeLiveRoomStatus == 'waiting' && _activeLiveRoomId != null) {
+          context.go('/teacher_waiting_room?roomId=$_activeLiveRoomId');
+        } else {
+          context.go('/live_dashboard?code=$_activeLiveRoomCode');
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Hiện không có phòng thi nào đang diễn ra. Chuyển sang tạo phòng mới.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        context.go('/create_room');
+      }
+      return;
+    }
+
+    context.go(defaultRoute);
+  }
+
   Widget _buildGamifiedCard({
     required BuildContext context,
     required String title,
@@ -800,7 +904,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.go(route),
+        onTap: () => _onCardTap(title, route),
         borderRadius: BorderRadius.circular(22),
         hoverColor: Colors.white.withValues(alpha: 0.1),
         child: Ink(

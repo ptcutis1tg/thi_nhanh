@@ -1038,4 +1038,96 @@ class ProfileService {
       return [];
     }
   }
+
+  /// Truy vấn bài thi đang làm dở dang gần nhất của học sinh (status == 'in_progress')
+  static Future<Map<String, String?>?> fetchActiveAttempt({
+    required String? userId,
+    required String? userEmail,
+  }) async {
+    final client = _client;
+    if (client == null || (userId == null && userEmail == null)) return null;
+
+    try {
+      return await SupabaseRetryHelper.run(() async {
+        var query = client
+            .from('attempts')
+            .select('id, exam_id, room_id, status, started_at')
+            .eq('status', 'in_progress');
+
+        if (userId != null) {
+          query = query.eq('user_id', userId);
+        } else if (userEmail != null) {
+          query = query.eq('guest_name', userEmail);
+        }
+
+        final res = await query.order('started_at', ascending: false).limit(1).maybeSingle();
+        if (res != null) {
+          return {
+            'attemptId': res['id']?.toString(),
+            'examId': res['exam_id']?.toString(),
+            'roomId': res['room_id']?.toString(),
+          };
+        }
+        return null;
+      });
+    } catch (e) {
+      debugPrint('Lỗi truy vấn bài thi đang làm dở dang: $e');
+      return null;
+    }
+  }
+
+  /// Truy vấn phòng thi đang mở gần nhất của giáo viên (status in ['live', 'waiting'])
+  static Future<Map<String, String?>?> fetchActiveLiveRoom({
+    required String? userId,
+    required String? userEmail,
+    required String? userName,
+  }) async {
+    final client = _client;
+    if (client == null || (userId == null && userEmail == null)) return null;
+
+    try {
+      return await SupabaseRetryHelper.run(() async {
+        String? teacherId;
+        if (userId != null) {
+          final tOwner = await client
+              .from('teachers')
+              .select('id')
+              .eq('owner_user_id', userId)
+              .maybeSingle();
+          if (tOwner != null) teacherId = tOwner['id']?.toString();
+        }
+        if (teacherId == null && userEmail != null) {
+          final tEmail = await client
+              .from('teachers')
+              .select('id')
+              .eq('email', userEmail)
+              .maybeSingle();
+          if (tEmail != null) teacherId = tEmail['id']?.toString();
+        }
+        if (teacherId == null) return null;
+
+        final roomRes = await client
+            .from('rooms')
+            .select('id, code, status, created_at')
+            .eq('teacher_id', teacherId)
+            .inFilter('status', ['live', 'waiting'])
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle();
+
+        if (roomRes != null) {
+          return {
+            'roomId': roomRes['id']?.toString(),
+            'code': roomRes['code']?.toString(),
+            'status': roomRes['status']?.toString(),
+          };
+        }
+        return null;
+      });
+    } catch (e) {
+      debugPrint('Lỗi truy vấn phòng thi đang mở của giáo viên: $e');
+      return null;
+    }
+  }
 }
+
