@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Future<void> _handleJoinRoom(BuildContext context) async {
+  Future<void> _handleJoinRoom() async {
     final code = _joinRoomController.text.trim();
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -157,15 +157,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
 
     // Kiểm tra mã bí mật kích hoạt chế độ nhà phát triển (18366767, 67676767)
-    try {
-      final devService = context.read<DeveloperModeService>();
-      final isSecret = await devService.handleRoomCode(code);
-      if (isSecret) {
-        _joinRoomController.clear();
-        return;
-      }
-    } catch (_) {}
-
+    final devService = context.read<DeveloperModeService>();
     final authProvider = context.read<AuthProvider>();
     RoomRepository? roomRepo;
     try {
@@ -173,6 +165,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } catch (_) {
       roomRepo = null;
     }
+
+    // Kiểm tra mã bí mật kích hoạt chế độ nhà phát triển (18366767, 67676767)
+    try {
+      final isSecret = await devService.handleRoomCode(code);
+      if (isSecret) {
+        _joinRoomController.clear();
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
 
     if (roomRepo == null) {
       context.go('/student_waiting_room?roomId=$code');
@@ -182,11 +185,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // Kiểm tra thông minh: Nếu tài khoản hiện tại là chủ tạo phòng -> điều hướng vào TeacherWaitingRoom
     try {
       final hostedRoomId = await roomRepo.findHostedRoomId(code);
-      if (hostedRoomId != null && context.mounted) {
+      if (hostedRoomId != null && mounted) {
         context.go('/teacher_waiting_room?roomId=$hostedRoomId');
         return;
       }
     } catch (_) {}
+
+    if (!mounted) return;
 
     if (!authProvider.isAuthenticated) {
       showDialog(
@@ -199,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               password: password,
               guestName: guestName,
             );
-            if (context.mounted) {
+            if (mounted) {
               context.go(
                 '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}${result.guestToken != null ? '&guestToken=${result.guestToken}' : ''}',
               );
@@ -210,13 +215,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     } else {
       try {
         final result = await roomRepo.joinRoom(code: code);
-        if (context.mounted) {
+        if (mounted) {
           context.go(
             '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
           );
         }
       } catch (e) {
-        if (!context.mounted) return;
+        if (!mounted) return;
         final errorMsg = e.toString().replaceAll('Exception: ', '');
         if (errorMsg.toLowerCase().contains('password') || errorMsg.toLowerCase().contains('mật khẩu')) {
           showDialog(
@@ -228,7 +233,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   code: code,
                   password: password,
                 );
-                if (context.mounted) {
+                if (mounted) {
                   context.go(
                     '/student_waiting_room?roomId=${result.roomId}&participantId=${result.participantId}',
                   );
@@ -558,7 +563,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           Expanded(
             child: TextField(
               controller: _joinRoomController,
-              onSubmitted: (_) => _handleJoinRoom(context),
+              onSubmitted: (_) => _handleJoinRoom(),
               decoration: const InputDecoration(
                 hintText: 'Nhập mã phòng PTxxxxxx...',
                 hintStyle: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
@@ -568,7 +573,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
           ElevatedButton(
-            onPressed: () => _handleJoinRoom(context),
+            onPressed: _handleJoinRoom,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
