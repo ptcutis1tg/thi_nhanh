@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phòng Thi Trực Tuyến - Đề Thi Thử THPT Quốc Gia Môn Toán 2026 - ThiNhanh</title>
+  <meta name="description" content="Giao diện làm bài thi trắc nghiệm trực tuyến thời gian thực với đồng hồ đếm ngược, hiển thị công thức toán học LaTeX và hệ thống giám sát chống gian lận.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-hover: #5043D4;
+      --primary-light: #F0EDFD;
+      --primary-surface: #F7F5FE;
+      --secondary: #24233A;
+      --text-main: #1E1B2E;
+      --text-muted: #64748B;
+      --text-sub: #475569;
+      --border-color: #E2E8F0;
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --card-shadow: 0 4px 16px -2px rgba(101, 87, 232, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 12px 28px -4px rgba(101, 87, 232, 0.16);
+      --success: #10B981;
+      --success-light: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-light: #FFFBEB;
+      --danger: #EF4444;
+      --danger-light: #FEF2F2;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Sticky Exam Bar */
+    .exam-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .header-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .exam-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn-exit {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      color: var(--text-sub);
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-exit:hover {
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .exam-titles {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .exam-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 450px;
+    }
+
+    .exam-code-tag {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .header-center-timer {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1.25rem;
+      background: #FFF1F2;
+      border: 1.5px solid #FFE4E6;
+      border-radius: 999px;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.1);
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    }
+
+    .timer-icon {
+      font-size: 1.25rem;
+      animation: tickTock 1s infinite alternate ease-in-out;
+    }
+
+    @keyframes tickTock {
+      from { transform: rotate(-8deg); }
+      to { transform: rotate(8deg); }
+    }
+
+    .timer-digits {
+      font-family: 'Fira Code', monospace;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--danger);
+      letter-spacing: 0.05em;
+    }
+
+    .timer-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #9F1239;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .btn-submit-exam {
+      background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+      color: white;
+      border: none;
+      padding: 0.65rem 1.5rem;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(101, 87, 232, 0.3);
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-submit-exam:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(101, 87, 232, 0.4);
+    }
+
+    /* Anti-cheat monitoring banner */
+    .anticheat-banner {
+      background: #FFFBEB;
+      border-bottom: 1px solid #FDE68A;
+      padding: 0.5rem 1.5rem;
+      color: #92400E;
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .anticheat-badge {
+      background: #FEF3C7;
+      color: #B45309;
+      border: 1px solid #FCD34D;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .violation-counter {
+      color: #DC2626;
+      font-weight: 700;
+    }
+
+    /* Layout Main */
+    .exam-body {
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    /* Question Main Workspace */
+    .question-card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .question-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .question-number-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .q-badge {
+      background: var(--primary);
+      color: white;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-md);
+      box-shadow: 0 2px 6px rgba(101, 87, 232, 0.25);
+    }
+
+    .q-difficulty {
+      background: #FEF3C7;
+      color: #D97706;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .btn-flag-review {
+      background: transparent;
+      border: 1px dashed var(--border-color);
+      color: var(--text-muted);
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn-flag-review:hover, .btn-flag-review.active {
+      border-color: var(--warning);
+      color: #B45309;
+      background: #FFFBEB;
+    }
+
+    .question-stem {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.8;
+    }
+
+    /* LaTeX Math Formula styling */
+    .math-formula-box {
+      margin: 1rem 0;
+      padding: 1.25rem 1.75rem;
+      background: var(--primary-surface);
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius-md);
+      font-family: 'Cambria Math', 'Times New Roman', serif;
+      font-size: 1.25rem;
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: auto;
+    }
+
+    .math-text {
+      font-style: italic;
+    }
+
+    .math-fraction {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      text-align: center;
+      padding: 0 0.35rem;
+      font-size: 0.95em;
+    }
+
+    .fraction-top {
+      border-bottom: 1.5px solid var(--secondary);
+      padding-bottom: 2px;
+    }
+
+    .fraction-bottom {
+      padding-top: 2px;
+    }
+
+    .math-sup {
+      font-size: 0.75em;
+      vertical-align: super;
+      font-style: normal;
+    }
+
+    .math-sub {
+      font-size: 0.75em;
+      vertical-align: sub;
+      font-style: normal;
+    }
+
+    /* Answer Choices */
+    .answer-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .option-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      background: var(--bg-surface);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .option-card:hover {
+      border-color: var(--primary);
+      background: #FAF8FF;
+      transform: translateX(4px);
+    }
+
+    .option-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      box-shadow: 0 2px 10px rgba(101, 87, 232, 0.12);
+    }
+
+    .option-letter {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #F1F5F9;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .option-card:hover .option-letter {
+      background: var(--primary);
+      color: white;
+    }
+
+    .option-card.selected .option-letter {
+      background: var(--primary);
+      color: white;
+    }
+
+    .option-content {
+      flex: 1;
+      font-size: 1.05rem;
+      font-weight: 500;
+      color: var(--text-main);
+      font-family: 'Cambria Math', 'Times New Roman', serif;
+    }
+
+    .option-check-icon {
+      color: var(--primary);
+      font-size: 1.2rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .option-card.selected .option-check-icon {
+      opacity: 1;
+    }
+
+    /* Question Footer Navigation */
+    .question-footer-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .btn-nav-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.4rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      transition: all 0.2s;
+    }
+
+    .btn-nav-step:hover:not(:disabled) {
+      background: var(--primary-surface);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-nav-step:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-nav-step.primary {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .btn-nav-step.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Right Sidebar: Palette & Progress */
+    .palette-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: sticky;
+      top: 5rem;
+    }
+
+    .sidebar-card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      padding: 1.5rem;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .progress-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--secondary);
+    }
+
+    .progress-stat {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 8px;
+      background: #E2E8F0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary) 0%, #10B981 100%);
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+
+    .palette-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+    }
+
+    .dot-done { background: var(--primary); }
+    .dot-current { background: white; border: 2px solid var(--primary); }
+    .dot-flag { background: #FEF3C7; border: 1.5px solid var(--warning); }
+    .dot-empty { background: #F1F5F9; border: 1px solid #CBD5E1; }
+
+    /* Palette 40 Question Grid */
+    .palette-grid-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
+      max-height: 280px;
+      overflow-y: auto;
+      padding-right: 0.25rem;
+    }
+
+    .palette-btn {
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: 1px solid #CBD5E1;
+      background: #F8FAFC;
+      color: var(--text-sub);
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .palette-btn:hover {
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .palette-btn.done {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .palette-btn.current {
+      background: white;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(101, 87, 232, 0.2);
+    }
+
+    .palette-btn.flagged::after {
+      content: '🚩';
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      font-size: 0.65rem;
+    }
+
+    .palette-btn.flagged {
+      background: #FFFBEB;
+      border-color: var(--warning);
+      color: #B45309;
+    }
+
+    .sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .btn-block-submit {
+      width: 100%;
+      padding: 0.85rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(101, 87, 232, 0.25);
+      transition: all 0.2s ease;
+      text-align: center;
+      text-decoration: none;
+      display: block;
+    }
+
+    .btn-block-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(101, 87, 232, 0.35);
+    }
+
+    /* Modal dialog mock */
+    .submit-hint-note {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .exam-body {
+        grid-template-columns: 1fr;
+      }
+
+      .palette-sidebar {
+        position: static;
+      }
+
+      .palette-grid {
+        grid-template-columns: repeat(10, 1fr);
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .header-container {
+        flex-wrap: wrap;
+      }
+
+      .header-center-timer {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .palette-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Bar -->
+  <header class="exam-header" role="banner">
+    <div class="header-container">
+      <div class="exam-info">
+        <a href="04_exam_detail.html" class="btn-exit" title="Thoát phòng thi" aria-label="Thoát phòng thi">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span>Thoát</span>
+        </a>
+        <div class="exam-titles">
+          <h1 class="exam-title">Đề Thi Thử THPT Quốc Gia Môn Toán 2026</h1>
+          <span class="exam-code-tag">Mã đề: MAT-101 • Thí sinh: Trần Hoàng Quân (Khách)</span>
+        </div>
+      </div>
+
+      <div class="header-center-timer" aria-live="polite" aria-label="Thời gian còn lại">
+        <span class="timer-icon">⏳</span>
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <span class="timer-digits">42:15</span>
+          <span class="timer-label">Thời gian còn lại</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <a href="06_result_screen.html" class="btn-submit-exam" id="btnHeaderSubmit">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Nộp bài</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Anti-Cheat Status Bar -->
+    <div class="anticheat-banner" role="status">
+      <span>🛡️ <strong>Chế độ giám sát toàn màn hình:</strong> Đang hoạt động. Vui lòng không chuyển tab hoặc thoát trình duyệt.</span>
+      <span class="anticheat-badge">Số lần rời màn hình: <span class="violation-counter">0/3</span></span>
+    </div>
+  </header>
+
+  <!-- Main Content Workspace -->
+  <main class="exam-body" id="main-content">
+    
+    <!-- Question Card -->
+    <section class="question-card" aria-labelledby="questionHeading">
+      <div class="question-top-bar">
+        <div class="question-number-badge">
+          <span class="q-badge" id="questionHeading">Câu 12 / 40</span>
+          <span class="q-difficulty">Vận dụng</span>
+        </div>
+        <button class="btn-flag-review active" type="button" aria-pressed="true">
+          <span>🚩</span>
+          <span>Đã đánh dấu xem lại</span>
+        </button>
+      </div>
+
+      <div class="question-stem">
+        Cho hàm số <span class="math-text">y = f(x)</span> có bảng biến thiên và liên tục trên khoảng xác định. Tìm tất cả các giá trị thực của tham số <span class="math-text">m</span> để phương trình sau có đúng 3 nghiệm thực phân biệt:
+      </div>
+
+      <!-- LaTeX Math Formula Rendered Mockup -->
+      <div class="math-formula-box" aria-label="Công thức toán học">
+        <span class="math-text">log</span><span class="math-sub">2</span>
+        <span>(</span><span class="math-text">x</span><span class="math-sup">2</span>
+        <span> - 3</span><span class="math-text">x</span><span> + 2) + </span>
+        <div class="math-fraction">
+          <span class="fraction-top"><span class="math-text">m</span> + 1</span>
+          <span class="fraction-bottom"><span class="math-text">x</span> - 1</span>
+        </div>
+        <span> = </span><span class="math-text">f(x)</span><span> + </span><span class="math-text">m</span>
+      </div>
+
+      <!-- Multiple Choice Options -->
+      <div class="answer-options" role="radiogroup" aria-label="Các phương án trả lời">
+        
+        <label class="option-card" for="optA">
+          <input type="radio" id="optA" name="question12" style="display: none;">
+          <div class="option-letter">A</div>
+          <div class="option-content">
+            <span class="math-text">m</span> &lt; -2 hoặc <span class="math-text">m</span> &ge; 3
+          </div>
+          <span class="option-check-icon">✓</span>
+        </label>
+
+        <label class="option-card selected" for="optB">
+          <input type="radio" id="optB" name="question12" checked style="display: none;">
+          <div class="option-letter">B</div>
+          <div class="option-content">
+            -1 &lt; <span class="math-text">m</span> &le; 
+            <div class="math-fraction">
+              <span class="fraction-top">5</span>
+              <span class="fraction-bottom">2</span>
+            </div>
+            và <span class="math-text">m</span> &ne; 0
+          </div>
+          <span class="option-check-icon">✓</span>
+        </label>
+
+        <label class="option-card" for="optC">
+          <input type="radio" id="optC" name="question12" style="display: none;">
+          <div class="option-letter">C</div>
+          <div class="option-content">
+            <span class="math-text">m</span> &isin; (0; 2] &cup; [4; +&infin;)
+          </div>
+          <span class="option-check-icon">✓</span>
+        </label>
+
+        <label class="option-card" for="optD">
+          <input type="radio" id="optD" name="question12" style="display: none;">
+          <div class="option-letter">D</div>
+          <div class="option-content">
+            Không có giá trị thực nào của <span class="math-text">m</span> thỏa mãn
+          </div>
+          <span class="option-check-icon">✓</span>
+        </label>
+
+      </div>
+
+      <!-- Navigation buttons -->
+      <div class="question-footer-nav">
+        <button class="btn-nav-step" type="button">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Câu trước</span>
+        </button>
+
+        <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Phím tắt: [1-4] Chọn đáp án • [&larr; / &rarr;] Đổi câu</span>
+
+        <button class="btn-nav-step primary" type="button">
+          <span>Câu tiếp theo</span>
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Sidebar Palette & Progress -->
+    <aside class="palette-sidebar" aria-label="Bảng câu hỏi và tiến trình">
+      <div class="sidebar-card">
+        <div class="progress-header">
+          <h2 class="progress-title">Tiến độ làm bài</h2>
+          <span class="progress-stat">28 / 40 câu (70%)</span>
+        </div>
+        <div class="progress-bar-bg" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-bar-fill" style="width: 70%;"></div>
+        </div>
+
+        <div class="palette-legend">
+          <div class="legend-item"><span class="legend-dot dot-done"></span> Đã trả lời (28)</div>
+          <div class="legend-item"><span class="legend-dot dot-current"></span> Đang làm (1)</div>
+          <div class="legend-item"><span class="legend-dot dot-flag"></span> Đã đánh dấu (3)</div>
+          <div class="legend-item"><span class="legend-dot dot-empty"></span> Chưa làm (11)</div>
+        </div>
+
+        <div class="palette-grid-title">Bảng 40 câu hỏi</div>
+        <nav class="palette-grid" aria-label="Danh sách số câu">
+          <!-- 1 to 10 -->
+          <button type="button" class="palette-btn done">1</button>
+          <button type="button" class="palette-btn done">2</button>
+          <button type="button" class="palette-btn done">3</button>
+          <button type="button" class="palette-btn done">4</button>
+          <button type="button" class="palette-btn done flagged">5</button>
+          <button type="button" class="palette-btn done">6</button>
+          <button type="button" class="palette-btn done">7</button>
+          <button type="button" class="palette-btn done">8</button>
+          <button type="button" class="palette-btn done">9</button>
+          <button type="button" class="palette-btn done">10</button>
+
+          <!-- 11 to 20 -->
+          <button type="button" class="palette-btn done">11</button>
+          <button type="button" class="palette-btn current flagged">12</button>
+          <button type="button" class="palette-btn done">13</button>
+          <button type="button" class="palette-btn done">14</button>
+          <button type="button" class="palette-btn done">15</button>
+          <button type="button" class="palette-btn done">16</button>
+          <button type="button" class="palette-btn done">17</button>
+          <button type="button" class="palette-btn done">18</button>
+          <button type="button" class="palette-btn done">19</button>
+          <button type="button" class="palette-btn done">20</button>
+
+          <!-- 21 to 30 -->
+          <button type="button" class="palette-btn done">21</button>
+          <button type="button" class="palette-btn done">22</button>
+          <button type="button" class="palette-btn done">23</button>
+          <button type="button" class="palette-btn done">24</button>
+          <button type="button" class="palette-btn done">25</button>
+          <button type="button" class="palette-btn done">26</button>
+          <button type="button" class="palette-btn done">27</button>
+          <button type="button" class="palette-btn done">28</button>
+          <button type="button" class="palette-btn flagged">29</button>
+          <button type="button" class="palette-btn">30</button>
+
+          <!-- 31 to 40 -->
+          <button type="button" class="palette-btn">31</button>
+          <button type="button" class="palette-btn">32</button>
+          <button type="button" class="palette-btn">33</button>
+          <button type="button" class="palette-btn">34</button>
+          <button type="button" class="palette-btn">35</button>
+          <button type="button" class="palette-btn">36</button>
+          <button type="button" class="palette-btn">37</button>
+          <button type="button" class="palette-btn">38</button>
+          <button type="button" class="palette-btn">39</button>
+          <button type="button" class="palette-btn">40</button>
+        </nav>
+
+        <div class="sidebar-actions">
+          <a href="06_result_screen.html" class="btn-block-submit">Nộp bài thi ngay</a>
+          <p class="submit-hint-note">Hệ thống sẽ tự động lưu bài làm và nộp khi hết thời gian đếm ngược.</p>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <script>
+    // Simple interactive preview for Stitch / viewer
+    document.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        const radio = card.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+      });
+    });
+
+    const flagBtn = document.querySelector('.btn-flag-review');
+    if (flagBtn) {
+      flagBtn.addEventListener('click', () => {
+        flagBtn.classList.toggle('active');
+      });
+    }
+  </script>
+</body>
+</html>

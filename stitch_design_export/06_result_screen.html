@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kết Quả Thi - Đề Thi Thử THPT Quốc Gia Môn Toán 2026 - ThiNhanh</title>
+  <meta name="description" content="Xem chi tiết kết quả làm bài thi, điểm số thang 10, phân tích câu đúng/sai và lời giải chi tiết từng câu hỏi.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-hover: #5043D4;
+      --primary-light: #F0EDFD;
+      --primary-surface: #F7F5FE;
+      --secondary: #24233A;
+      --text-main: #1E1B2E;
+      --text-muted: #64748B;
+      --text-sub: #475569;
+      --border-color: #E2E8F0;
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --card-shadow: 0 4px 16px -2px rgba(101, 87, 232, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 12px 28px -4px rgba(101, 87, 232, 0.16);
+      --success: #10B981;
+      --success-light: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-light: #FFFBEB;
+      --danger: #EF4444;
+      --danger-light: #FEF2F2;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Nav */
+    .top-nav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn-nav-outline {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--text-sub);
+      transition: all 0.2s;
+    }
+
+    .btn-nav-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-surface);
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 1040px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Score Hero Card */
+    .hero-score-card {
+      background: linear-gradient(135deg, #24233A 0%, #352E63 100%);
+      color: white;
+      border-radius: var(--radius-xl);
+      padding: 2.5rem;
+      box-shadow: 0 16px 36px -8px rgba(36, 35, 58, 0.35);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .hero-score-card::after {
+      content: '';
+      position: absolute;
+      top: -50px;
+      right: -50px;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(101, 87, 232, 0.4) 0%, rgba(101, 87, 232, 0) 70%);
+      pointer-events: none;
+    }
+
+    .score-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .score-badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34D399;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      width: fit-content;
+    }
+
+    .exam-name-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.3;
+      color: #FFFFFF;
+    }
+
+    .exam-meta-text {
+      color: #CBD5E1;
+      font-size: 0.9rem;
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .score-display-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      backdrop-filter: blur(10px);
+      text-align: center;
+    }
+
+    .score-digits {
+      font-size: 4rem;
+      font-weight: 800;
+      line-height: 1;
+      color: #FBBF24;
+      font-family: 'Fira Code', monospace;
+      text-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+    }
+
+    .score-scale {
+      font-size: 1.25rem;
+      color: #94A3B8;
+      font-weight: 600;
+      margin-left: 0.25rem;
+    }
+
+    .score-grade-tag {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #A7F3D0;
+    }
+
+    .rank-percentile {
+      font-size: 0.8rem;
+      color: #CBD5E1;
+      margin-top: 0.25rem;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 4px;
+    }
+
+    .stat-card.correct::before { background: var(--success); }
+    .stat-card.wrong::before { background: var(--danger); }
+    .stat-card.skipped::before { background: var(--text-muted); }
+    .stat-card.accuracy::before { background: var(--primary); }
+
+    .stat-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--secondary);
+      font-family: 'Fira Code', monospace;
+    }
+
+    .stat-card.correct .stat-value { color: var(--success); }
+    .stat-card.wrong .stat-value { color: var(--danger); }
+    .stat-card.skipped .stat-value { color: var(--text-muted); }
+    .stat-card.accuracy .stat-value { color: var(--primary); }
+
+    .stat-subtext {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+
+    /* Action Buttons Row */
+    .actions-strip {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-action-primary {
+      flex: 1;
+      min-width: 240px;
+      padding: 1rem 1.75rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(101, 87, 232, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-action-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(101, 87, 232, 0.4);
+    }
+
+    .btn-action-secondary {
+      padding: 1rem 1.5rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--secondary);
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-action-secondary:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-surface);
+    }
+
+    /* Question Review Section */
+    .review-section {
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .review-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    /* Filter Tabs */
+    .filter-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: var(--bg-canvas);
+      padding: 0.35rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--primary);
+    }
+
+    .tab-btn.active {
+      background: var(--bg-surface);
+      color: var(--primary);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Review Item Cards */
+    .review-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .review-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .review-card.is-correct {
+      border-left: 4px solid var(--success);
+    }
+
+    .review-card.is-wrong {
+      border-left: 4px solid var(--danger);
+      background: #FFFDFC;
+    }
+
+    .review-top-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .q-number-tag {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--secondary);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-pill.correct {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .status-pill.wrong {
+      background: var(--danger-light);
+      color: var(--danger);
+    }
+
+    .review-stem {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .review-math {
+      font-family: 'Cambria Math', 'Times New Roman', serif;
+      font-style: italic;
+      color: var(--secondary);
+      font-size: 1.05rem;
+    }
+
+    .choices-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 0.5rem 0;
+    }
+
+    .choice-box {
+      padding: 0.85rem 1.15rem;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .choice-box.user-choice-wrong {
+      background: var(--danger-light);
+      border: 1px solid #FECACA;
+      color: #991B1B;
+    }
+
+    .choice-box.correct-choice {
+      background: var(--success-light);
+      border: 1px solid #A7F3D0;
+      color: #065F46;
+    }
+
+    .choice-badge-label {
+      font-weight: 800;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+
+    /* Solution Box */
+    .solution-box {
+      background: var(--primary-surface);
+      border-left: 3px solid var(--primary);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    .solution-title {
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      margin-top: auto;
+    }
+
+    @media (max-width: 840px) {
+      .hero-score-card {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .choices-comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav" role="banner">
+    <div class="nav-container">
+      <a href="02_home_screen.html" class="nav-logo" aria-label="Trang chủ ThiNhanh">
+        <span class="logo-icon">⚡</span>
+        <span>ThiNhanh</span>
+      </a>
+      <div class="nav-actions">
+        <a href="10_student_leaderboard.html" class="btn-nav-outline">🏆 Xem Bảng Xếp Hạng</a>
+        <a href="02_home_screen.html" class="btn-nav-outline">🏠 Về Trang Chủ</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-container" id="main-content">
+
+    <!-- Score Hero Card -->
+    <section class="hero-score-card" aria-labelledby="scoreHeading">
+      <div class="score-info">
+        <div class="score-badge-status">
+          <span>✔️</span> Hoàn thành bài thi
+        </div>
+        <h1 class="exam-name-title" id="scoreHeading">Đề Thi Thử THPT Quốc Gia Môn Toán 2026</h1>
+        <div class="exam-meta-text">
+          <span>📅 Ngày thi: 08/10/2026 21:45</span>
+          <span>⏱️ Thời gian làm: 34 phút 25 giây / 50 phút</span>
+          <span>👤 Thí sinh: Trần Hoàng Quân</span>
+        </div>
+      </div>
+
+      <div class="score-display-box">
+        <div>
+          <span class="score-digits">8.50</span>
+          <span class="score-scale">/ 10</span>
+        </div>
+        <div class="score-grade-tag">Xếp loại: Giỏi (Thành tích Xuất Sắc)</div>
+        <div class="rank-percentile">🎉 Bạn cao điểm hơn 92% thí sinh tham gia đợt thi này</div>
+      </div>
+    </section>
+
+    <!-- 4-Stat Metric Summary Grid -->
+    <section class="stats-grid" aria-label="Thống kê kết quả">
+      <div class="stat-card correct">
+        <span class="stat-label">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Số câu đúng
+        </span>
+        <span class="stat-value">34</span>
+        <span class="stat-subtext">+8.50 điểm</span>
+      </div>
+
+      <div class="stat-card wrong">
+        <span class="stat-label">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+          Số câu sai
+        </span>
+        <span class="stat-value">4</span>
+        <span class="stat-subtext">Cần luyện tập lại</span>
+      </div>
+
+      <div class="stat-card skipped">
+        <span class="stat-label">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
+          Chưa trả lời
+        </span>
+        <span class="stat-value">2</span>
+        <span class="stat-subtext">Hết giờ làm bài</span>
+      </div>
+
+      <div class="stat-card accuracy">
+        <span class="stat-label">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          Độ chính xác
+        </span>
+        <span class="stat-value">85%</span>
+        <span class="stat-subtext">34 / 40 câu</span>
+      </div>
+    </section>
+
+    <!-- Action Strip -->
+    <section class="actions-strip" aria-label="Thao tác tiếp theo">
+      <a href="05_taking_exam.html" class="btn-action-primary">
+        <span>🔄 Luyện tập lại 4 câu sai</span>
+      </a>
+      <a href="05_taking_exam.html" class="btn-action-secondary">
+        <span>📝 Thi lại toàn bộ đề</span>
+      </a>
+      <a href="10_student_leaderboard.html" class="btn-action-secondary">
+        <span>🏆 Bảng xếp hạng phòng</span>
+      </a>
+      <a href="02_home_screen.html" class="btn-action-secondary">
+        <span>🏠 Trang chủ</span>
+      </a>
+    </section>
+
+    <!-- Question Review Section -->
+    <section class="review-section" aria-labelledby="reviewHeading">
+      <div class="review-header">
+        <h2 class="review-title" id="reviewHeading">Chi tiết bài làm & Lời giải</h2>
+        
+        <div class="filter-tabs" role="tablist" aria-label="Bộ lọc câu hỏi">
+          <button class="tab-btn active" role="tab" aria-selected="true">Tất cả (40)</button>
+          <button class="tab-btn" role="tab" aria-selected="false">Chỉ câu sai (4)</button>
+          <button class="tab-btn" role="tab" aria-selected="false">Câu đúng (34)</button>
+          <button class="tab-btn" role="tab" aria-selected="false">Chưa làm (2)</button>
+        </div>
+      </div>
+
+      <div class="review-list">
+        
+        <!-- Review Item 1: Câu đúng -->
+        <article class="review-card is-correct">
+          <div class="review-top-meta">
+            <span class="q-number-tag">Câu 1 (Nhận biết)</span>
+            <span class="status-pill correct">✓ Trả lời Đúng (+0.25đ)</span>
+          </div>
+          <p class="review-stem">
+            Cho hàm số <span class="review-math">y = x<sup>3</sup> - 3x + 2</span>. Điểm cực tiểu của đồ thị hàm số là:
+          </p>
+          <div class="choices-comparison">
+            <div class="choice-box correct-choice">
+              <span class="choice-badge-label">Bạn chọn & Đáp án đúng:</span>
+              <span><strong>A. (1; 0)</strong></span>
+            </div>
+          </div>
+          <div class="solution-box">
+            <div class="solution-title">💡 Hướng dẫn giải chi tiết:</div>
+            Ta có <span class="review-math">y' = 3x<sup>2</sup> - 3 = 0 &hArr; x = &plusmn;1</span>. Đạo hàm cấp hai <span class="review-math">y''(1) = 6 &gt; 0</span>, do đó hàm số đạt cực tiểu tại <span class="review-math">x = 1</span> với <span class="review-math">y(1) = 0</span>. Vậy tọa độ điểm cực tiểu là (1; 0).
+          </div>
+        </article>
+
+        <!-- Review Item 2: Câu sai -->
+        <article class="review-card is-wrong">
+          <div class="review-top-meta">
+            <span class="q-number-tag">Câu 12 (Vận dụng)</span>
+            <span class="status-pill wrong">✗ Trả lời Sai (0.00đ)</span>
+          </div>
+          <p class="review-stem">
+            Cho hàm số <span class="review-math">y = f(x)</span> có bảng biến thiên. Tìm các giá trị thực của <span class="review-math">m</span> để phương trình <span class="review-math">log<sub>2</sub>(x<sup>2</sup> - 3x + 2) + (m + 1)/(x - 1) = f(x) + m</span> có đúng 3 nghiệm phân biệt:
+          </p>
+          <div class="choices-comparison">
+            <div class="choice-box user-choice-wrong">
+              <span class="choice-badge-label">Bạn đã chọn:</span>
+              <span><strong>B. -1 &lt; m &le; 5/2</strong> (Chưa chính xác)</span>
+            </div>
+            <div class="choice-box correct-choice">
+              <span class="choice-badge-label">Đáp án đúng:</span>
+              <span><strong>C. m &isin; (0; 2] &cup; [4; +&infin;)</strong></span>
+            </div>
+          </div>
+          <div class="solution-box">
+            <div class="solution-title">💡 Hướng dẫn giải chi tiết:</div>
+            Điều kiện xác định: <span class="review-math">x<sup>2</sup> - 3x + 2 &gt; 0</span> và <span class="review-math">x &ne; 1</span>. Tách biến đổi phương trình về dạng <span class="review-math">g(x) = h(m)</span> và khảo sát sự tương giao đồ thị, ta suy ra tập hợp tham số nghiệm đúng là <span class="review-math">m &isin; (0; 2] &cup; [4; +&infin;)</span>.
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>© 2026 ThiNhanh - Nền tảng khảo thí trắc nghiệm trực tuyến thông minh</p>
+  </footer>
+
+</body>
+</html>
