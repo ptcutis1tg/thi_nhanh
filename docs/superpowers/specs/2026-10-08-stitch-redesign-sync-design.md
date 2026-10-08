@@ -1,88 +1,138 @@
-# Thiết Kế Chi Tiết: Chuẩn Hóa & Hoàn Thiện Bộ Giao Diện Stitch AI Redesign và Lộ Trình Đồng Bộ Sang Mã Nguồn Flutter
+# Thiết Kế Chi Tiết: Chuẩn Hóa & Hoàn Thiện Toàn Diện Bộ Giao Diện Stitch AI Redesign và Lộ Trình Đồng Bộ Sang Flutter Code
 
-> **Ngày tạo:** 08/10/2026  
-> **Trạng thái:** Bản thiết kế đã thông qua phỏng vấn chuyên sâu (/grill-me)  
-> **Tài liệu tham chiếu:** `edtech_assessment_modern/DESIGN.md`, `stitch_web_redesign_html_mockups.zip`  
-
----
-
-## 1. Bối Cảnh & Đánh Giá Toàn Diện Bản Thiết Kế Của Stitch AI
-
-### 1.1. Ưu Điểm Nổi Bật của Stitch AI Redesign
-1. **Design System chuyên nghiệp (`edtech_assessment_modern/DESIGN.md`):** Xây dựng bảng quy chuẩn Design Tokens rất chi tiết, bao gồm:
-   - **Bảng màu:** Màu chủ đạo Deep Violet (`#6557E8` / `#4C3BCE`), nền tương phản Ink Navy (`#24233A`), bề mặt mềm mại Lavender (`#F7F5FE` / `#F8FAFC`), và các màu chức năng (Success Emerald `#10B981`, Warning Amber `#F59E0B`, Danger Coral `#EF4444`).
-   - **Typography:** Chuẩn hóa toàn bộ bằng Google Fonts `Be Vietnam Pro` (từ 11px caption đến 32px headline-xl) kết hợp `Fira Code` cho số đếm thời gian thực và mã PIN.
-   - **Đổ bóng quang học (Violet-tinted luminescence):** Sử dụng bóng mờ ánh tím `rgba(101, 87, 232, 0.08)` thay vì bóng xám vô hồn, tạo cảm giác công nghệ cao cấp, hiện đại.
-   - **Bo góc (Curvature):** 8px (sm) $\rightarrow$ 12px (md) $\rightarrow$ 16px (lg) $\rightarrow$ 20-24px (xl) $\rightarrow$ 999px (pill).
-2. **Chất lượng tạo hình các màn hình học sinh:** Các màn hình `01_auth_greeting`, `02_home_screen`, `10_student_leaderboard` đạt thẩm mỹ xuất sắc, bố cục thẻ cân đối, phân cấp trực quan rõ ràng.
-
-### 1.2. Các Khiếm Khuyết & Lỗ Hổng Cần Khắc Phục
-1. **Bỏ sót 2 màn hình cốt lõi:**
-   - `04_exam_detail.html`: Màn hình trung gian quan trọng nhất dẫn dắt học sinh vào thi, nơi nhập mã PIN phòng thi và chọn chế độ thi thử offline.
-   - `09_live_dashboard.html`: Màn hình giám sát phòng thi realtime của giáo viên với các tính năng độc quyền (cờ vi phạm rời tab 🚩, tiến độ realtime X/Y câu, thu bài cưỡng chế ⛔).
-2. **Lỗi đặt tên thư mục & băm dấu tiếng Việt:** Các thư mục bị mất nguyên âm có dấu (ví dụ `01_m_n_h_nh_ch_o_m_ng_ng_nh_p`, `07_so_n_th_o_thi_chuy_n_s_u`), gây khó khăn khi liên kết và mở trên web.
-3. **Ưu tiên màn hình:** Tập trung tối ưu trải nghiệm cho máy tính (Desktop/Laptop), nơi giáo viên soạn đề và học sinh làm bài thi tập trung, với bố cục thoáng đãng, sắc nét, không bị giật lag layout.
+> **Ngày tạo:** 08/10/2026 (Cập nhật sau phiên phỏng vấn chuyên sâu chi tiết /grill-me)  
+> **Trạng thái:** Đã thống nhất & Phê duyệt phương án kiến trúc  
+> **Tài liệu tham chiếu:** `edtech_assessment_modern/DESIGN.md`, `stitch_web_redesign_html_mockups.zip`, `lib/shared/widgets/top_nav_bar.dart`  
 
 ---
 
-## 2. Kiến Trúc & Quy Chuẩn Bộ HTML Redesign Hoàn Thiện (`stitch_design_redesign/`)
+## 1. Đánh Giá Chuyên Sâu Các Khiếm Khuyết Trong Bản Của Stitch AI
 
-Bộ giao diện sẽ được tổ chức lại gọn gàng tại thư mục:  
-`c:\Users\ADMINE\Desktop\CODE\thi_nhanh\stitch_design_redesign/`
+Qua kiểm tra đối soát từng dòng mã nguồn giữa các thư mục do Stitch AI tạo ra và ứng dụng Flutter thực tế, phát hiện các khuyết tật kỹ thuật nghiêm trọng cần được khắc phục:
+
+### 1.1. Bảng So Sánh Sự Bất Nhất & Phân Mảnh Của Top Navigation Bar
+
+| Màn Hình | Logo & Thương Hiệu | Menu Điều Hướng (Nav Links) | Cụm Hành Động Bên Phải (Nav Actions) | Đánh Giá Khuyết Tật |
+| :--- | :--- | :--- | :--- | :--- |
+| **01 Chào Mừng** | `<div class="brand-logo">⚡</div> Thi Nhanh` | Không có (Màn Auth) | Không có | ✅ Hợp lý cho màn chào mừng/đăng nhập. |
+| **02 Trang Chủ** | `<div class="nav-logo">⚡</div> Thi Nhanh` | **4 mục:** `Trang Chủ`, `Khám Phá Đề`, `Bảng Xếp Hạng`, `Kênh Giáo Viên` | Ô nhập PIN `[Mã phòng PT...]` + Nút `Vào` + Avatar `M` | ⚠️ Menu đầy đủ nhất nhưng tất cả link đều là `href="#"`. |
+| **03 Tìm Kiếm** | `<div class="nav-logo">⚡</div> Thi Nhanh` | **4 mục:** như trên | **MẤT TOÀN BỘ:** Không có ô nhập PIN, không có Avatar người dùng | ❌ **Lỗi:** Bị mất sạch cụm hành động bên phải so với Trang Chủ. |
+| **04 Chi Tiết Đề** | *(Bị Stitch bỏ sót)* | *(Không được tạo thư mục)* | *(Không được tạo thư mục)* | ❌ **Lỗi nghiêm trọng:** Stitch quên hẳn màn hình này. |
+| **05 Làm Bài Thi** | Không có logo thương hiệu | Không có menu (Dạng Full-screen Exam) | Nút Thoát + Đồng hồ đếm ngược + Nút Nộp bài | ⚠️ Hợp lý cho phòng thi nhưng thiếu nhận diện thương hiệu. |
+| **06 Kết Quả** | `<div class="nav-logo">⚡</div> Thi Nhanh` | **MẤT SẠCH MENU 4 MỤC:** Thay bằng 2 nút outline `🏆 Bảng Xếp Hạng` và `🏠 Trang Chủ` | Không có avatar hay ô nhập PIN | ❌ **Lỗi:** Bẻ gãy cấu trúc TopNav, người dùng không thể bấm sang màn khác. |
+| **07 Soạn Đề** | Không có logo thương hiệu | Thanh công cụ soạn thảo: Nút trở về + Tên đề + Badge Nháp | Nút `💾 Lưu tạm` + Nút `🚀 Xuất bản` | ⚠️ Hợp lý cho màn hình Editor chuyên sâu. |
+| **08 Quản Lý Đề** | `<span class="logo-icon">⚡</span> ThiNhanh` *(Viết dính liền)* | **ĐỔI CÒN 3 MỤC:** `Trang Chủ`, `Kho Đề Thi` *(Đổi tên)*, `Kênh Giáo Viên` *(Mất Bảng Xếp Hạng)* | Thay thế ô nhập PIN bằng nút `+ Tạo đề mới`, **không có Avatar** | ❌ **Lỗi nặng:** Tự ý đổi tên menu, xóa bớt mục, đổi cả cách viết tên thương hiệu. |
+| **09 Giám Sát** | *(Bị Stitch bỏ sót)* | *(Không được tạo thư mục)* | *(Không được tạo thư mục)* | ❌ **Lỗi nghiêm trọng:** Stitch quên hẳn màn hình Realtime này. |
+| **10 Bảng Vàng** | `<span class="logo-icon">⚡</span> ThiNhanh` *(Viết dính liền)* | **MẤT TOÀN BỘ MENU:** Chỉ còn 1 dòng text `🏠 Về Trang Chủ` | **Không có gì** | ❌ **Lỗi:** Giao diện bị cô lập, không chuyển trang được. |
+
+### 1.2. Các Lỗi Kỹ Thuật Khác Của Stitch AI
+1. **Liên kết chết (`href="#"`):** Toàn bộ các thẻ `<a>` ở menu điều hướng đều không có đường dẫn thực tế, người dùng nhấp chuột chỉ bị giật màn hình lên đầu trang.
+2. **Xung đột kiến trúc Flutter `ShellRoute`:** Trong Flutter (`lib/shared/widgets/top_nav_bar.dart` và `lib/main.dart`), toàn bộ các trang chính được bọc trong một `TopNavBar` dùng chung. Nếu HTML bị phân mảnh 5 kiểu, khi chuyển sang Flutter sẽ phá vỡ tính kế thừa và tái sử dụng component.
+3. **Bỏ quên 2 màn hình quan trọng:** Màn hình 04 (Chi tiết đề & Nhập PIN phòng) và 09 (Giám sát phòng thi realtime của giáo viên) bị Stitch AI bỏ quên hoàn toàn.
+4. **Lỗi đặt tên thư mục & Font tiếng Việt:** Tên thư mục bị băm mất dấu tiếng Việt (`01_m_n_h_nh_...`, `07_so_n_th_o_...`).
+
+---
+
+## 2. Chuẩn Hóa Kiến Trúc Giao Diện: Phương Án A (Global ShellRoute)
+
+Hệ thống sẽ được chuẩn hóa thành **2 hệ thống Header duy nhất và nhất quán 100%**:
+
+### 2.1. Hệ Thống 1: Global App TopNavBar (Áp dụng cho 02, 03, 04, 06, 08, 10)
+Tất cả 6 màn hình chính đều sử dụng chung một cấu trúc TopNav duy nhất, đồng bộ tuyệt đối về HTML markup và CSS styling:
+
+```html
+<header class="top-nav" role="banner">
+  <div class="nav-container">
+    <!-- Brand Logo & Title -->
+    <a href="02_home_screen.html" class="nav-brand" aria-label="Về trang chủ Thi Nhanh">
+      <div class="nav-logo">⚡</div>
+      <span class="brand-title">Thi Nhanh</span>
+    </a>
+
+    <!-- Unified 4 Menu Links with Working Relative URLs -->
+    <nav class="nav-links" aria-label="Điều hướng chính">
+      <a href="02_home_screen.html" class="nav-link {active-if-02}">Trang Chủ</a>
+      <a href="03_search_screen.html" class="nav-link {active-if-03}">Khám Phá Đề</a>
+      <a href="08_teacher_exams.html" class="nav-link {active-if-08}">Kênh Giáo Viên</a>
+      <a href="10_student_leaderboard.html" class="nav-link {active-if-10}">Bảng Xếp Hạng</a>
+    </nav>
+
+    <!-- Unified Right Actions: Quick Join Room PIN + User Profile -->
+    <div class="nav-actions">
+      <form class="quick-join-group" action="05_taking_exam.html" method="get">
+        <input type="text" class="quick-join-input" placeholder="Mã phòng PT..." aria-label="Nhập mã phòng thi">
+        <button type="submit" class="quick-join-btn">Vào</button>
+      </form>
+
+      <div class="user-profile" title="Tài khoản cá nhân">
+        <div class="avatar-circle">M</div>
+        <span class="user-display-name">Minh (Lớp 12)</span>
+      </div>
+    </div>
+  </div>
+</header>
+```
+
+- **Màu sắc & Active State:** Mục menu của trang hiện tại có class `.active` mang màu tím Primary `#6557E8`, nền nhẹ Lavender `#EEECFF` và font-weight 700.
+- **Liên kết thực tế:** Nhấp vào bất kỳ link nào trên TopNav đều chuyển ngay lập tức sang trang đích tương ứng trong bộ HTML.
+
+### 2.2. Hệ Thống 2: Focused Workspace Headers (Dành riêng cho 3 màn hình chuyên biệt)
+Các màn hình này không nằm trong ShellRoute thông thường mà đòi hỏi không gian tập trung cao độ:
+1. **`01_auth_greeting.html`:** Không có TopNav (Màn chào mừng đăng nhập, thiết kế Hero Banner & Form đăng nhập).
+2. **`05_taking_exam.html`:** Top Exam Bar chuyên dụng:
+   - Nút Thoát (có xác nhận) $\rightarrow$ Về `04_exam_detail.html`.
+   - Tiêu đề đề thi & Mã đề.
+   - Đồng hồ đếm ngược thời gian thực `42:15` font Fira Code với hiệu ứng đập nhịp (pulsating).
+   - Nút Nộp bài thi nổi bật màu tím $\rightarrow$ Chuyển sang `06_result_screen.html`.
+   - Banner cảnh báo chống gian lận & giám sát toàn màn hình.
+3. **`07_create_exam.html`:** Top Editor Bar chuyên dụng:
+   - Nút Trở về `← Quản lý đề` $\rightarrow$ Về `08_teacher_exams.html`.
+   - Ô nhập tiêu đề đề thi trực tiếp.
+   - Badge trạng thái `Bản nháp / Đã xuất bản`.
+   - Nút `💾 Lưu tạm` và nút `🚀 Xuất bản đề thi`.
+4. **`09_live_dashboard.html`:** Top Proctoring Bar chuyên dụng:
+   - Nút `← Thoát phòng` $\rightarrow$ Về `08_teacher_exams.html`.
+   - Trạng thái chấm xanh phát sáng `🔴 Trực tiếp`.
+   - Tiêu đề phòng thi và Mã PIN phòng cỡ lớn kèm nút bấm 1-chạm sao chép.
+   - Timer đếm ngược thời gian thi phòng.
+   - Nút `⛔ Thu bài toàn phòng`.
+
+---
+
+## 3. Cấu Trúc Bộ Thư Mục Hoàn Thiện Chuẩn Mực (`stitch_design_redesign/`)
+
+Toàn bộ 11 tệp HTML sẽ được đặt trong thư mục chuẩn `stitch_design_redesign/` (tên thư mục chuẩn tiếng Anh/không dấu, không bị băm ký tự):
 
 ```
 stitch_design_redesign/
-├── index.html                           # Cổng điều hướng trung tâm (Hub) cập nhật thẩm mỹ Stitch
-├── 01_auth_greeting.html                # Chào mừng & Đăng nhập (Hero Glowing Book, Google, Guest)
-├── 02_home_screen.html                   # Trang chủ học tập (TopNav, Smart Nav Cards, 8 môn học)
-├── 03_search_screen.html                # Tìm kiếm đề thi & Google Pagination
-├── 04_exam_detail.html                  # Chi tiết đề thi & Nhập PIN phòng thi (Mới hoàn thiện theo Stitch)
-├── 05_taking_exam.html                  # Phòng thi trực tuyến (Đếm ngược, Chống gian lận, LaTeX)
-├── 06_result_screen.html                # Kết quả bài thi & Luyện câu sai (Thang điểm 10)
-├── 07_create_exam.html                  # Soạn thảo đề thi chia 3 cột & Visual Math Editor
-├── 08_teacher_exams.html                # Quản lý kho đề thi giáo viên (Tabs & Actions)
-├── 09_live_dashboard.html               # Giám sát phòng thi Realtime (Mới hoàn thiện theo Stitch)
-└── 10_student_leaderboard.html          # Bảng vàng vinh danh (Bục Top 1-2-3 Podium)
+├── index.html                   # Showcase Hub điều hướng trung tâm, liên kết toàn bộ 10 màn
+├── 01_auth_greeting.html        # Chào mừng & Đăng nhập (Hero Glowing Book, Google, Guest)
+├── 02_home_screen.html          # Trang chủ học tập (TopNav chuẩn, Smart Nav Cards, 8 môn học)
+├── 03_search_screen.html        # Tìm kiếm đề thi (TopNav chuẩn, Bộ lọc môn, Google Pagination)
+├── 04_exam_detail.html          # Chi tiết đề thi (MỚI: Chuẩn hóa theo Stitch, TopNav chuẩn, Nhập PIN)
+├── 05_taking_exam.html          # Phòng thi trực tuyến (Focused Exam Bar, LaTeX, Lưới 40 câu)
+├── 06_result_screen.html        # Kết quả thi (TopNav chuẩn, Thang điểm 10, Lời giải chi tiết)
+├── 07_create_exam.html          # Soạn đề thi (Focused Editor Bar, Visual Math, 3 cột)
+├── 08_teacher_exams.html        # Quản lý kho đề (TopNav chuẩn, 4 stats cards, 3 tabs lọc)
+├── 09_live_dashboard.html       # Giám sát trực tiếp (MỚI: Chuẩn hóa theo Stitch, Realtime metrics, Cờ vi phạm)
+└── 10_student_leaderboard.html  # Bảng vàng vinh danh (TopNav chuẩn, Bục Top 1-2-3 Podium)
 ```
-
-### Chi Tiết Cải Tiến 2 Màn Hình Được Hoàn Thiện Mới:
-- **`04_exam_detail.html`:**
-  - Hero Card với gradient Deep Violet (`#6557E8` $\rightarrow$ `#402DB5`).
-  - Hộp thông tin đề thi: Môn học, Thời gian, Số câu hỏi, Tác giả kèm avatar.
-  - Phân vùng 2 hành động rõ rệt: (A) Ô nhập mã PIN phòng thi kèm nút "Vào phòng thi ngay"; (B) Nút "Tự luyện tập tự do".
-  - Hộp cảnh báo quy chế phòng thi: Nhắc nhở về việc giám sát rời màn hình, xáo trộn câu hỏi.
-- **`09_live_dashboard.html`:**
-  - Thanh tiêu đề trực tiếp với chấm phát sáng xanh `pulse-dot`, tiêu đề phòng thi, đồng hồ đếm ngược Fira Code.
-  - Hộp mã PIN phòng thi cỡ lớn kèm nút bấm 1-chạm sao chép liên kết.
-  - 4 thẻ Metric thời gian thực: Thí sinh có mặt, Đã nộp bài, Cảnh báo vi phạm (màu coral `#EF4444`), Điểm trung bình tạm tính.
-  - Bảng học sinh trực tuyến: Avatar chữ cái, tên học sinh, tiến độ thanh progress bar, trạng thái vi phạm (0 lần xanh lá / 1 lần cảnh báo vàng / 2+ lần cờ đỏ 🚩), các nút hành động: Xem bài làm live, Cảnh cáo, Thu bài cưỡng chế ⛔.
 
 ---
 
-## 3. Lộ Trình Đồng Bộ Sang Mã Nguồn Flutter (`lib/`)
+## 4. Lộ Trình Thực Hiện & Tiêu Chí Nghiệm Thu (Implementation & Acceptance)
 
-Quá trình đồng bộ sang Flutter sẽ thực hiện theo 2 giai đoạn:
+### Giai Đoạn 1: Xuất Bản & Nghiệm Thu Trọn Vẹn Bộ HTML Redesign
+1. Tạo thư mục `stitch_design_redesign/` với đầy đủ 11 file HTML.
+2. Áp dụng chuẩn **Global App TopNavBar** đồng nhất cho cả 6 màn hình (`02`, `03`, `04`, `06`, `08`, `10`).
+3. Hoàn thiện xuất sắc 2 màn hình 04 & 09 theo phong cách Stitch cao cấp.
+4. Đảm bảo toàn bộ menu và nút bấm đều có liên kết qua lại hoạt động mượt mà (không có link chết `href="#"`).
+5. Người dùng nghiệm thu trực quan bộ giao diện trên trình duyệt.
 
-### Giai Đoạn 1: Xuất Bản & Nghiệm Thu Bộ HTML Hoàn Hảo (Immediate Deliverable)
-- Tạo toàn bộ thư mục `stitch_design_redesign/` chứa 11 tệp HTML hoàn thiện 100%.
-- Kiểm tra tính liên kết: Các nút điều hướng trong các file HTML đều click qua lại được giữa các màn hình một cách liền mạch.
-- Nghiệm thu trực quan cùng người dùng.
-
-### Giai Đoạn 2: Đồng Bộ Từng Bước Vào Mã Nguồn Flutter (Phased Implementation Plan)
-1. **Đồng bộ Theme & Design System (`lib/core/theme/app_theme.dart`):**
-   - Định nghĩa chính xác bảng màu Stitch: `primary: 0xFF6557E8`, `secondary: 0xFF24233A`, `surface: 0xFFF7F5FE`, `canvas: 0xFFF8FAFC`.
-   - Cập nhật bóng đổ `BoxShadow(color: Color(0x146557E8), blurRadius: 16, offset: Offset(0, 4))`.
-2. **Đồng bộ Nhóm Màn Hình Học Sinh:**
-   - `auth_screen.dart` $\rightarrow$ Thẩm mỹ 01.
-   - `home_screen.dart` $\rightarrow$ Thẩm mỹ 02.
-   - `search_screen.dart` & `exam_detail_screen.dart` $\rightarrow$ Thẩm mỹ 03, 04.
-   - `taking_exam_screen.dart` & `result_screen.dart` $\rightarrow$ Thẩm mỹ 05, 06.
-   - `student_leaderboard_screen.dart` $\rightarrow$ Thẩm mỹ 10 (Podium Top 1-2-3).
-3. **Đồng bộ Nhóm Màn Hình Giáo Viên:**
-   - `teacher_exams_screen.dart` $\rightarrow$ Thẩm mỹ 08.
-   - `create_exam_screen.dart` $\rightarrow$ Thẩm mỹ 07 (Visual Math blocks).
-   - `live_dashboard_screen.dart` $\rightarrow$ Thẩm mỹ 09 (Realtime monitoring).
-4. **Kiểm thử tự động & TDD:**
-   - Duy trì 100% số lượng bài kiểm thử (173/173 tests PASS).
-   - Tự động chạy git commit & git push theo quy tắc của dự án.
-   - Cập nhật tài liệu kiến trúc `system_architecture_and_deep_evaluation.md`.
+### Giai Đoạn 2: Lập Kế Hoạch TDD & Đồng Bộ Sang Mã Nguồn Flutter (`lib/`)
+1. Viết Implementation Plan chi tiết theo kỹ năng `writing-plans`.
+2. Đồng bộ Design System Tokens vào `lib/core/theme/app_theme.dart`.
+3. Chuẩn hóa `lib/shared/widgets/top_nav_bar.dart` theo mẫu TopNavBar chuẩn đã thống nhất.
+4. Cập nhật lần lượt các màn hình Flutter tương ứng.
+5. Chạy kiểm thử tự động xác nhận 173/173 tests PASS.
+6. Git commit và auto-push lên GitHub theo quy định của dự án.
