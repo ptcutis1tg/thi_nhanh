@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Xếp Hạng Phòng Thi - ThiNhanh</title>
+  <meta name="description" content="Bảng vàng vinh danh top thí sinh xuất sắc, bục vinh danh Top 1-2-3 và xếp hạng thời gian thực của phòng thi trắc nghiệm.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-hover: #5043D4;
+      --primary-light: #F0EDFD;
+      --primary-surface: #F7F5FE;
+      --secondary: #24233A;
+      --text-main: #1E1B2E;
+      --text-muted: #64748B;
+      --text-sub: #475569;
+      --border-color: #E2E8F0;
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --card-shadow: 0 4px 16px -2px rgba(101, 87, 232, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 12px 28px -4px rgba(101, 87, 232, 0.16);
+      --gold: #F59E0B;
+      --gold-light: #FEF3C7;
+      --silver: #94A3B8;
+      --silver-light: #F1F5F9;
+      --bronze: #B45309;
+      --bronze-light: #FFEDD5;
+      --success: #10B981;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Nav */
+    .top-nav {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .nav-container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--primary);
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .btn-nav-outline {
+      padding: 0.45rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--text-sub);
+      transition: all 0.2s;
+    }
+
+    .btn-nav-outline:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-surface);
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 1040px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 5rem 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Header Banner */
+    .leaderboard-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .leaderboard-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .exam-tag {
+      font-size: 0.95rem;
+      color: var(--primary);
+      font-weight: 700;
+      background: var(--primary-light);
+      padding: 0.35rem 1rem;
+      border-radius: 999px;
+    }
+
+    /* Podium Top 1-2-3 */
+    .podium-container {
+      background: linear-gradient(180deg, #24233A 0%, #1A192B 100%);
+      border-radius: var(--radius-xl);
+      padding: 3rem 2rem 2rem 2rem;
+      box-shadow: 0 20px 40px -10px rgba(36, 35, 58, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .podium-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 240px;
+      position: relative;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      margin-bottom: 0.75rem;
+    }
+
+    .podium-avatar {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 3px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: white;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .crown-icon {
+      position: absolute;
+      top: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.75rem;
+      animation: floatCrown 2s infinite ease-in-out;
+    }
+
+    @keyframes floatCrown {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-6px); }
+    }
+
+    .podium-name {
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 1rem;
+      text-align: center;
+      margin-bottom: 0.2rem;
+    }
+
+    .podium-score {
+      font-family: 'Fira Code', monospace;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: #FBBF24;
+      margin-bottom: 0.2rem;
+    }
+
+    .podium-time {
+      font-size: 0.75rem;
+      color: #94A3B8;
+      margin-bottom: 1rem;
+    }
+
+    .podium-step {
+      width: 100%;
+      border-radius: 12px 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1rem;
+      color: white;
+      font-weight: 800;
+      position: relative;
+    }
+
+    /* Rank 1 */
+    .rank-1 .podium-avatar {
+      width: 90px;
+      height: 90px;
+      border-color: #F59E0B;
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    }
+
+    .rank-1 .podium-step {
+      height: 160px;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.3) 0%, rgba(245, 158, 11, 0.1) 100%);
+      border: 1.5px solid rgba(245, 158, 11, 0.5);
+      border-bottom: none;
+    }
+
+    .rank-1 .step-number {
+      font-size: 3rem;
+      color: #F59E0B;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Rank 2 */
+    .rank-2 .podium-avatar {
+      border-color: #CBD5E1;
+      background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%);
+    }
+
+    .rank-2 .podium-step {
+      height: 120px;
+      background: linear-gradient(180deg, rgba(148, 163, 184, 0.3) 0%, rgba(148, 163, 184, 0.1) 100%);
+      border: 1.5px solid rgba(148, 163, 184, 0.5);
+      border-bottom: none;
+    }
+
+    .rank-2 .step-number {
+      font-size: 2.25rem;
+      color: #CBD5E1;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Rank 3 */
+    .rank-3 .podium-avatar {
+      border-color: #F97316;
+      background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%);
+    }
+
+    .rank-3 .podium-step {
+      height: 95px;
+      background: linear-gradient(180deg, rgba(249, 115, 22, 0.3) 0%, rgba(249, 115, 22, 0.1) 100%);
+      border: 1.5px solid rgba(249, 115, 22, 0.5);
+      border-bottom: none;
+    }
+
+    .rank-3 .step-number {
+      font-size: 2rem;
+      color: #FB923C;
+      font-family: 'Fira Code', monospace;
+    }
+
+    /* Table Section */
+    .table-section {
+      background: var(--bg-surface);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--card-shadow);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .table-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .table-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    .search-filter-box {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .search-input {
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    .lb-table-wrap {
+      overflow-x: auto;
+    }
+
+    .lb-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .lb-table th {
+      padding: 0.85rem 1rem;
+      border-bottom: 1.5px solid var(--border-color);
+      color: var(--text-sub);
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .lb-table td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+      font-size: 0.925rem;
+    }
+
+    .lb-table tr:hover {
+      background: var(--primary-surface);
+    }
+
+    .lb-table tr.my-row {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      font-weight: 600;
+    }
+
+    .rank-num-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .rank-medal-1 { background: var(--gold-light); color: var(--gold); }
+    .rank-medal-2 { background: var(--silver-light); color: var(--silver); }
+    .rank-medal-3 { background: var(--bronze-light); color: var(--bronze); }
+    .rank-medal-other { background: #F1F5F9; color: var(--text-sub); }
+
+    .user-info-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .avatar-sm {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #E2E8F0;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    .guest-pill {
+      font-size: 0.7rem;
+      background: #F1F5F9;
+      color: var(--text-muted);
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      margin-left: 0.35rem;
+    }
+
+    .score-value {
+      font-family: 'Fira Code', monospace;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--secondary);
+    }
+
+    .grade-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+    }
+
+    .grade-xs { background: #DCFCE7; color: #15803D; }
+    .grade-g { background: #E0E7FF; color: #4338CA; }
+
+    /* Sticky Bottom My Rank Bar */
+    .sticky-my-rank {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #24233A;
+      color: white;
+      padding: 0.85rem 1.5rem;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+    }
+
+    .my-rank-content {
+      max-width: 1040px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .my-rank-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .my-rank-badge {
+      background: #F59E0B;
+      color: white;
+      font-weight: 800;
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .podium-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .podium-column {
+        width: 100%;
+        max-width: 300px;
+      }
+
+      .podium-step {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="top-nav" role="banner">
+    <div class="nav-container">
+      <a href="02_home_screen.html" class="nav-logo" aria-label="Trang chủ ThiNhanh">
+        <span class="logo-icon">⚡</span>
+        <span>ThiNhanh</span>
+      </a>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="06_result_screen.html" class="btn-nav-outline">📄 Xem Kết Quả Bài Làm</a>
+        <a href="02_home_screen.html" class="btn-nav-outline">🏠 Về Trang Chủ</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-container" id="main-content">
+    
+    <!-- Title Header -->
+    <section class="leaderboard-header">
+      <h1 class="leaderboard-title">
+        <span>🏆 Bảng Vàng Vinh Danh</span>
+      </h1>
+      <span class="exam-tag">Đề Thi Thử THPT Quốc Gia Môn Toán 2026 - Mã đề 101</span>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Tổng số 25 thí sinh đã hoàn thành bài thi</p>
+    </section>
+
+    <!-- Podium Top 1-2-3 -->
+    <section class="podium-container" aria-label="Bục vinh danh Top 3">
+      
+      <!-- Rank 2 (Silver) -->
+      <div class="podium-column rank-2">
+        <div class="avatar-wrapper">
+          <div class="podium-avatar">HL</div>
+        </div>
+        <div class="podium-name">Lê Hoàng Long</div>
+        <div class="podium-score">9.75 / 10</div>
+        <div class="podium-time">⏱️ 31 phút 20 giây</div>
+        <div class="podium-step">
+          <span class="step-number">2</span>
+          <span>HẠNG NHÌ</span>
+        </div>
+      </div>
+
+      <!-- Rank 1 (Gold - Center) -->
+      <div class="podium-column rank-1">
+        <div class="avatar-wrapper">
+          <span class="crown-icon">👑</span>
+          <div class="podium-avatar">MA</div>
+        </div>
+        <div class="podium-name">Nguyễn Mai Anh</div>
+        <div class="podium-score" style="color: #FDE047;">10.00 / 10</div>
+        <div class="podium-time">⏱️ 28 phút 15 giây</div>
+        <div class="podium-step">
+          <span class="step-number">1</span>
+          <span>QUÁN QUÂN</span>
+        </div>
+      </div>
+
+      <!-- Rank 3 (Bronze) -->
+      <div class="podium-column rank-3">
+        <div class="avatar-wrapper">
+          <div class="podium-avatar">HQ</div>
+        </div>
+        <div class="podium-name">Trần Hoàng Quân <span style="font-size: 0.75rem; color: #FDBA74;">(Bạn)</span></div>
+        <div class="podium-score">9.50 / 10</div>
+        <div class="podium-time">⏱️ 34 phút 25 giây</div>
+        <div class="podium-step">
+          <span class="step-number">3</span>
+          <span>HẠNG BA</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Table Section -->
+    <section class="table-section" aria-labelledby="leaderboardTableTitle">
+      <div class="table-header-row">
+        <h2 class="table-title" id="leaderboardTableTitle">Bảng xếp hạng đầy đủ</h2>
+        <div class="search-filter-box">
+          <input type="search" class="search-input" placeholder="Tìm tên thí sinh..." aria-label="Tìm kiếm thí sinh trong bảng">
+        </div>
+      </div>
+
+      <div class="lb-table-wrap">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th style="width: 70px;">Hạng</th>
+              <th>Thí sinh</th>
+              <th>Điểm số</th>
+              <th>Thời gian hoàn thành</th>
+              <th>Thời điểm nộp</th>
+              <th>Xếp loại</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- #1 -->
+            <tr>
+              <td><span class="rank-num-badge rank-medal-1">1</span></td>
+              <td>
+                <div class="user-info-group">
+                  <div class="avatar-sm" style="background: #FEF3C7; color: #D97706;">MA</div>
+                  <strong>Nguyễn Mai Anh</strong>
+                </div>
+              </td>
+              <td><span class="score-value" style="color: #D97706;">10.00</span></td>
+              <td>28 phút 15 giây</td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">21:28:15</td>
+              <td><span class="grade-badge grade-xs">Xuất sắc</span></td>
+            </tr>
+
+            <!-- #2 -->
+            <tr>
+              <td><span class="rank-num-badge rank-medal-2">2</span></td>
+              <td>
+                <div class="user-info-group">
+                  <div class="avatar-sm" style="background: #F1F5F9; color: #64748B;">HL</div>
+                  <strong>Lê Hoàng Long</strong>
+                </div>
+              </td>
+              <td><span class="score-value" style="color: #64748B;">9.75</span></td>
+              <td>31 phút 20 giây</td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">21:31:20</td>
+              <td><span class="grade-badge grade-xs">Xuất sắc</span></td>
+            </tr>
+
+            <!-- #3 (Current user) -->
+            <tr class="my-row">
+              <td><span class="rank-num-badge rank-medal-3">3</span></td>
+              <td>
+                <div class="user-info-group">
+                  <div class="avatar-sm" style="background: var(--primary); color: white;">HQ</div>
+                  <div>
+                    <strong>Trần Hoàng Quân</strong>
+                    <span class="guest-pill">Khách • Bạn</span>
+                  </div>
+                </div>
+              </td>
+              <td><span class="score-value" style="color: var(--primary);">9.50</span></td>
+              <td>34 phút 25 giây</td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">21:34:25</td>
+              <td><span class="grade-badge grade-xs">Xuất sắc</span></td>
+            </tr>
+
+            <!-- #4 -->
+            <tr>
+              <td><span class="rank-num-badge rank-medal-other">4</span></td>
+              <td>
+                <div class="user-info-group">
+                  <div class="avatar-sm">ĐH</div>
+                  <span>Phạm Đức Huy</span>
+                </div>
+              </td>
+              <td><span class="score-value">9.25</span></td>
+              <td>36 phút 10 giây</td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">21:36:10</td>
+              <td><span class="grade-badge grade-xs">Xuất sắc</span></td>
+            </tr>
+
+            <!-- #5 -->
+            <tr>
+              <td><span class="rank-num-badge rank-medal-other">5</span></td>
+              <td>
+                <div class="user-info-group">
+                  <div class="avatar-sm">BH</div>
+                  <span>Trần Bích Hường</span>
+                </div>
+              </td>
+              <td><span class="score-value">8.75</span></td>
+              <td>38 phút 05 giây</td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">21:38:05</td>
+              <td><span class="grade-badge grade-g">Giỏi</span></td>
+            </tr>
+
+            <!-- #6 -->
+            <tr>
+              <td><span class="rank-num-badge rank-medal-other">6</span></td>
+              <td>
+                <div class="user-info-group">
+                  <div class="avatar-sm">QK</div>
+                  <div>
+                    <span>Vũ Quốc Khánh</span>
+                    <span class="guest-pill">Khách</span>
+                  </div>
+                </div>
+              </td>
+              <td><span class="score-value">8.50</span></td>
+              <td>42 phút 15 giây</td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">21:42:15</td>
+              <td><span class="grade-badge grade-g">Giỏi</span></td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Sticky Bottom User Rank Bar -->
+  <aside class="sticky-my-rank" aria-label="Thứ hạng của bạn">
+    <div class="my-rank-content">
+      <div class="my-rank-left">
+        <span class="my-rank-badge">HẠNG #3</span>
+        <span>Thí sinh: <strong>Trần Hoàng Quân</strong> (Khách)</span>
+        <span style="color: #94A3B8;">•</span>
+        <span>Điểm: <strong style="color: #FBBF24;">9.50 / 10</strong></span>
+        <span style="color: #94A3B8;">•</span>
+        <span>Thời gian: 34m 25s</span>
+      </div>
+      <div>
+        <a href="06_result_screen.html" class="btn-nav-outline" style="background: white; color: var(--secondary);">Xem chi tiết bài làm →</a>
+      </div>
+    </div>
+  </aside>
+
+</body>
+</html>

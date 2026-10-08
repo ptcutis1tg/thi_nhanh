@@ -1,9 +1,9 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 08/10/2026 *(Cập nhật sau khi quét sạch Widget thừa, loại bỏ mã mồ côi và chuẩn hóa logic)*  
+> **Ngày thực hiện:** 08/10/2026 *(Cập nhật sau khi hoàn thành Bộ Xuất Mã Nguồn Semantic HTML5/CSS phục vụ AI Stitch Redesign)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
 > **Trạng thái kiểm thử:** **173 / 173 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
-> **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu kiến trúc, hệ thống chống gian lận, điều hướng động và quy trình kiểm thử tự động.
+> **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, bộ mã nguồn xuất bản mẫu `stitch_design_export/`, tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động.
 
 ---
 
@@ -180,9 +180,19 @@ graph TD
    - `AvatarHelper` hỗ trợ đa định dạng thông minh: Network URL, Base64 URI, hoặc Memory Image với cơ chế fallback chữ cái đầu.
 2. **Tài nguyên tĩnh ứng dụng (`assets/images/`):**
    - Đồ họa UI cao cấp: `books_left.png`, `books_right.png`, `clean_login_bg.png`, `glowing_book.png`, `google_logo.png`.
-3. **Bộ nhớ cục bộ (`SharedPreferences`):**
-   - Lưu trữ `active_user_email` duy trì đăng nhập.
-   - Cơ chế lưu trữ offline bài làm thi `local_exam_attempts` khi thiết bị học sinh mất mạng lúc bấm nộp bài.
+4. **Bộ Xuất Mã Nguồn HTML5/CSS Cho AI Stitch Redesign (`stitch_design_export/`):**
+   - Bộ sưu tập 11 tệp HTML5 Semantic độc lập, tự chứa (self-contained CSS), đóng vai trò đầu vào trực tiếp cho các công cụ AI UI/UX Design (như Stitch) để tái thiết kế và nâng cấp thẩm mỹ ứng dụng:
+     - `index.html`: Cổng điều hướng trung tâm, phân loại màn hình theo nhóm chức năng, chỉ dẫn phím tắt và xem trước.
+     - `01_auth_greeting.html`: Chào mừng, đăng nhập/đăng ký, đăng nhập chế độ Khách.
+     - `02_home_screen.html`: Trang chủ học tập, TopNavBar, 8 môn học, điều hướng thông minh "Bài đang làm" & "Phòng đang diễn ra", trợ lý AI.
+     - `03_search_screen.html`: Tìm kiếm đề thi, lọc môn học, độ khó, phân trang Google Pagination.
+     - `04_exam_detail.html`: Chi tiết đề thi, thông tin tác giả, tham gia phòng thi trực tuyến hoặc tự luyện tập, quy chế phòng thi.
+     - `05_taking_exam.html`: Giao diện phòng thi thời gian thực, đồng hồ đếm ngược, thanh cảnh báo vi phạm toàn màn hình, công thức toán học LaTeX trực quan, bảng điều hướng 40 câu hỏi.
+     - `06_result_screen.html`: Kết quả thi thang điểm 10, phân tích 4 chỉ số (Đúng, Sai, Bỏ qua, Độ chính xác), luyện tập câu sai, lời giải chi tiết.
+     - `07_create_exam.html`: Soạn thảo đề thi chia 3 cột (Cây câu hỏi, Visual Math Editor với thanh ký hiệu toán học nhanh, cấu hình đề thi).
+     - `08_teacher_exams.html`: Kênh quản lý đề thi của giáo viên (Thống kê 4 chỉ số, 3 tab Tất cả/Bản nháp/Đã xuất bản, mở phòng thi, chỉnh sửa).
+     - `09_live_dashboard.html`: Bảng giám sát phòng thi trực tiếp theo thời gian thực (Mã PIN phòng, tiến độ từng học sinh, cờ vi phạm rời tab 🚩, nút thu bài cưỡng chế ⛔).
+     - `10_student_leaderboard.html`: Bảng vàng vinh danh Top 1-2-3 (Bục vinh danh, huy chương Vàng/Bạc/Đồng, xếp hạng chi tiết, nhãn Khách).
 
 ---
 
@@ -194,6 +204,7 @@ graph TD
 3. **Khả Năng Chống Lỗi Tuyệt Vời (High Resilience):** Tầng `SupabaseRetryHelper` giải quyết triệt để vấn đề lệch đồng hồ và rớt mạng. Các màn hình đều có fallback bảng trực tiếp nếu RPC gặp sự cố.
 4. **Trải Nghiệm Người Dùng (UX) & Thiết Kế Cao Cấp:** Giao diện nhất quán, đẹp mắt, font Be Vietnam Pro tối ưu tiếng Việt, phân trang Google, hỗ trợ màn hình siêu nhỏ không bao giờ bị RenderFlex overflow.
 5. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **173 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100%, tuân thủ nghiêm ngặt chuẩn TDD.
+6. **Sẵn Sàng Tái Thiết Kế & Nâng Cấp Giao Diện Với AI (AI-Ready Design Bridge):** Bộ 11 tệp HTML Semantic `stitch_design_export/` giúp các công cụ tạo sinh giao diện như Stitch hiểu chính xác cây phân cấp DOM, ngữ nghĩa nút bấm, công thức toán và trạng thái tương tác mà không bị cản trở bởi canvas Flutter Web.
 
 ### 5.2. Các Rủi Ro Tiềm Ẩn & Nút Thắt Cần Lưu Ý (Risks & Bottlenecks)
 
@@ -228,12 +239,19 @@ graph TD
   - [x] Triệt tiêu fallback UUID demo ảo `_demoExamId` và dọn dẹp bookmark RAM giả lập tại `ExamDetailScreen`.
   - [x] Khắc phục triệt để cảnh báo `use_build_context_synchronously` trên `HomeScreen` bằng cách sử dụng `State.context` và `if (!mounted) return;`.
   - [x] Duy trì 100% kiểm thử hồi quy đạt 173/173 tests PASS, mã nguồn sạch sẽ, không thêm tính năng mới.
+- ✅ **Giai đoạn 4: Bộ Xuất Mã Nguồn HTML5/CSS Cho AI Stitch Redesign (Stitch Design Export Suite):**
+  - [x] Tạo toàn bộ 10 màn hình độc lập cùng 1 trang mục lục trung tâm tại `stitch_design_export/`.
+  - [x] Cấu trúc chuẩn Semantic HTML5 (`<header>`, `<nav>`, `<main>`, `<article>`, `<aside>`, `<section>`), hỗ trợ đầy đủ ARIA roles.
+  - [x] Thiết kế thẩm mỹ Material 3 & hiện đại: tông màu Deep Violet (`#6557E8`) và Ink Navy (`#24233A`), typography Be Vietnam Pro & Fira Code, định dạng công thức toán học mô phỏng LaTeX chuẩn xác.
+  - [x] Mỗi tệp HTML độc lập 100%, tích hợp CSS nội tuyến, không phụ thuộc máy chủ hay thư viện ngoài, sẵn sàng kéo thả trực tiếp vào Stitch hoặc mở bằng trình duyệt offline.
+  - [x] Duy trì 100% kiểm thử hồi quy Flutter (173/173 tests PASS), không can thiệp hay làm ảnh hưởng logic Dart của ứng dụng.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 4: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 5: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
-2. **Giai đoạn 5: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+2. **Giai đoạn 6: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 6: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 7: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
+
