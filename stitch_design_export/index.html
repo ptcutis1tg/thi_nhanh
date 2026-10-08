@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thi Nhanh - Stitch AI Redesign Export Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-dark: #4E3EC8;
+      --primary-light: #EEECFF;
+      --bg: #F7F5FE;
+      --surface: #FFFFFF;
+      --text-main: #24233A;
+      --text-secondary: #6B7280;
+      --border: #E5E7EB;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --radius: 16px;
+      --shadow: 0 10px 25px -5px rgba(101, 87, 232, 0.08), 0 8px 10px -6px rgba(101, 87, 232, 0.04);
+      --shadow-hover: 0 20px 30px -10px rgba(101, 87, 232, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Be Vietnam Pro', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header.hub-header {
+      background: linear-gradient(135deg, #6557E8 0%, #3B28B8 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 24px;
+      margin-bottom: 36px;
+      box-shadow: 0 16px 32px rgba(101, 87, 232, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .header-text h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .header-text p {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 16px;
+      max-width: 650px;
+    }
+
+    .badge-count {
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 20px;
+      border-radius: 100px;
+      font-size: 15px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    .instructions-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .instructions-card h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .instructions-card ol {
+      padding-left: 20px;
+      color: var(--text-secondary);
+      font-size: 14.5px;
+    }
+
+    .instructions-card ol li {
+      margin-bottom: 6px;
+    }
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 24px;
+    }
+
+    .screen-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: all 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-hover);
+      border-color: #C3BAFF;
+    }
+
+    .screen-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--primary);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .screen-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .category-tag {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .tag-student { background: #E0F2FE; color: #0284C7; }
+    .tag-teacher { background: #FEF3C7; color: #D97706; }
+    .tag-auth { background: #F3E8FF; color: #9333EA; }
+    .tag-live { background: #FEE2E2; color: #DC2626; }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 18px;
+      flex-grow: 1;
+    }
+
+    .card-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .feature-pill {
+      font-size: 11.5px;
+      background: #F3F4F6;
+      color: #4B5563;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .card-action {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      flex: 1;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+    }
+
+    .btn-outline:hover {
+      background: #F9FAFB;
+      border-color: #D1D5DB;
+    }
+
+    footer.hub-footer {
+      margin-top: 50px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="hub-header">
+      <div class="header-text">
+        <h1>🚀 Thi Nhanh — Stitch AI Export Hub</h1>
+        <p>Bộ mã nguồn Semantic HTML5 & Vanilla CSS độc lập của 10 màn hình cốt lõi. Sẵn sàng tải lên công cụ AI Stitch để phân tích bố cục, hệ thống thành phần và thiết kế lại giao diện hiện đại.</p>
+      </div>
+      <div class="badge-count">10 Màn Hình Hoàn Chỉnh</div>
+    </header>
+
+    <section class="instructions-card">
+      <h2>💡 Cách Sử Dụng Cho AI Stitch & Công Cụ Thiết Kế</h2>
+      <ol>
+        <li><strong>Xem trực tiếp:</strong> Nhấp vào nút <strong>"Mở xem trang"</strong> trên bất kỳ thẻ nào để mở màn hình HTML đầy đủ trên trình duyệt.</li>
+        <li><strong>Đưa cho AI Stitch:</strong> Kéo thả trực tiếp file <code>.html</code> tương ứng vào Stitch hoặc copy toàn bộ mã nguồn HTML & CSS của trang vào prompt thiết kế.</li>
+        <li><strong>Thiết kế độc lập:</strong> Mỗi file đều tự chứa (self-contained) toàn bộ thẻ HTML5 ngữ nghĩa và bảng màu Material 3 + Be Vietnam Pro, không phụ thuộc thư viện ngoài.</li>
+      </ol>
+    </section>
+
+    <main class="screens-grid">
+      <!-- 01: Auth & Greeting -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">01</div>
+          <span class="category-tag tag-auth">Xác Thực & Chào Đón</span>
+        </div>
+        <h3 class="card-title">Màn hình Chào mừng & Đăng nhập</h3>
+        <p class="card-desc">Hero banner quyển sách phát sáng, Form đăng nhập Email/Mật khẩu, Đăng ký OTP và chế độ Khách tham gia nhanh không cần mật khẩu.</p>
+        <div class="card-features">
+          <span class="feature-pill">Glowing Book Hero</span>
+          <span class="feature-pill">Chế độ Khách</span>
+          <span class="feature-pill">OTP Mailer Flow</span>
+        </div>
+        <div class="card-action">
+          <a href="01_auth_greeting.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 02: Home Screen -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">02</div>
+          <span class="category-tag tag-student">Trang Chủ Học Sinh</span>
+        </div>
+        <h3 class="card-title">Trang Chủ & Điều Hướng Thông Minh</h3>
+        <p class="card-desc">Top Navigation bar cố định, 8 chip môn học phổ thông, ô nhập nhanh mã phòng PT, thẻ "Bài Đang Làm", "Phòng Đang Diễn Ra", đề thi nổi bật.</p>
+        <div class="card-features">
+          <span class="feature-pill">TopNavBar</span>
+          <span class="feature-pill">8 Môn học Chips</span>
+          <span class="feature-pill">Smart Navigation</span>
+        </div>
+        <div class="card-action">
+          <a href="02_home_screen.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 03: Search Screen -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">03</div>
+          <span class="category-tag tag-student">Khám Phá Đề</span>
+        </div>
+        <h3 class="card-title">Tìm Kiếm & Bộ Lọc Đề Thi</h3>
+        <p class="card-desc">Ô tìm kiếm từ khóa, thanh lọc 8 môn học, lọc độ khó (Dễ/TB/Khó), danh thiệp đề thi có thời gian tương đối động và thanh phân trang Google.</p>
+        <div class="card-features">
+          <span class="feature-pill">Relative Time</span>
+          <span class="feature-pill">Google Pagination</span>
+          <span class="feature-pill">Bộ Lọc Đa Tầng</span>
+        </div>
+        <div class="card-action">
+          <a href="03_search_screen.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 04: Exam Detail -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">04</div>
+          <span class="category-tag tag-student">Thông Tin Đề Thi</span>
+        </div>
+        <h3 class="card-title">Chi Tiết Đề Thi & Bắt Đầu Luyện</h3>
+        <p class="card-desc">Tóm tắt cấu trúc đề thi, số lượng câu, thời gian làm bài, action panel nhập mã phòng thi / tự luyện, lưu đề và hướng dẫn quy chế.</p>
+        <div class="card-features">
+          <span class="feature-pill">Breadcrumbs</span>
+          <span class="feature-pill">Action Panel</span>
+          <span class="feature-pill">Quy chế phòng thi</span>
+        </div>
+        <div class="card-action">
+          <a href="04_exam_detail.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 05: Taking Exam -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">05</div>
+          <span class="category-tag tag-student">Làm Bài Thi</span>
+        </div>
+        <h3 class="card-title">Làm Bài Thi & Chống Gian Lận</h3>
+        <p class="card-desc">Đồng hồ đếm ngược, thanh cảnh báo chuyển tab 4 cấp độ, nội dung câu hỏi Toán học render LaTeX, 4 đáp án A/B/C/D và bảng lưới 1-40 câu.</p>
+        <div class="card-features">
+          <span class="feature-pill">LaTeX Math Block</span>
+          <span class="feature-pill">Anti-Cheat Banner</span>
+          <span class="feature-pill">Bảng câu hỏi 1-40</span>
+        </div>
+        <div class="card-action">
+          <a href="05_taking_exam.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 06: Result Screen -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">06</div>
+          <span class="category-tag tag-student">Kết Quả Điểm Số</span>
+        </div>
+        <h3 class="card-title">Kết Quả Bài Thi & Luyện Câu Sai</h3>
+        <p class="card-desc">Huy hiệu điểm số lớn thang điểm 10, card thống kê Đúng/Sai/Bỏ qua, nút luyện lại câu sai và bảng đối chiếu đáp án chi tiết từng câu.</p>
+        <div class="card-features">
+          <span class="feature-pill">Score Badge Thang 10</span>
+          <span class="feature-pill">Thống kê 3 cột</span>
+          <span class="feature-pill">Luyện Câu Sai</span>
+        </div>
+        <div class="card-action">
+          <a href="06_result_screen.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 07: Create Exam -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">07</div>
+          <span class="category-tag tag-teacher">Soạn Đề Giáo Viên</span>
+        </div>
+        <h3 class="card-title">Soạn Thảo Đề Thi Chuyên Sâu</h3>
+        <p class="card-desc">Sidebar cây câu hỏi trái, trình soạn thảo công thức Toán Visual Math & LaTeX, danh sách đáp án, thanh công cụ ký hiệu toán học đáy trang.</p>
+        <div class="card-features">
+          <span class="feature-pill">Visual Math Editor</span>
+          <span class="feature-pill">LaTeX Toolbar</span>
+          <span class="feature-pill">Cây câu hỏi Sidebar</span>
+        </div>
+        <div class="card-action">
+          <a href="07_create_exam.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 08: Teacher Exams -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">08</div>
+          <span class="category-tag tag-teacher">Kho Đề Thi</span>
+        </div>
+        <h3 class="card-title">Quản Lý Kho Đề Thi Trắc Nghiệm</h3>
+        <p class="card-desc">Quản lý kho đề thi với 3 tabs: Tất cả, Đề nháp, Đã công khai kèm huy hiệu số lượng, thanh tìm kiếm, lọc môn học và các action Xuất bản / Sửa / Xóa.</p>
+        <div class="card-features">
+          <span class="feature-pill">3 Tab Badges</span>
+          <span class="feature-pill">Thao tác Xuất bản</span>
+          <span class="feature-pill">M3 Card Design</span>
+        </div>
+        <div class="card-action">
+          <a href="08_teacher_exams.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 09: Live Dashboard -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">09</div>
+          <span class="category-tag tag-live">Giám Sát Phòng Thi</span>
+        </div>
+        <h3 class="card-title">Giám Sát Phòng Thi Trực Tiếp</h3>
+        <p class="card-desc">Theo dõi tiến độ nộp bài của học sinh thời gian thực (X/Y câu thực tế), gắn cờ đỏ cảnh báo rời tab 🚩 và hiển thị trạng thái cưỡng chế thu bài ⛔.</p>
+        <div class="card-features">
+          <span class="feature-pill">Realtime Monitoring</span>
+          <span class="feature-pill">Cờ Đỏ Vi Phạm 🚩</span>
+          <span class="feature-pill">Huy hiệu Thu bài ⛔</span>
+        </div>
+        <div class="card-action">
+          <a href="09_live_dashboard.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+
+      <!-- 10: Student Leaderboard -->
+      <article class="screen-card">
+        <div class="card-top">
+          <div class="screen-num">10</div>
+          <span class="category-tag tag-student">Vinh Danh & Thành Tích</span>
+        </div>
+        <h3 class="card-title">Bảng Xếp Hạng & Bục Vinh Danh</h3>
+        <p class="card-desc">Bục vinh danh Top 1 Vàng, Top 2 Bạc, Top 3 Đồng, bảng vàng thành tích giải đấu, phân giải tên thật từ profiles và gắn nhãn phân biệt (Khách).</p>
+        <div class="card-features">
+          <span class="feature-pill">Podium Top 1-2-3</span>
+          <span class="feature-pill">Nhãn Khách chuẩn hóa</span>
+          <span class="feature-pill">Bảng Vàng Thành Tích</span>
+        </div>
+        <div class="card-action">
+          <a href="10_student_leaderboard.html" class="btn btn-primary" target="_blank">Mở xem trang ↗</a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="hub-footer">
+      <p>Hệ Thống Ôn Thi Trắc Nghiệm Thông Minh — Thi Nhanh (Onthi Community) • Xuất bản HTML phục vụ AI Stitch Redesign</p>
+    </footer>
+  </div>
+</body>
+</html>
