@@ -157,25 +157,38 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
 
     // Kiểm tra mã bí mật kích hoạt chế độ nhà phát triển (18366767, 67676767)
-    final devService = context.read<DeveloperModeService>();
-    final authProvider = context.read<AuthProvider>();
+    DeveloperModeService? devService;
+    try {
+      devService = context.read<DeveloperModeService>();
+    } catch (_) {
+      devService = null;
+    }
+
+    if (devService != null) {
+      try {
+        final isSecret = await devService.handleRoomCode(code);
+        if (isSecret) {
+          _joinRoomController.clear();
+          return;
+        }
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+
+    AuthProvider? authProvider;
+    try {
+      authProvider = context.read<AuthProvider>();
+    } catch (_) {
+      authProvider = null;
+    }
+
     RoomRepository? roomRepo;
     try {
       roomRepo = context.read<RoomRepository>();
     } catch (_) {
       roomRepo = null;
     }
-
-    // Kiểm tra mã bí mật kích hoạt chế độ nhà phát triển (18366767, 67676767)
-    try {
-      final isSecret = await devService.handleRoomCode(code);
-      if (isSecret) {
-        _joinRoomController.clear();
-        return;
-      }
-    } catch (_) {}
-
-    if (!mounted) return;
 
     if (roomRepo == null) {
       context.go('/student_waiting_room?roomId=$code');
@@ -193,7 +206,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     if (!mounted) return;
 
-    if (!authProvider.isAuthenticated) {
+    final isAuth = authProvider?.isAuthenticated ?? false;
+    if (!isAuth) {
       showDialog(
         context: context,
         builder: (ctx) => JoinRoomGuestDialog(
