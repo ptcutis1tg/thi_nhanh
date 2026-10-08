@@ -257,8 +257,9 @@ class _ExamSummaryCard extends StatelessWidget {
         padding: const EdgeInsets.all(26),
         decoration: BoxDecoration(
           color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           border: Border.all(color: AppTheme.border),
+          boxShadow: AppTheme.luminescenceShadow,
         ),
         child: LayoutBuilder(builder: (context, constraints) {
           final narrow = constraints.maxWidth < 760;
@@ -325,8 +326,9 @@ class _ActionPanel extends StatelessWidget {
         padding: const EdgeInsets.all(26),
         decoration: BoxDecoration(
           color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: const Border(top: BorderSide(color: AppTheme.primary, width: 3)),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+          border: Border.all(color: AppTheme.border),
+          boxShadow: AppTheme.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

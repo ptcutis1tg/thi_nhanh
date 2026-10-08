@@ -464,11 +464,11 @@ class _GreetingScreenState extends State<GreetingScreen> {
                               : (_isRegisterMode ? _handleEmailRegister : _handleEmailLogin),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            backgroundColor: const Color(0xFF8B72F6),
+                            backgroundColor: AppTheme.primary,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(100),
+                              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             ),
                           ),
                           child: _isLoading
@@ -489,35 +489,30 @@ class _GreetingScreenState extends State<GreetingScreen> {
                                 ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
-                        // Guest Button Link ("Thi ngay với mã phòng (Guest)")
-                        Center(
-                          child: InkWell(
-                            onTap: () => context.go('/home'),
-                            borderRadius: BorderRadius.circular(8),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(
-                                    Icons.login_rounded,
-                                    size: 18,
-                                    color: Color(0xFF475569),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Thi ngay với mã phòng (Guest)',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF334155),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                        // Guest Button Link ("Trải nghiệm ngay (Chế độ Khách)")
+                        OutlinedButton.icon(
+                          onPressed: () => context.go('/home'),
+                          icon: const Icon(
+                            Icons.explore_outlined,
+                            size: 18,
+                            color: AppTheme.primary,
+                          ),
+                          label: const Text(
+                            'Trải nghiệm ngay (Chế độ Khách)',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.primary,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppTheme.primaryLight, width: 1.2),
+                            backgroundColor: AppTheme.surfaceLavender.withValues(alpha: 0.6),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             ),
                           ),
                         ),
@@ -575,24 +570,24 @@ class _GreetingScreenState extends State<GreetingScreen> {
     return InputDecoration(
       hintText: hintText,
       hintStyle: const TextStyle(
-        color: Color(0xFF94A3B8),
+        color: AppTheme.textPlaceholder,
         fontSize: 14,
         fontWeight: FontWeight.w400,
       ),
       filled: true,
-      fillColor: const Color(0xFFF8FAFC),
+      fillColor: AppTheme.background,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(AppTheme.inputRadius),
+        borderSide: const BorderSide(color: AppTheme.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+        borderRadius: BorderRadius.circular(AppTheme.inputRadius),
+        borderSide: const BorderSide(color: AppTheme.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF8B72F6), width: 1.5),
+        borderRadius: BorderRadius.circular(AppTheme.inputRadius),
+        borderSide: const BorderSide(color: AppTheme.primary, width: 1.8),
       ),
       suffixIcon: suffixIcon,
     );

@@ -290,6 +290,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 // 1. HEADER SECTION (User Profile & Quick Room Entry)
                 _buildHeaderSection(context, authProvider, avatarImage, isMobile),
 
+                if (isStudent) ...[
+                  const SizedBox(height: 18),
+                  _buildSubjectChipsRow(context),
+                ],
+
                 const SizedBox(height: 20),
 
                 // WORKSPACE MODE SWITCHER (Học tập & Thi thử ⇄ Soạn đề & Quản lý)
@@ -607,6 +612,64 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubjectChipsRow(BuildContext context) {
+    final subjects = [
+      {'name': 'Toán học', 'icon': '🧮'},
+      {'name': 'Vật lý', 'icon': '⚛️'},
+      {'name': 'Hóa học', 'icon': '🧪'},
+      {'name': 'Tiếng Anh', 'icon': '🌐'},
+      {'name': 'Sinh học', 'icon': '🧬'},
+      {'name': 'Lịch sử', 'icon': '🏛️'},
+      {'name': 'Địa lý', 'icon': '🗺️'},
+      {'name': 'Ngữ văn', 'icon': '📚'},
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: subjects.map((sub) {
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: InkWell(
+              onTap: () => context.go('/search?subject=${sub['name']}'),
+              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  border: Border.all(color: AppTheme.border),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x06000000),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(sub['icon']!, style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 8),
+                    Text(
+                      sub['name']!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textMain,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
