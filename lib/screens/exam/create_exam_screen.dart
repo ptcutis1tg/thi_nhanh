@@ -420,19 +420,21 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           Expanded(
             child: Row(
               children: [
-                Text(
-                  _examNameController.text.isEmpty ? 'Soạn đề thi' : _examNameController.text,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
+                Flexible(
+                  child: Text(
+                    _examNameController.text.isEmpty ? 'Soạn đề thi' : _examNameController.text,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                   decoration: BoxDecoration(
                     color: _status == 'published'
                         ? AppTheme.success.withValues(alpha: 0.1)
                         : Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                   ),
                   child: Text(
                     _status == 'published' ? 'Đã xuất bản' : 'Bản nháp',
@@ -475,8 +477,13 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 860),
-          child: Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+              border: Border.all(color: AppTheme.border),
+              boxShadow: AppTheme.cardShadow,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(28),
               child: Column(
@@ -486,14 +493,19 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppTheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          color: AppTheme.surfaceLavender,
+                          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                          border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
                         ),
                         child: Text(
                           'CÂU ${_activeQuestionIndex + 1}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary, fontSize: 15),
+                          style: AppTheme.firaCodeStyle.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primary,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 14),
@@ -502,7 +514,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppTheme.border),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<QuestionType>(
@@ -542,9 +554,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                         child: TextField(
                           controller: TextEditingController(text: question.points),
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Điểm',
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputRadius)),
                           ),
                           onChanged: (val) => question.points = val,
                         ),
@@ -556,10 +569,11 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                           child: TextField(
                             controller: TextEditingController(text: question.timeLimitSeconds?.toString() ?? ''),
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Giây / câu',
                               suffixText: 's',
-                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputRadius)),
                             ),
                             onChanged: (val) => question.timeLimitSeconds = int.tryParse(val),
                           ),
@@ -597,8 +611,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppTheme.surfaceLavender.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppTheme.cardRadius / 2),
                       border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
                     ),
                     child: Column(
@@ -670,6 +684,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
             onPressed: _isLoading ? null : _saveDraft,
             icon: const Icon(Icons.save_outlined, size: 18),
             label: const Text('Lưu bản nháp'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            ),
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
@@ -679,6 +697,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              elevation: 2,
             ),
           ),
         ],
@@ -693,36 +714,81 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
             padding: const EdgeInsets.all(32),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 640),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(36),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Icon(Icons.menu_book_rounded, color: AppTheme.primary, size: 36),
-                    const SizedBox(height: 16),
-                    Text('Tạo đề mới', style: Theme.of(context).textTheme.headlineSmall),
-                    const SizedBox(height: 8),
-                    const Text('Nhập thông tin chung một lần. Sau đó bạn chỉ tập trung soạn câu hỏi.', style: TextStyle(color: AppTheme.textSecondary)),
-                    const SizedBox(height: 28),
-                    TextField(key: const Key('setup-name'), controller: _examNameController, decoration: const InputDecoration(labelText: 'Tên đề thi *', hintText: 'Ví dụ: Ôn tập Toán 12 chương 1')),
-                    const SizedBox(height: 18),
-                    DropdownButtonFormField<String>(
-                      key: const Key('setup-subject'),
-                      value: _selectedSubject,
-                      decoration: const InputDecoration(labelText: 'Môn học *'),
-                      items: const [
-                        DropdownMenuItem(value: 'Toán', child: Text('Toán')),
-                        DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
-                        DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
-                        DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
-                      ],
-                      onChanged: (value) => setState(() => _selectedSubject = value),
-                    ),
-                    const SizedBox(height: 18),
-                    TextField(controller: _durationController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Thời lượng (phút)', suffixText: 'phút')),
-                    const SizedBox(height: 28),
-                    SizedBox(width: double.infinity, child: ElevatedButton.icon(key: const Key('setup-continue'), onPressed: _configureExam, icon: const Icon(Icons.arrow_forward), label: const Text('Bắt đầu soạn câu hỏi'))),
-                  ]),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                  border: Border.all(color: AppTheme.border),
+                  boxShadow: AppTheme.luminescenceShadow,
                 ),
+                padding: const EdgeInsets.all(36),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceLavender,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.menu_book_rounded, color: AppTheme.primary, size: 32),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Tạo đề mới', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Nhập thông tin chung một lần. Sau đó bạn chỉ tập trung soạn câu hỏi.', style: TextStyle(color: AppTheme.textSecondary)),
+                  const SizedBox(height: 28),
+                  TextField(
+                    key: const Key('setup-name'),
+                    controller: _examNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Tên đề thi *',
+                      hintText: 'Ví dụ: Ôn tập Toán 12 chương 1',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputRadius)),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  DropdownButtonFormField<String>(
+                    key: const Key('setup-subject'),
+                    value: _selectedSubject,
+                    decoration: InputDecoration(
+                      labelText: 'Môn học *',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputRadius)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Toán', child: Text('Toán')),
+                      DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
+                      DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
+                      DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
+                    ],
+                    onChanged: (value) => setState(() => _selectedSubject = value),
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: _durationController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Thời lượng (phút)',
+                      suffixText: 'phút',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.inputRadius)),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      key: const Key('setup-continue'),
+                      onPressed: _configureExam,
+                      icon: const Icon(Icons.arrow_forward),
+                      label: const Text('Bắt đầu soạn câu hỏi'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
+                ]),
               ),
             ),
           ),

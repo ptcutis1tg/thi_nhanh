@@ -151,11 +151,9 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF24233a),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
+        color: AppTheme.primaryDark,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        boxShadow: AppTheme.luminescenceShadow,
       ),
       child: Wrap(
         alignment: WrapAlignment.spaceBetween,
@@ -194,18 +192,23 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                         context.pop();
                         context.go('/home');
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppTheme.error),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                      ),
                       child: const Text('Đóng phòng thi'),
                     ),
                   ],
                 ),
               );
             },
-            icon: const Icon(Icons.stop_circle, color: Colors.white),
-            label: const Text('Kết thúc Phòng thi', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.stop_circle_outlined, color: Colors.white),
+            label: const Text('Kết thúc Phòng thi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: Colors.white38),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
             ),
           ),
         ],
@@ -226,21 +229,21 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
             title: 'SỐ HỌC SINH',
             value: '${_students.length}',
             subtitle: 'Đang kết nối phòng',
-            icon: Icons.people,
+            icon: Icons.people_outline,
             color: AppTheme.primary,
           ),
           _buildMetricCard(
             title: 'ĐANG LÀM BÀI',
             value: '$inProgressCount',
             subtitle: 'Đang tương tác làm bài',
-            icon: Icons.edit_note,
+            icon: Icons.edit_note_rounded,
             color: AppTheme.warning,
           ),
           _buildMetricCard(
             title: 'ĐÃ NỘP BÀI',
             value: '$completedCount',
             subtitle: 'Hoàn thành bài thi',
-            icon: Icons.task_alt,
+            icon: Icons.task_alt_rounded,
             color: AppTheme.success,
           ),
           if (violationCount > 0)
@@ -286,20 +289,19 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 28),
@@ -316,7 +318,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: AppTheme.firaCodeStyle.copyWith(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   subtitle,
@@ -334,10 +336,9 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

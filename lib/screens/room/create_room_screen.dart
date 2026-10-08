@@ -145,22 +145,29 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
                   ),
                   const SizedBox(height: 32),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: AppTheme.border),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                      boxShadow: AppTheme.luminescenceShadow,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 1. Thông tin cơ bản
-                          const Row(
-                            children: [
-                              Icon(Icons.meeting_room_outlined, color: AppTheme.primary),
-                              SizedBox(width: 8),
+                    child: Card(
+                      elevation: 0,
+                      margin: EdgeInsets.zero,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                        side: const BorderSide(color: AppTheme.border),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1. Thông tin cơ bản
+                            const Row(
+                              children: [
+                                Icon(Icons.meeting_room_outlined, color: AppTheme.primary),
+                                SizedBox(width: 8),
                               Text(
                                 '1. Thông tin phòng thi',
                                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -469,14 +476,24 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                             height: 54,
                             child: ElevatedButton.icon(
                               onPressed: (_selectedExam == null || _isCreating) ? null : _createRoom,
-                              icon: const Icon(Icons.play_arrow),
-                              label: Text(_isCreating ? 'Đang khởi tạo...' : 'Khởi tạo phòng thi'),
+                              icon: const Icon(Icons.play_arrow_rounded),
+                              label: Text(
+                                _isCreating ? 'Đang khởi tạo...' : 'Khởi tạo phòng thi',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                                elevation: 2,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+                ),
                 ],
               ),
             ),

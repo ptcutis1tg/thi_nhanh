@@ -110,18 +110,12 @@ class RoomQrDialog extends StatelessWidget {
 
                 // QR Code Container
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppTheme.border, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+                    border: Border.all(color: AppTheme.primaryLight, width: 2),
+                    boxShadow: AppTheme.luminescenceShadow,
                   ),
                   child: QrImageView(
                     data: _joinUrl,
@@ -158,20 +152,20 @@ class RoomQrDialog extends StatelessWidget {
                 // Room Code Box
                 InkWell(
                   onTap: () => _copyCode(context),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
                     decoration: BoxDecoration(
-                      color: AppTheme.background,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.border),
+                      color: AppTheme.surfaceLavender,
+                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                      border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           roomCode,
-                          style: const TextStyle(
+                          style: AppTheme.firaCodeStyle.copyWith(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.primary,
@@ -179,7 +173,7 @@ class RoomQrDialog extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        const Icon(Icons.copy, size: 20, color: AppTheme.primary),
+                        const Icon(Icons.copy_rounded, size: 20, color: AppTheme.primary),
                       ],
                     ),
                   ),
@@ -192,12 +186,14 @@ class RoomQrDialog extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () => _copyLink(context),
-                        icon: const Icon(Icons.link),
+                        icon: const Icon(Icons.link_rounded),
                         label: const Text('Sao chép link vào phòng'),
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                           ),
                         ),
                       ),
@@ -208,7 +204,7 @@ class RoomQrDialog extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                         ),
                       ),
                       child: const Text('Đóng'),

@@ -212,19 +212,25 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => context.go('/home'),
-                          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          '📁 Quản Lý Kho Đề Thi Trắc Nghiệm',
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-                        ),
-                      ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => context.go('/home'),
+                            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
+                          ),
+                          const SizedBox(width: 8),
+                          const Flexible(
+                            child: Text(
+                              '📁 Quản Lý Kho Đề Thi Trắc Nghiệm',
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 12),
                     ElevatedButton.icon(
                       onPressed: () => context.go('/create_exam'),
                       icon: const Icon(Icons.add_rounded),
@@ -232,8 +238,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                        elevation: 2,
                       ),
                     ),
                   ],
@@ -247,7 +254,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
                       border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
                     ),
                     child: Row(
@@ -275,6 +282,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD97706),
                             foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
                           ),
                           child: const Text('Đăng nhập ngay'),
                         ),
@@ -289,8 +297,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5E0F8)),
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                    border: Border.all(color: AppTheme.border),
+                    boxShadow: AppTheme.cardShadow,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -317,12 +326,12 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFFE5E0F8)),
+                            borderRadius: BorderRadius.circular(AppTheme.inputRadius),
+                            borderSide: const BorderSide(color: AppTheme.border),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFFE5E0F8)),
+                            borderRadius: BorderRadius.circular(AppTheme.inputRadius),
+                            borderSide: const BorderSide(color: AppTheme.border),
                           ),
                         ),
                       ),
@@ -354,9 +363,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           ),
                           backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             side: BorderSide(
-                              color: isSelected ? AppTheme.primary : const Color(0xFFE5E0F8),
+                              color: isSelected ? AppTheme.primary : AppTheme.border,
                             ),
                           ),
                         ),
@@ -392,13 +401,13 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     final isActive = _activeTab == tabKey;
     return InkWell(
       onTap: () => setState(() => _activeTab = tabKey),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? AppTheme.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppTheme.pillRadius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -439,8 +448,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E0F8)),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         children: [
@@ -460,7 +470,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
             ),
           ),
         ],
@@ -476,23 +486,17 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         border: Border.all(
-          color: isDraft ? const Color(0xFFFDE68A) : const Color(0xFFE5E0F8),
+          color: isDraft ? const Color(0xFFFDE68A) : AppTheme.border,
           width: isDraft ? 1.5 : 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
           onTap: () {
             if (isDraft) {
               context.go('/create_exam?examId=${exam.id}');
@@ -509,8 +513,8 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: isDraft ? const Color(0xFFFFFBEB) : const Color(0xFFF0ECFF),
-                    borderRadius: BorderRadius.circular(16),
+                    color: isDraft ? const Color(0xFFFFFBEB) : AppTheme.surfaceLavender,
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
                     isDraft ? Icons.edit_note_rounded : Icons.assignment_outlined,
@@ -541,7 +545,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: isDraft ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5),
-                              borderRadius: BorderRadius.circular(100),
+                              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -589,7 +593,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -600,7 +604,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                         label: const Text('Sửa'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -620,7 +624,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           backgroundColor: AppTheme.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -631,7 +635,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                         label: const Text('Xem chi tiết'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
                         ),
                       ),
                       const SizedBox(width: 4),
