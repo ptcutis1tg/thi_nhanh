@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thi Nhanh - Tìm Kiếm & Khám Phá Đề Thi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-dark: #4E3EC8;
+      --primary-light: #EEECFF;
+      --bg: #F7F5FE;
+      --surface: #FFFFFF;
+      --text-main: #24233A;
+      --text-secondary: #6B7280;
+      --border: #E5E7EB;
+      --radius: 16px;
+      --shadow: 0 4px 18px rgba(101, 87, 232, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Be Vietnam Pro', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      padding-bottom: 60px;
+    }
+
+    header.top-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .nav-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--primary);
+      color: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .nav-brand h1 {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-link {
+      padding: 8px 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .nav-link.active {
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 24px;
+    }
+
+    /* Search Header Bar */
+    .search-panel {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      color: var(--text-secondary);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 14px 18px 14px 48px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(101, 87, 232, 0.15);
+    }
+
+    .filter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .subjects-filter {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .filter-chip {
+      padding: 7px 14px;
+      border-radius: 100px;
+      background: #F3F4F6;
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .dropdown-filters {
+      display: flex;
+      gap: 10px;
+    }
+
+    .select-filter {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      background: white;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Result Meta */
+    .result-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Exam Cards List */
+    .exams-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+
+    .exam-row-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+      gap: 20px;
+    }
+
+    .exam-row-card:hover {
+      border-color: #C3BAFF;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(101, 87, 232, 0.1);
+    }
+
+    .exam-main {
+      flex: 1;
+    }
+
+    .exam-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .subject-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .code-pill {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--text-secondary);
+    }
+
+    .time-relative {
+      font-size: 12px;
+      color: #9CA3AF;
+      margin-left: auto;
+    }
+
+    .exam-title-link {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-decoration: none;
+      margin-bottom: 8px;
+      display: inline-block;
+      transition: color 0.2s;
+    }
+
+    .exam-title-link:hover {
+      color: var(--primary);
+    }
+
+    .exam-specs {
+      display: flex;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .exam-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .btn-take {
+      padding: 10px 20px;
+      background: var(--primary);
+      color: white;
+      text-decoration: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-take:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Google Pagination Bar */
+    .pagination-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .page-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-main);
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .page-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    @media (max-width: 768px) {
+      .exam-row-card {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .exam-actions {
+        width: 100%;
+      }
+      .btn-take {
+        width: 100%;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-nav">
+    <div class="nav-container">
+      <a href="02_home_screen.html" class="nav-brand">
+        <div class="nav-logo">⚡</div>
+        <h1>Thi Nhanh</h1>
+      </a>
+      <ul class="nav-links">
+        <li><a href="02_home_screen.html" class="nav-link">Trang Chủ</a></li>
+        <li><a href="03_search_screen.html" class="nav-link active">Khám Phá Đề</a></li>
+        <li><a href="10_student_leaderboard.html" class="nav-link">Bảng Xếp Hạng</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Search & Filter Panel -->
+    <section class="search-panel">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" placeholder="Tìm kiếm theo tên đề, mã đề, môn học hoặc tác giả..." value="Vật lý 12">
+      </div>
+
+      <div class="filter-row">
+        <div class="subjects-filter">
+          <button class="filter-chip">Tất Cả</button>
+          <button class="filter-chip">Toán</button>
+          <button class="filter-chip active">Vật Lý</button>
+          <button class="filter-chip">Hóa Học</button>
+          <button class="filter-chip">Sinh Học</button>
+          <button class="filter-chip">Tiếng Anh</button>
+          <button class="filter-chip">Lịch Sử</button>
+        </div>
+
+        <div class="dropdown-filters">
+          <select class="select-filter">
+            <option>Mọi độ khó</option>
+            <option>Dễ</option>
+            <option>Trung bình</option>
+            <option selected>Khó</option>
+          </select>
+          <select class="select-filter">
+            <option>Mới nhất</option>
+            <option>Làm nhiều nhất</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Header -->
+    <div class="result-info">
+      <span>Tìm thấy <strong>18 đề thi</strong> môn Vật Lý</span>
+      <span>Hiển thị trang 1 / 2</span>
+    </div>
+
+    <!-- Exams List -->
+    <div class="exams-list">
+      <article class="exam-row-card">
+        <div class="exam-main">
+          <div class="exam-badge-row">
+            <span class="subject-pill">Vật Lý</span>
+            <span class="code-pill">DT100002</span>
+            <span class="time-relative">⏱️ 15 phút trước</span>
+          </div>
+          <a href="04_exam_detail.html" class="exam-title-link">Ôn Tập Dao Động Cơ Học Chuyên Sâu - Đề Số 01</a>
+          <div class="exam-specs">
+            <span>👨‍🏫 Cô Lê Thị B</span>
+            <span>📝 40 câu trắc nghiệm</span>
+            <span>⏳ 50 phút</span>
+            <span>⭐ 4.9/5</span>
+          </div>
+        </div>
+        <div class="exam-actions">
+          <a href="04_exam_detail.html" class="btn-take">Làm Bài Ngay ↗</a>
+        </div>
+      </article>
+
+      <article class="exam-row-card">
+        <div class="exam-main">
+          <div class="exam-badge-row">
+            <span class="subject-pill">Vật Lý</span>
+            <span class="code-pill">DT100015</span>
+            <span class="time-relative">⏱️ 2 giờ trước</span>
+          </div>
+          <a href="04_exam_detail.html" class="exam-title-link">Khảo Sát Chất Lượng Sóng Cơ Học & Sóng Âm (Chuẩn Bộ GD)</a>
+          <div class="exam-specs">
+            <span>👨‍🏫 Thầy Hoàng Văn Nam</span>
+            <span>📝 40 câu trắc nghiệm</span>
+            <span>⏳ 50 phút</span>
+            <span>⭐ 4.8/5</span>
+          </div>
+        </div>
+        <div class="exam-actions">
+          <a href="04_exam_detail.html" class="btn-take">Làm Bài Ngay ↗</a>
+        </div>
+      </article>
+
+      <article class="exam-row-card">
+        <div class="exam-main">
+          <div class="exam-badge-row">
+            <span class="subject-pill">Vật Lý</span>
+            <span class="code-pill">DT100022</span>
+            <span class="time-relative">⏱️ Hôm qua</span>
+          </div>
+          <a href="04_exam_detail.html" class="exam-title-link">Luyện Đề Dòng Điện Xoay Chiều Nâng Cao (Vận Dụng Cao 8.5+)</a>
+          <div class="exam-specs">
+            <span>👨‍🏫 Thầy Nguyễn Tuấn Anh</span>
+            <span>📝 50 câu trắc nghiệm</span>
+            <span>⏳ 60 phút</span>
+            <span>⭐ 5.0/5</span>
+          </div>
+        </div>
+        <div class="exam-actions">
+          <a href="04_exam_detail.html" class="btn-take">Làm Bài Ngay ↗</a>
+        </div>
+      </article>
+    </div>
+
+    <!-- Google Pagination Bar -->
+    <nav class="pagination-bar">
+      <a href="#" class="page-btn">‹</a>
+      <a href="#" class="page-btn active">1</a>
+      <a href="#" class="page-btn">2</a>
+      <a href="#" class="page-btn">3</a>
+      <span style="padding: 0 4px; color: var(--text-secondary);">...</span>
+      <a href="#" class="page-btn">6</a>
+      <a href="#" class="page-btn">›</a>
+    </nav>
+  </main>
+</body>
+</html>
