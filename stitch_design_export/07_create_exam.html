@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soạn Thảo Đề Thi - Visual Math Editor - ThiNhanh</title>
+  <meta name="description" content="Trình soạn thảo đề thi trắc nghiệm trực quan dành cho giáo viên với thanh công cụ toán học Visual Math, quản lý câu hỏi kéo thả và phân loại độ khó.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-hover: #5043D4;
+      --primary-light: #F0EDFD;
+      --primary-surface: #F7F5FE;
+      --secondary: #24233A;
+      --text-main: #1E1B2E;
+      --text-muted: #64748B;
+      --text-sub: #475569;
+      --border-color: #E2E8F0;
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --card-shadow: 0 4px 16px -2px rgba(101, 87, 232, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 12px 28px -4px rgba(101, 87, 232, 0.16);
+      --success: #10B981;
+      --success-light: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-light: #FFFBEB;
+      --danger: #EF4444;
+      --danger-light: #FEF2F2;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Top Navigation Editor Bar */
+    .editor-top-nav {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex: 1;
+    }
+
+    .btn-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-back-link:hover {
+      background: var(--primary-surface);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .exam-title-input {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--secondary);
+      border: 1px solid transparent;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-sm);
+      outline: none;
+      flex: 1;
+      max-width: 450px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .exam-title-input:hover {
+      border-color: var(--border-color);
+      background: var(--bg-canvas);
+    }
+
+    .exam-title-input:focus {
+      border-color: var(--primary);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(101, 87, 232, 0.15);
+    }
+
+    .draft-badge {
+      background: #FEF3C7;
+      color: #B45309;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .nav-right-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-save-draft {
+      padding: 0.55rem 1.15rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn-save-draft:hover {
+      background: var(--bg-canvas);
+      border-color: var(--text-muted);
+    }
+
+    .btn-publish {
+      padding: 0.55rem 1.4rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 4px 12px rgba(101, 87, 232, 0.25);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-publish:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(101, 87, 232, 0.35);
+    }
+
+    /* Main Editor Layout */
+    .editor-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr 320px;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    /* Column 1: Questions Sidebar */
+    .questions-sidebar {
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--secondary);
+    }
+
+    .btn-add-q {
+      padding: 0.35rem 0.75rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid rgba(101, 87, 232, 0.2);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.2s;
+    }
+
+    .btn-add-q:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .question-list-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .q-tree-item {
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s ease;
+    }
+
+    .q-tree-item:hover {
+      border-color: var(--primary);
+      background: var(--primary-surface);
+    }
+
+    .q-tree-item.active {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      box-shadow: 0 2px 8px rgba(101, 87, 232, 0.12);
+    }
+
+    .q-tree-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .drag-handle {
+      color: var(--text-muted);
+      cursor: grab;
+      font-size: 0.9rem;
+    }
+
+    .q-tree-num {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--secondary);
+    }
+
+    .q-tree-diff {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .diff-nb { background: #DCFCE7; color: #15803D; }
+    .diff-th { background: #E0E7FF; color: #4338CA; }
+    .diff-vd { background: #FEF3C7; color: #B45309; }
+    .diff-vdc { background: #FEE2E2; color: #B91C1C; }
+
+    /* Column 2: Center Workspace (Editor) */
+    .editor-center {
+      background: var(--bg-canvas);
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .editor-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 1.75rem;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .q-edit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .q-title-label {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    .q-controls-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .select-diff {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: var(--bg-surface);
+      outline: none;
+    }
+
+    /* Visual Math Toolbar */
+    .math-toolbar {
+      background: var(--primary-surface);
+      border: 1px solid rgba(101, 87, 232, 0.2);
+      border-radius: var(--radius-md);
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .math-tool-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-family: 'Cambria Math', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .math-tool-btn:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-color);
+      margin: 0 0.35rem;
+    }
+
+    /* Content Area */
+    .input-field-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+
+    .editor-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-family: 'Be Vietnam Pro', sans-serif;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--text-main);
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.2s;
+    }
+
+    .editor-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(101, 87, 232, 0.12);
+    }
+
+    /* Options Editing */
+    .options-edit-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .opt-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-canvas);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .opt-radio-wrap {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .opt-tag {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #E2E8F0;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .opt-edit-row.is-correct-row {
+      border-color: var(--success);
+      background: var(--success-light);
+    }
+
+    .opt-edit-row.is-correct-row .opt-tag {
+      background: var(--success);
+      color: white;
+    }
+
+    .opt-input-text {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      outline: none;
+      background: white;
+    }
+
+    .opt-correct-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--success);
+      white-space: nowrap;
+    }
+
+    /* Column 3: Exam Settings Sidebar */
+    .settings-sidebar {
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .setting-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--secondary);
+    }
+
+    .setting-select, .setting-input {
+      padding: 0.6rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      outline: none;
+      color: var(--text-main);
+      background: var(--bg-surface);
+    }
+
+    .setting-select:focus, .setting-input:focus {
+      border-color: var(--primary);
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+
+    .toggle-text {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-sub);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #CBD5E1;
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    @media (max-width: 1024px) {
+      .editor-layout {
+        grid-template-columns: 240px 1fr;
+      }
+      .settings-sidebar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Editor Bar -->
+  <header class="editor-top-nav" role="banner">
+    <div class="nav-left">
+      <a href="08_teacher_exams.html" class="btn-back-link" title="Trở về danh sách đề">
+        <span>← Quản lý đề</span>
+      </a>
+      <input type="text" class="exam-title-input" value="Đề Thi Thử THPT Quốc Gia Môn Toán 2026 - Mã 101" aria-label="Tiêu đề đề thi">
+      <span class="draft-badge">📝 Bản nháp</span>
+    </div>
+
+    <div class="nav-right-actions">
+      <button type="button" class="btn-save-draft">
+        <span>💾 Lưu tạm</span>
+      </button>
+      <a href="08_teacher_exams.html" class="btn-publish">
+        <span>🚀 Xuất bản đề thi</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- 3-Column Split View Layout -->
+  <main class="editor-layout" id="main-content">
+    
+    <!-- Sidebar Left: Question Tree -->
+    <aside class="questions-sidebar" aria-label="Danh sách câu hỏi">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Danh sách (40 câu)</h2>
+        <button type="button" class="btn-add-q">+ Thêm câu</button>
+      </div>
+
+      <nav class="question-list-scroll">
+        <div class="q-tree-item">
+          <div class="q-tree-left">
+            <span class="drag-handle">⠿</span>
+            <span class="q-tree-num">Câu 1</span>
+          </div>
+          <span class="q-tree-diff diff-nb">Nhận biết</span>
+        </div>
+
+        <div class="q-tree-item">
+          <div class="q-tree-left">
+            <span class="drag-handle">⠿</span>
+            <span class="q-tree-num">Câu 2</span>
+          </div>
+          <span class="q-tree-diff diff-nb">Nhận biết</span>
+        </div>
+
+        <div class="q-tree-item">
+          <div class="q-tree-left">
+            <span class="drag-handle">⠿</span>
+            <span class="q-tree-num">Câu 3</span>
+          </div>
+          <span class="q-tree-diff diff-th">Thông hiểu</span>
+        </div>
+
+        <div class="q-tree-item active">
+          <div class="q-tree-left">
+            <span class="drag-handle">⠿</span>
+            <span class="q-tree-num">Câu 4</span>
+          </div>
+          <span class="q-tree-diff diff-vd">Vận dụng</span>
+        </div>
+
+        <div class="q-tree-item">
+          <div class="q-tree-left">
+            <span class="drag-handle">⠿</span>
+            <span class="q-tree-num">Câu 5</span>
+          </div>
+          <span class="q-tree-diff diff-vdc">Vận dụng cao</span>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Center Workspace: Visual Math Editor -->
+    <section class="editor-center" aria-label="Vùng soạn thảo câu hỏi">
+      <div class="editor-card">
+        <div class="q-edit-header">
+          <h1 class="q-title-label">Soạn thảo Câu 4</h1>
+          <div class="q-controls-row">
+            <select class="select-diff" aria-label="Mức độ khó">
+              <option value="nb">Độ khó: Nhận biết</option>
+              <option value="th">Độ khó: Thông hiểu</option>
+              <option value="vd" selected>Độ khó: Vận dụng</option>
+              <option value="vdc">Độ khó: Vận dụng cao</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Visual Math Symbol Toolbar -->
+        <div class="math-toolbar" role="toolbar" aria-label="Ký hiệu toán học nhanh">
+          <button type="button" class="math-tool-btn" title="Căn bậc hai">√x</button>
+          <button type="button" class="math-tool-btn" title="Phân số">a/b</button>
+          <button type="button" class="math-tool-btn" title="Số mũ">x²</button>
+          <button type="button" class="math-tool-btn" title="Chỉ số dưới">x₁</button>
+          <button type="button" class="math-tool-btn" title="Logarit">logₐb</button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="math-tool-btn" title="Tích phân">∫</button>
+          <button type="button" class="math-tool-btn" title="Tổng Sigma">∑</button>
+          <button type="button" class="math-tool-btn" title="Số Pi">π</button>
+          <button type="button" class="math-tool-btn" title="Vô cực">∞</button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="math-tool-btn" title="Nhỏ hơn hoặc bằng">≤</button>
+          <button type="button" class="math-tool-btn" title="Lớn hơn hoặc bằng">≥</button>
+          <button type="button" class="math-tool-btn" title="Thuộc">∈</button>
+          <button type="button" class="math-tool-btn" title="Hợp">∪</button>
+          <button type="button" class="math-tool-btn" title="Giao">∩</button>
+        </div>
+
+        <!-- Question Stem Textarea -->
+        <div>
+          <label class="input-field-label" for="qStemInput">Nội dung câu hỏi & Đề bài:</label>
+          <textarea id="qStemInput" class="editor-textarea" placeholder="Nhập câu hỏi tại đây... Bạn có thể gõ công thức toán dạng LaTeX hoặc dùng thanh ký hiệu ở trên.">Cho hàm số y = f(x) liên tục trên đoạn [-1; 3]. Tìm giá trị lớn nhất của hàm số g(x) = f(2x - 1) + x² trên đoạn [0; 2].</textarea>
+        </div>
+
+        <!-- Answer Options Inputs -->
+        <div>
+          <label class="input-field-label">Các phương án trả lời (Tick chọn đáp án đúng):</label>
+          <div class="options-edit-section">
+            <div class="opt-edit-row">
+              <label class="opt-radio-wrap" title="Chọn làm đáp án đúng">
+                <input type="radio" name="correctOpt" style="margin-right: 0.5rem;">
+                <span class="opt-tag">A</span>
+              </label>
+              <input type="text" class="opt-input-text" value="max g(x) = 5">
+            </div>
+
+            <div class="opt-edit-row is-correct-row">
+              <label class="opt-radio-wrap" title="Chọn làm đáp án đúng">
+                <input type="radio" name="correctOpt" checked style="margin-right: 0.5rem;">
+                <span class="opt-tag">B</span>
+              </label>
+              <input type="text" class="opt-input-text" value="max g(x) = 9">
+              <span class="opt-correct-label">✓ Đáp án đúng</span>
+            </div>
+
+            <div class="opt-edit-row">
+              <label class="opt-radio-wrap" title="Chọn làm đáp án đúng">
+                <input type="radio" name="correctOpt" style="margin-right: 0.5rem;">
+                <span class="opt-tag">C</span>
+              </label>
+              <input type="text" class="opt-input-text" value="max g(x) = 12">
+            </div>
+
+            <div class="opt-edit-row">
+              <label class="opt-radio-wrap" title="Chọn làm đáp án đúng">
+                <input type="radio" name="correctOpt" style="margin-right: 0.5rem;">
+                <span class="opt-tag">D</span>
+              </label>
+              <input type="text" class="opt-input-text" value="max g(x) = 7/2">
+            </div>
+          </div>
+        </div>
+
+        <!-- Solution Field -->
+        <div>
+          <label class="input-field-label" for="qSolutionInput">Lời giải chi tiết / Hướng dẫn giải (Hiển thị sau khi thi):</label>
+          <textarea id="qSolutionInput" class="editor-textarea" style="min-height: 80px;" placeholder="Nhập các bước giải chi tiết để học sinh đối chiếu sau bài làm...">Đặt t = 2x - 1 với x ∈ [0; 2] suy ra t ∈ [-1; 3]. Áp dụng bất đẳng thức và khảo sát hàm số, ta có max g(x) đạt tại x = 2 với giá trị là 9.</textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sidebar Right: Exam Configuration -->
+    <aside class="settings-sidebar" aria-label="Cài đặt cấu hình đề thi">
+      <h2 class="sidebar-title">Cấu hình đề thi</h2>
+
+      <div class="setting-group">
+        <label class="setting-label" for="subjectSelect">Môn học</label>
+        <select id="subjectSelect" class="setting-select">
+          <option value="math" selected>Toán học</option>
+          <option value="physics">Vật lý</option>
+          <option value="chemistry">Hóa học</option>
+          <option value="biology">Sinh học</option>
+          <option value="english">Tiếng Anh</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label" for="gradeSelect">Khối lớp</label>
+        <select id="gradeSelect" class="setting-select">
+          <option value="12" selected>Lớp 12 - Luyện thi THPT</option>
+          <option value="11">Lớp 11</option>
+          <option value="10">Lớp 10</option>
+        </select>
+      </div>
+
+      <div class="setting-group">
+        <label class="setting-label" for="durationInput">Thời gian làm bài (Phút)</label>
+        <input type="number" id="durationInput" class="setting-input" value="50">
+      </div>
+
+      <hr style="border: none; border-top: 1px solid var(--border-color);">
+
+      <div class="setting-group">
+        <span class="setting-label">Cài đặt bảo mật & Chống gian lận</span>
+        
+        <div class="toggle-row">
+          <span class="toggle-text">Trộn thứ tự câu hỏi</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-text">Trộn thứ tự đáp án (A,B,C,D)</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-text">Bật giám sát toàn màn hình</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-text">Cho phép tự do luyện tập</span>
+          <label class="switch">
+            <input type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+</body>
+</html>

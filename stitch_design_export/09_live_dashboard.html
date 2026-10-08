@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giám Sát Phòng Thi Trực Tiếp - Live Dashboard - ThiNhanh</title>
+  <meta name="description" content="Bảng điều khiển giám sát phòng thi thời gian thực của giáo viên: theo dõi tiến độ từng thí sinh, phát hiện vi phạm rời màn hình và quản lý nộp bài thi.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6557E8;
+      --primary-hover: #5043D4;
+      --primary-light: #F0EDFD;
+      --primary-surface: #F7F5FE;
+      --secondary: #24233A;
+      --text-main: #1E1B2E;
+      --text-muted: #64748B;
+      --text-sub: #475569;
+      --border-color: #E2E8F0;
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --card-shadow: 0 4px 16px -2px rgba(101, 87, 232, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 12px 28px -4px rgba(101, 87, 232, 0.16);
+      --success: #10B981;
+      --success-light: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-light: #FFFBEB;
+      --danger: #EF4444;
+      --danger-light: #FEF2F2;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Top Live Room Bar */
+    .live-top-header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .live-header-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .live-title-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .btn-nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn-nav-back:hover {
+      background: var(--primary-surface);
+      color: var(--primary);
+    }
+
+    .live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #ECFDF5;
+      color: #059669;
+      border: 1px solid #A7F3D0;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: pulseGreen 1.5s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .live-room-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    .pin-box {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--primary-light);
+      border: 1px dashed var(--primary);
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-md);
+    }
+
+    .pin-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    .pin-code {
+      font-family: 'Fira Code', monospace;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+    }
+
+    .btn-copy-pin {
+      background: var(--bg-surface);
+      border: 1px solid rgba(101, 87, 232, 0.3);
+      color: var(--primary);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-copy-pin:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .live-header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Fira Code', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--secondary);
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-color);
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-md);
+    }
+
+    .btn-force-end {
+      background: #FEF2F2;
+      color: var(--danger);
+      border: 1.5px solid #FECACA;
+      padding: 0.55rem 1.15rem;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+    }
+
+    .btn-force-end:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    /* Container */
+    .main-container {
+      max-width: 1440px;
+      margin: 1.5rem auto;
+      padding: 0 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* 4 Realtime Metrics */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card.warning {
+      border-color: #FCD34D;
+      background: #FFFDF5;
+    }
+
+    .metric-num {
+      font-size: 2.2rem;
+      font-weight: 800;
+      font-family: 'Fira Code', monospace;
+      line-height: 1;
+      color: var(--secondary);
+    }
+
+    .metric-card.warning .metric-num { color: #D97706; }
+
+    .metric-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Student Management Panel */
+    .students-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--card-shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .panel-title-text {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--secondary);
+    }
+
+    .panel-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .search-student-input {
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      outline: none;
+      width: 240px;
+    }
+
+    .filter-student-select {
+      padding: 0.5rem 0.85rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      outline: none;
+      background: white;
+    }
+
+    /* Student Table */
+    .student-table-wrap {
+      overflow-x: auto;
+    }
+
+    .student-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .student-table th {
+      background: #F8FAFC;
+      color: var(--text-sub);
+      font-weight: 700;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .student-table td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
+    }
+
+    .student-table tr:hover {
+      background: #FAF8FF;
+    }
+
+    .student-info-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .student-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .student-name-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .student-name {
+      font-weight: 700;
+      color: var(--secondary);
+    }
+
+    .guest-tag {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Progress bar in table */
+    .table-progress-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      width: 160px;
+    }
+
+    .table-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #E2E8F0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .table-progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 999px;
+    }
+
+    .table-progress-text {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+
+    /* Violation Pill */
+    .violation-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .violation-pill.clean {
+      background: var(--success-light);
+      color: var(--success);
+    }
+
+    .violation-pill.warn {
+      background: var(--warning-light);
+      color: #B45309;
+      border: 1px solid #FCD34D;
+    }
+
+    .violation-pill.danger {
+      background: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid #FECACA;
+      animation: alertPulse 1.5s infinite;
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Action buttons in table */
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-row-action {
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--bg-surface);
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-row-action:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-surface);
+    }
+
+    .btn-row-action.danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-light);
+    }
+
+    @media (max-width: 960px) {
+      .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header class="live-top-header" role="banner">
+    <div class="live-header-container">
+      <div class="live-title-group">
+        <a href="08_teacher_exams.html" class="btn-nav-back" title="Quay lại kho đề">
+          <span>← Thoát phòng</span>
+        </a>
+        <span class="live-indicator">
+          <span class="pulse-dot"></span>
+          <span>Trực tiếp</span>
+        </span>
+        <h1 class="live-room-title">Phòng Thi: Đề Thi Thử THPT Quốc Gia Môn Toán 2026</h1>
+      </div>
+
+      <div class="pin-box">
+        <span class="pin-label">MÃ PIN PHÒNG:</span>
+        <span class="pin-code">849-210</span>
+        <button type="button" class="btn-copy-pin" title="Sao chép mã phòng để gửi học sinh">Sao chép</button>
+      </div>
+
+      <div class="live-header-right">
+        <div class="timer-badge">
+          <span>⏳ 28:45 / 50:00</span>
+        </div>
+        <button type="button" class="btn-force-end" title="Kết thúc phòng thi và thu toàn bộ bài làm">
+          <span>⛔ Thu bài toàn phòng</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="main-container" id="main-content">
+    
+    <!-- 4 Realtime Metric Cards -->
+    <section class="metrics-grid" aria-label="Thống kê thời gian thực">
+      <div class="metric-card">
+        <span class="metric-title">👥 Thí sinh trong phòng</span>
+        <span class="metric-num">24 / 25</span>
+        <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;">96% có mặt trực tuyến</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-title">📥 Đã hoàn thành nộp bài</span>
+        <span class="metric-num" style="color: var(--success);">6</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">18 thí sinh đang làm bài</span>
+      </div>
+
+      <div class="metric-card warning">
+        <span class="metric-title">⚠️ Cảnh báo vi phạm rời tab</span>
+        <span class="metric-num">2</span>
+        <span style="font-size: 0.75rem; color: #B45309; font-weight: 600;">Phát hiện rời màn hình thi</span>
+      </div>
+
+      <div class="metric-card">
+        <span class="metric-title">📊 Điểm trung bình (Đã nộp)</span>
+        <span class="metric-num" style="color: var(--primary);">7.85</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">Thang điểm 10</span>
+      </div>
+    </section>
+
+    <!-- Student Monitoring Live Table -->
+    <section class="students-panel" aria-labelledby="studentsTableHeading">
+      <div class="panel-header">
+        <h2 class="panel-title-text" id="studentsTableHeading">Bảng theo dõi thí sinh trực tiếp (24 học sinh)</h2>
+
+        <div class="panel-controls">
+          <input type="search" class="search-student-input" placeholder="Tìm tên thí sinh..." aria-label="Tìm kiếm thí sinh">
+          <select class="filter-student-select" aria-label="Lọc trạng thái thí sinh">
+            <option value="all">Tất cả trạng thái (24)</option>
+            <option value="in_progress">Đang làm bài (18)</option>
+            <option value="submitted">Đã nộp bài (6)</option>
+            <option value="violations">Có cảnh báo vi phạm (2)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="student-table-wrap">
+        <table class="student-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">STT</th>
+              <th>Thí sinh</th>
+              <th>Tiến độ làm bài</th>
+              <th>Điểm số</th>
+              <th>Giám sát vi phạm</th>
+              <th>Thời gian vào</th>
+              <th style="text-align: right;">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Row 1: Doing exam, clean -->
+            <tr>
+              <td>1</td>
+              <td>
+                <div class="student-info-cell">
+                  <div class="student-avatar">HQ</div>
+                  <div class="student-name-group">
+                    <span class="student-name">Trần Hoàng Quân</span>
+                    <span class="guest-tag">(Khách - Mã: MAT-G82)</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="table-progress-wrap">
+                  <div class="table-progress-bar">
+                    <div class="table-progress-fill" style="width: 70%;"></div>
+                  </div>
+                  <span class="table-progress-text">28 / 40 câu (70%)</span>
+                </div>
+              </td>
+              <td><span style="color: var(--text-muted); font-weight: 600;">Đang làm</span></td>
+              <td>
+                <span class="violation-pill clean">✓ Không vi phạm</span>
+              </td>
+              <td style="color: var(--text-sub); font-size: 0.85rem;">21:02:14</td>
+              <td style="text-align: right;">
+                <div class="row-actions" style="justify-content: flex-end;">
+                  <button type="button" class="btn-row-action">👁️ Xem bài</button>
+                  <button type="button" class="btn-row-action">⚠️ Nhắc nhở</button>
+                  <button type="button" class="btn-row-action danger">⛔ Thu bài</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 2: Violation Warning -->
+            <tr style="background: #FFFDF5;">
+              <td>2</td>
+              <td>
+                <div class="student-info-cell">
+                  <div class="student-avatar" style="background: #FEE2E2; color: #DC2626;">MT</div>
+                  <div class="student-name-group">
+                    <span class="student-name">Lê Minh Tuấn</span>
+                    <span class="guest-tag">Học sinh lớp 12A1</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="table-progress-wrap">
+                  <div class="table-progress-bar">
+                    <div class="table-progress-fill" style="width: 45%; background: var(--warning);"></div>
+                  </div>
+                  <span class="table-progress-text">18 / 40 câu (45%)</span>
+                </div>
+              </td>
+              <td><span style="color: var(--text-muted); font-weight: 600;">Đang làm</span></td>
+              <td>
+                <span class="violation-pill danger">🚩 2 lần rời tab</span>
+              </td>
+              <td style="color: var(--text-sub); font-size: 0.85rem;">21:00:45</td>
+              <td style="text-align: right;">
+                <div class="row-actions" style="justify-content: flex-end;">
+                  <button type="button" class="btn-row-action">👁️ Xem bài</button>
+                  <button type="button" class="btn-row-action" style="color: var(--warning); border-color: var(--warning);">⚠️ Cảnh cáo</button>
+                  <button type="button" class="btn-row-action danger">⛔ Thu bài ngay</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 3: Submitted -->
+            <tr>
+              <td>3</td>
+              <td>
+                <div class="student-info-cell">
+                  <div class="student-avatar" style="background: #DCFCE7; color: #15803D;">MA</div>
+                  <div class="student-name-group">
+                    <span class="student-name">Nguyễn Mai Anh</span>
+                    <span class="guest-tag">Học sinh lớp 12A1</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="table-progress-wrap">
+                  <div class="table-progress-bar">
+                    <div class="table-progress-fill" style="width: 100%; background: var(--success);"></div>
+                  </div>
+                  <span class="table-progress-text">40 / 40 câu (Đã nộp)</span>
+                </div>
+              </td>
+              <td><strong style="color: var(--success); font-family: 'Fira Code', monospace; font-size: 1rem;">9.25 / 10</strong></td>
+              <td>
+                <span class="violation-pill clean">✓ Không vi phạm</span>
+              </td>
+              <td style="color: var(--text-sub); font-size: 0.85rem;">21:00:10</td>
+              <td style="text-align: right;">
+                <div class="row-actions" style="justify-content: flex-end;">
+                  <a href="06_result_screen.html" class="btn-row-action" style="text-decoration: none;">📄 Xem kết quả</a>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Row 4: Clean in progress -->
+            <tr>
+              <td>4</td>
+              <td>
+                <div class="student-info-cell">
+                  <div class="student-avatar">ĐH</div>
+                  <div class="student-name-group">
+                    <span class="student-name">Phạm Đức Huy</span>
+                    <span class="guest-tag">Học sinh lớp 12A2</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="table-progress-wrap">
+                  <div class="table-progress-bar">
+                    <div class="table-progress-fill" style="width: 82%;"></div>
+                  </div>
+                  <span class="table-progress-text">33 / 40 câu (82%)</span>
+                </div>
+              </td>
+              <td><span style="color: var(--text-muted); font-weight: 600;">Đang làm</span></td>
+              <td>
+                <span class="violation-pill clean">✓ Không vi phạm</span>
+              </td>
+              <td style="color: var(--text-sub); font-size: 0.85rem;">21:01:50</td>
+              <td style="text-align: right;">
+                <div class="row-actions" style="justify-content: flex-end;">
+                  <button type="button" class="btn-row-action">👁️ Xem bài</button>
+                  <button type="button" class="btn-row-action">⚠️ Nhắc nhở</button>
+                  <button type="button" class="btn-row-action danger">⛔ Thu bài</button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+</body>
+</html>
