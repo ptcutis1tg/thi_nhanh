@@ -1,9 +1,9 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 06/10/2026 *(Cập nhật chuẩn hóa theo tiến trình thực tế mới nhất)*  
+> **Ngày thực hiện:** 08/10/2026 *(Cập nhật chuẩn hóa sau khi hoàn tất loại bỏ Mock Data và nâng cao trải nghiệm điều hướng)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **162 / 162 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
-> **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động.
+> **Trạng thái kiểm thử:** **173 / 173 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
+> **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu kiến trúc, hệ thống chống gian lận, điều hướng động và quy trình kiểm thử tự động.
 
 ---
 
@@ -75,8 +75,10 @@ graph TD
 1. **Trang chủ ([`HomeScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/home_screen.dart)):**
    - Danh mục 8 môn học phổ thông (Toán, Lý, Hóa, Sinh, Sử, Địa, GDCD, Tiếng Anh) với `TopicChip`.
    - Danh sách đề thi nổi bật, thanh tìm kiếm nhanh, nút AI Navigation điều hướng thông minh bằng ngôn ngữ tự nhiên.
+   - **Điều hướng thông minh theo thời gian thực:** Thẻ "Bài Đang Làm" và "Phòng Đang Diễn Ra" tự động truy vấn `ProfileService` (`fetchActiveAttempt`, `fetchActiveLiveRoom`) để đưa học sinh quay lại đúng bài thi hoặc phòng thi đang dở dang mà không bị mất dữ liệu.
 2. **Tìm kiếm & Bộ lọc ([`SearchScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
    - Tìm kiếm đề thi theo từ khóa, môn học, mức độ khó (Dễ, Trung bình, Khó).
+   - **Định dạng thời gian tương đối động:** Tích hợp `formatRelativeTime` tính toán tự động khoảng cách thời gian ("Vừa xong", "X phút trước", "X giờ trước", "X ngày trước") từ trường `created_at` thay vì chuỗi cứng.
 3. **Chi tiết đề thi ([`ExamDetailScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/exam_detail_screen.dart)):**
    - Tóm tắt thông tin đề, số lượng câu, thời gian làm bài, cấu trúc điểm và nút bắt đầu làm bài.
 4. **Làm bài thi ([`TakingExamScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/taking_exam_screen.dart)) — *Được Nâng Cấp Toàn Diện*:**
@@ -94,6 +96,7 @@ graph TD
    - Bảng điều khiển lịch sử đồ sộ: lọc theo thời gian (Hôm nay, 7 ngày, 30 ngày, tùy chọn), phân loại phòng thi / tự luyện, lọc môn học, thang điểm, sắp xếp, phân trang Google.
 8. **Thành tích & Bảng xếp hạng ([`StudentAchievementsScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/student/student_achievements_screen.dart), [`StudentLeaderboardScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/student/student_leaderboard_screen.dart)):**
    - Hệ thống danh hiệu/huy hiệu (Chuỗi 5 bài, Điểm tuyệt đối, Phản xạ nhanh, Top 3) và vinh danh bảng vàng thành tích.
+   - **Dữ liệu người dùng chuẩn hóa:** Loại bỏ triệt để email giả lập (`hocsinh@gmail.com`), tự động tra cứu tên hiển thị thực tế từ bảng `profiles` và gắn nhãn phân biệt người dùng vãng lai `(Khách)`.
 
 ### 2.3. Phân Hệ Giáo Viên & Quản Trị (Teacher Experience)
 1. **Soạn thảo đề thi chuyên sâu ([`CreateExamScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/create_exam_screen.dart)):**
@@ -125,6 +128,7 @@ graph TD
    - **Khởi động đồng bộ kịch tính (Countdown Animation):** Tích hợp `CountdownOverlayWidget` hiển thị đếm ngược toàn màn hình `3` $\rightarrow$ `2` $\rightarrow$ `1` $\rightarrow$ `BẮT ĐẦU!` với hiệu ứng nhịp đập Pulse và Scale Transition ngay khi giáo viên phát lệnh mở đề, tạo tâm thế thi đấu kịch tính trước khi chuyển vào làm bài.
 4. **Bảng theo dõi trực tiếp & Giám sát Vi phạm ([`LiveDashboardScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/live_dashboard_screen.dart)):**
    - Giám sát tiến độ làm bài của từng học sinh trong thời gian thực (số câu đã làm, số câu đúng/sai, điểm số).
+   - **Số liệu tiến độ thực tế:** Truy vấn tổng số câu hỏi từ bảng `questions` và đếm số câu đã trả lời từ bảng `attempt_answers` cho từng thí sinh, loại bỏ hoàn toàn các chỉ số giả lập (hardcoded `12/20/8/4`).
    - **Giám sát vi phạm trực tiếp:** Hiển thị trực tiếp cờ đỏ cảnh báo `🚩 X vi phạm` bên cạnh tên từng thí sinh theo thời gian thực nếu thí sinh rời màn hình làm bài, và gắn huy hiệu `⛔ Bị thu bài (Vi phạm quy chế)` nếu bị hệ thống cưỡng chế thu bài.
 
 ---
@@ -189,7 +193,7 @@ graph TD
 2. **Bảo Mật Học Thuật & Chống Gian Lận Hàng Đầu (New High-Water Mark):** Học sinh không thể copy đề bài ra ngoài, đề thi được xáo trộn thứ tự tất định cho từng người, và việc rời tab/chuyển ứng dụng được giám sát chặt chẽ với cơ chế cưỡng chế nộp bài ở lần thứ 4 và phát cờ đỏ trực tiếp lên dashboard của giáo viên.
 3. **Khả Năng Chống Lỗi Tuyệt Vời (High Resilience):** Tầng `SupabaseRetryHelper` giải quyết triệt để vấn đề lệch đồng hồ và rớt mạng. Các màn hình đều có fallback bảng trực tiếp nếu RPC gặp sự cố.
 4. **Trải Nghiệm Người Dùng (UX) & Thiết Kế Cao Cấp:** Giao diện nhất quán, đẹp mắt, font Be Vietnam Pro tối ưu tiếng Việt, phân trang Google, hỗ trợ màn hình siêu nhỏ không bao giờ bị RenderFlex overflow.
-5. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **162 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100%, tuân thủ nghiêm ngặt chuẩn TDD.
+5. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **173 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100%, tuân thủ nghiêm ngặt chuẩn TDD.
 
 ### 5.2. Các Rủi Ro Tiềm Ẩn & Nút Thắt Cần Lưu Ý (Risks & Bottlenecks)
 
@@ -211,13 +215,19 @@ graph TD
   - [x] Chặn bôi đen và khóa sao chép câu hỏi (`SelectionContainer.disabled`).
   - [x] Tùy chọn cấu hình bảo mật phòng thi tại `CreateRoomScreen`.
   - [x] Đồng bộ cờ đỏ vi phạm thời gian thực lên `LiveDashboardScreen` của giáo viên.
-  - [x] 100% 7 tasks hoàn thành, toàn bộ test hồi quy đạt 162/162 green.
+- ✅ **Giai đoạn 2: Quét Sạch Mock Data & Nâng Cao Trải Nghiệm Cốt Lõi (Mock Data Elimination & Core Polish):**
+  - [x] Dọn dẹp store mồ côi `created_exam_store.dart` và route giả lập `/exam/physics-12`.
+  - [x] Chuẩn hóa hiển thị thời gian tương đối động `formatRelativeTime` tại `SearchScreen`.
+  - [x] Thay thế số liệu tiến độ giám sát hardcoded trong `LiveDashboardScreen` bằng truy vấn thực từ `questions` và `attempt_answers`.
+  - [x] Triển khai điều hướng thông minh cho "Bài Đang Làm" và "Phòng Đang Diễn Ra" trên `HomeScreen`.
+  - [x] Chuẩn hóa dữ liệu bảng xếp hạng `StudentLeaderboardScreen` (xóa fake email, phân giải `profiles`, nhãn `(Khách)`).
+  - [x] 100% kiểm thử hồi quy đạt 173/173 tests PASS.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 2: Quản lý Lớp Học (Classroom Management):**
-   - Bổ sung thực thể `classes` (Lớp học) và `class_members` để giáo viên gán học sinh vào danh sách lớp, tự động gửi đề thi về lớp mà không cần nhập mã phòng mỗi lần.
-2. **Giai đoạn 3: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+1. **Giai đoạn 3: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+   - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
+2. **Giai đoạn 4: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 4: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 5: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
