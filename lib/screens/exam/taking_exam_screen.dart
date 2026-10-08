@@ -784,11 +784,11 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.timer, color: Colors.white, size: 16),
-              const SizedBox(width: 4),
+              const Icon(Icons.timer_outlined, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
               Text(
                 _remainingTime,
-                style: const TextStyle(
+                style: AppTheme.firaCodeStyle.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -1089,15 +1089,33 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Danh sách câu hỏi',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Text(
+                  'Danh sách câu hỏi',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${_selectedAnswers.length}/${_questions.length}',
+                style: AppTheme.firaCodeStyle.copyWith(
+                  color: AppTheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -1118,24 +1136,24 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
                 Border border = Border.all(color: AppTheme.border);
 
                 if (isCurrent) {
-                  bgColor = AppTheme.primary;
-                  textColor = Colors.white;
+                  bgColor = AppTheme.surfaceLavender;
+                  textColor = AppTheme.primary;
                   border = Border.all(color: AppTheme.primary, width: 2);
                 } else if (isAnswered) {
-                  bgColor = const Color(0xFFF0ECFF);
-                  textColor = AppTheme.primary;
-                  border = Border.all(color: AppTheme.primaryLight);
+                  bgColor = AppTheme.primary;
+                  textColor = Colors.white;
+                  border = Border.all(color: AppTheme.primaryDark);
                 }
 
                 return InkWell(
                   onTap: _isSubmitting
                       ? null
                       : () => setState(() => _currentQuestionIndex = index),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(10),
                   child: Container(
                     decoration: BoxDecoration(
                       color: bgColor,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                       border: border,
                     ),
                     alignment: Alignment.center,
@@ -1146,6 +1164,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
                           '${index + 1}',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: 13,
                             color: textColor,
                           ),
                         ),
@@ -1176,9 +1195,13 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
               style: ElevatedButton.styleFrom(
                 backgroundColor: _hasSubmitted
                     ? AppTheme.textSecondary
-                    : AppTheme.success,
+                    : AppTheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                ),
+                elevation: 0,
               ),
               child: _isSubmitting
                   ? const FittedBox(
@@ -1203,7 +1226,10 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
                         ],
                       ),
                     )
-                  : Text(_hasSubmitted ? 'Đã nộp bài' : 'Nộp bài thi'),
+                  : Text(
+                      _hasSubmitted ? 'Đã nộp bài' : 'Nộp bài thi',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
             ),
           ),
         ],

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/supabase_retry_helper.dart';
+import '../../shared/widgets/top_nav_bar.dart';
 
 class LeaderboardUser {
   final String id;
@@ -192,7 +193,8 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
     final currentUserName = authProvider.userName;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+      appBar: const TopNavBar(),
+      backgroundColor: AppTheme.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Center(
@@ -280,7 +282,11 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
                             subtitle: Text('Đã hoàn thành ${user.totalTests} bài thi'),
                             trailing: Text(
                               '${user.avgScore.toStringAsFixed(1)} điểm',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primary),
+                              style: AppTheme.firaCodeStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primary,
+                              ),
                             ),
                           ),
                         );
@@ -329,7 +335,14 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
           Text(badge, style: const TextStyle(fontSize: 28)),
           const SizedBox(height: 4),
           Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-          Text('${user.avgScore.toStringAsFixed(1)} điểm', style: TextStyle(fontSize: 12, color: crownColor, fontWeight: FontWeight.bold)),
+          Text(
+            '${user.avgScore.toStringAsFixed(1)} điểm',
+            style: AppTheme.firaCodeStyle.copyWith(
+              fontSize: 12,
+              color: crownColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

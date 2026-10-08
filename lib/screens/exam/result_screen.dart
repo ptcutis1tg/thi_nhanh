@@ -273,7 +273,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                       Text(
                         _score.toStringAsFixed(2),
-                        style: const TextStyle(
+                        style: AppTheme.firaCodeStyle.copyWith(
                           fontSize: 34,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.primary,
