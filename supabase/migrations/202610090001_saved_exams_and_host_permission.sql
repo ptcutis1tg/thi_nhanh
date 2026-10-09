@@ -66,3 +66,10 @@ end;
 $$;
 
 grant execute on function public.create_teacher_room(uuid, text, text, integer) to authenticated;
+
+-- Indexes for performance
+create index if not exists idx_saved_exams_user on public.saved_exams(user_id);
+create index if not exists idx_saved_exams_exam on public.saved_exams(exam_id);
+
+-- Notify PostgREST to immediately refresh its schema cache (prevents PGRST205)
+notify pgrst, 'reload schema';
