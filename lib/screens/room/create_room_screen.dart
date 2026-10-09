@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/repositories/teacher_exam_repository.dart';
+import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -19,7 +20,9 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   final _searchController = TextEditingController();
   final _capacityController = TextEditingController(text: '40');
 
-  List<TeacherExamSummary> _createdExams = [];
+  List<TeacherExamSummary> _myExams = [];
+  List<TeacherExamSummary> _savedExams = [];
+  String _examSourceTab = 'all'; // 'all' | 'mine' | 'saved'
   TeacherExamSummary? _selectedExam;
   bool _requirePassword = false;
   bool _isLoadingExams = true;
@@ -40,18 +43,59 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
   }
 
   Future<void> _loadCreatedExams() async {
-    final exams = await context.read<TeacherExamRepository>().summaries();
-    if (mounted) {
-      setState(() {
-        _createdExams = exams.where((exam) => exam.status == 'published').toList();
-        _isLoadingExams = false;
-      });
+    setState(() => _isLoadingExams = true);
+    try {
+      TeacherExamRepository? teacherRepo;
+      try {
+        teacherRepo = context.read<TeacherExamRepository>();
+      } catch (_) {}
+
+      SavedExamRepository? savedRepo;
+      try {
+        savedRepo = context.read<SavedExamRepository?>();
+      } catch (_) {}
+
+      final mySummaries = teacherRepo != null ? await teacherRepo.summaries() : <TeacherExamSummary>[];
+      final savedSummaries = savedRepo != null ? await savedRepo.getSavedExams() : <TeacherExamSummary>[];
+
+      if (mounted) {
+        setState(() {
+          _myExams = mySummaries.where((exam) => exam.status == 'published').toList();
+          _savedExams = savedSummaries.where((exam) => exam.status == 'published').toList();
+          _isLoadingExams = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingExams = false);
     }
   }
 
+  bool _isSavedExam(String examId) => _savedExams.any((e) => e.id == examId);
+
+  List<TeacherExamSummary> get _allAvailableExams {
+    final seenIds = <String>{};
+    final list = <TeacherExamSummary>[];
+    for (final e in _myExams) {
+      if (seenIds.add(e.id)) list.add(e);
+    }
+    for (final e in _savedExams) {
+      if (seenIds.add(e.id)) list.add(e);
+    }
+    return list;
+  }
+
   List<TeacherExamSummary> get _filteredExams {
+    List<TeacherExamSummary> pool;
+    if (_examSourceTab == 'mine') {
+      pool = _myExams;
+    } else if (_examSourceTab == 'saved') {
+      pool = _savedExams;
+    } else {
+      pool = _allAvailableExams;
+    }
+
     final query = _searchController.text.trim().toLowerCase();
-    return _createdExams.where((exam) {
+    return pool.where((exam) {
       final matchesSearch = query.isEmpty ||
           exam.title.toLowerCase().contains(query) ||
           exam.subject.toLowerCase().contains(query);
@@ -63,7 +107,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
   List<String> get _availableSubjects {
     final subjects = {'Tất cả'};
-    for (final exam in _createdExams) {
+    for (final exam in _allAvailableExams) {
       if (exam.subject.trim().isNotEmpty) {
         subjects.add(exam.subject.trim());
       }
@@ -122,6 +166,53 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
     _searchController.dispose();
     _capacityController.dispose();
     super.dispose();
+  }
+
+  Widget _buildSourceTab(String key, String label, int count) {
+    final isSelected = _examSourceTab == key;
+    return InkWell(
+      onTap: () => setState(() => _examSourceTab = key),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primary : const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : AppTheme.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? Colors.white : AppTheme.textMain,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white.withValues(alpha: 0.25) : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : AppTheme.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -266,14 +357,14 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                               Icon(Icons.menu_book_outlined, color: AppTheme.primary),
                               SizedBox(width: 8),
                               Text(
-                                '2. Chọn đề thi đã tạo',
+                                '2. Chọn đề thi mở phòng',
                                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'Chỉ những đề thi bạn đã khởi tạo mới có thể dùng để mở phòng thi trực tuyến.',
+                            'Bạn có thể chọn đề thi do mình khởi tạo hoặc đề thi đã lưu từ cộng đồng.',
                             style: TextStyle(color: AppTheme.textSecondary),
                           ),
                           const SizedBox(height: 18),
@@ -285,9 +376,24 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                                 child: CircularProgressIndicator(),
                               ),
                             )
-                          else if (_createdExams.isEmpty)
+                          else if (_myExams.isEmpty && _savedExams.isEmpty)
                             _EmptyExamState(onCreateExam: () => context.go('/teacher_exams'))
                           else ...[
+                            // Tabs nguồn đề: Tất cả, Đề của tôi, Đề đã lưu
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _buildSourceTab('all', 'Tất cả', _allAvailableExams.length),
+                                  const SizedBox(width: 8),
+                                  _buildSourceTab('mine', 'Đề của tôi', _myExams.length),
+                                  const SizedBox(width: 8),
+                                  _buildSourceTab('saved', 'Đề đã lưu', _savedExams.length),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+
                             // Thanh tìm kiếm đề
                             TextField(
                               controller: _searchController,
@@ -354,6 +460,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                                 itemBuilder: (context, index) {
                                   final exam = _filteredExams[index];
                                   final isSelected = _selectedExam?.id == exam.id;
+                                  final isSaved = _isSavedExam(exam.id);
                                   return InkWell(
                                     onTap: () => setState(() => _selectedExam = exam),
                                     borderRadius: BorderRadius.circular(12),
@@ -386,6 +493,31 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
+                                                if (isSaved) ...[
+                                                  Container(
+                                                    margin: const EdgeInsets.only(bottom: 4),
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: AppTheme.primary.withValues(alpha: 0.1),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: const Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Icon(Icons.bookmark_added_rounded, size: 12, color: AppTheme.primary),
+                                                        SizedBox(width: 4),
+                                                        Text(
+                                                          'Đề lưu từ cộng đồng',
+                                                          style: TextStyle(
+                                                            color: AppTheme.primary,
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
                                                 Text(
                                                   exam.title,
                                                   style: TextStyle(

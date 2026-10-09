@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/teacher_exam_repository.dart';
+import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
 import 'widgets/publish_confirm_dialog.dart';
 import 'widgets/delete_draft_confirm_dialog.dart';
@@ -18,9 +19,10 @@ class TeacherExamsScreen extends StatefulWidget {
 class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
   bool _isLoading = true;
   List<TeacherExamSummary> _exams = [];
+  List<TeacherExamSummary> _savedExams = [];
   String _searchQuery = '';
   String _selectedSubject = 'Tất cả môn';
-  String _activeTab = 'all'; // 'all' | 'draft' | 'published'
+  String _activeTab = 'all'; // 'all' | 'draft' | 'published' | 'saved'
 
   final List<String> _subjects = const [
     'Tất cả môn',
@@ -51,18 +53,22 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
         repo = null;
       }
 
-      if (repo != null) {
-        final list = await repo.summaries();
-        if (mounted) {
-          setState(() {
-            _exams = list;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+      SavedExamRepository? savedRepo;
+      try {
+        savedRepo = context.read<SavedExamRepository?>();
+      } catch (_) {
+        savedRepo = null;
+      }
+
+      final list = repo != null ? await repo.summaries() : <TeacherExamSummary>[];
+      final savedList = savedRepo != null ? await savedRepo.getSavedExams() : <TeacherExamSummary>[];
+
+      if (mounted) {
+        setState(() {
+          _exams = list;
+          _savedExams = savedList;
+          _isLoading = false;
+        });
       }
     } catch (e) {
       debugPrint('Lỗi tải danh sách đề thi của giáo viên: $e');
@@ -175,8 +181,10 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     final allCount = _exams.length;
     final draftCount = _exams.where((e) => e.isDraft).length;
     final publishedCount = _exams.where((e) => e.isPublished).length;
+    final savedCount = _savedExams.length;
 
-    final filtered = _exams.where((e) {
+    final pool = _activeTab == 'saved' ? _savedExams : _exams;
+    final filtered = pool.where((e) {
       // Filter by tab
       if (_activeTab == 'draft' && !e.isDraft) return false;
       if (_activeTab == 'published' && !e.isPublished) return false;
@@ -292,24 +300,29 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                   const SizedBox(height: 24),
                 ],
 
-                // Tabs: Tất cả, Đề nháp, Đã công khai
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                    border: Border.all(color: AppTheme.border),
-                    boxShadow: AppTheme.cardShadow,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildTabButton('all', 'Tất cả ($allCount)', Icons.dashboard_outlined),
-                      const SizedBox(width: 6),
-                      _buildTabButton('draft', 'Đề nháp ($draftCount)', Icons.edit_note_rounded, badgeColor: const Color(0xFFF59E0B)),
-                      const SizedBox(width: 6),
-                      _buildTabButton('published', 'Đã công khai ($publishedCount)', Icons.public_rounded, badgeColor: AppTheme.success),
-                    ],
+                // Tabs: Tất cả, Đề nháp, Đã công khai, Đề đã lưu
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                      border: Border.all(color: AppTheme.border),
+                      boxShadow: AppTheme.cardShadow,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTabButton('all', 'Tất cả ($allCount)', Icons.dashboard_outlined),
+                        const SizedBox(width: 6),
+                        _buildTabButton('draft', 'Đề nháp ($draftCount)', Icons.edit_note_rounded, badgeColor: const Color(0xFFF59E0B)),
+                        const SizedBox(width: 6),
+                        _buildTabButton('published', 'Đã công khai ($publishedCount)', Icons.public_rounded, badgeColor: AppTheme.success),
+                        const SizedBox(width: 6),
+                        _buildTabButton('saved', 'Đề đã lưu ($savedCount)', Icons.bookmark_added_rounded, badgeColor: AppTheme.primary),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -438,6 +451,8 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       message = 'Bạn không có bản nháp nào đang soạn.';
     } else if (_activeTab == 'published') {
       message = 'Chưa có đề nào được công khai. Hãy chọn đề nháp và bấm "Public đề".';
+    } else if (_activeTab == 'saved') {
+      message = 'Bạn chưa lưu đề thi nào từ cộng đồng. Hãy khám phá và lưu đề từ trang Tìm kiếm.';
     } else if (_searchQuery.isNotEmpty) {
       message = 'Không tìm thấy đề thi phù hợp với từ khóa "$_searchQuery".';
     }
@@ -479,7 +494,8 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
   }
 
   Widget _buildExamCard(TeacherExamSummary exam) {
-    final isDraft = exam.isDraft;
+    final isSaved = _savedExams.any((s) => s.id == exam.id);
+    final isDraft = exam.isDraft && !isSaved;
     final codeDisplay = exam.code.isNotEmpty ? exam.code : 'Mã: Đang tạo';
 
     return Container(
@@ -488,7 +504,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
         border: Border.all(
-          color: isDraft ? const Color(0xFFFDE68A) : AppTheme.border,
+          color: isDraft ? const Color(0xFFFDE68A) : (isSaved ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.border),
           width: isDraft ? 1.5 : 1.0,
         ),
         boxShadow: AppTheme.cardShadow,
@@ -513,11 +529,11 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: isDraft ? const Color(0xFFFFFBEB) : AppTheme.surfaceLavender,
+                    color: isDraft ? const Color(0xFFFFFBEB) : (isSaved ? const Color(0xFFF0ECFF) : AppTheme.surfaceLavender),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(
-                    isDraft ? Icons.edit_note_rounded : Icons.assignment_outlined,
+                    isSaved ? Icons.bookmark_added_rounded : (isDraft ? Icons.edit_note_rounded : Icons.assignment_outlined),
                     color: isDraft ? const Color(0xFFD97706) : AppTheme.primary,
                     size: 26,
                   ),
@@ -544,24 +560,32 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isDraft ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5),
+                              color: isSaved
+                                  ? const Color(0xFFEDE9FE)
+                                  : (isDraft ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5)),
                               borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  isDraft ? Icons.edit_note_rounded : Icons.check_circle_rounded,
+                                  isSaved
+                                      ? Icons.bookmark_added_rounded
+                                      : (isDraft ? Icons.edit_note_rounded : Icons.check_circle_rounded),
                                   size: 14,
-                                  color: isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46),
+                                  color: isSaved
+                                      ? AppTheme.primary
+                                      : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  isDraft ? 'Bản nháp' : 'Đã công khai',
+                                  isSaved ? 'Đề lưu từ cộng đồng' : (isDraft ? 'Bản nháp' : 'Đã công khai'),
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46),
+                                    color: isSaved
+                                        ? AppTheme.primary
+                                        : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
                                   ),
                                 ),
                               ],
@@ -583,7 +607,31 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isDraft) ...[
+                    if (isSaved) ...[
+                      // Create Room Button
+                      ElevatedButton.icon(
+                        onPressed: () => context.go('/create_room?examId=${exam.id}'),
+                        icon: const Icon(Icons.meeting_room_outlined, size: 16),
+                        label: const Text('Tạo Phòng Thi'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // View Detail Button
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/exam_detail?examId=${exam.id}'),
+                        icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+                        label: const Text('Xem chi tiết'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                        ),
+                      ),
+                    ] else if (isDraft) ...[
                       // Primary Public Button
                       ElevatedButton.icon(
                         onPressed: () => _handlePublish(exam),
