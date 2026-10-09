@@ -89,6 +89,7 @@ graph TD
      - *Thẻ 2 — Phòng Thi Trực Tiếp & Vào Nhanh:* Thẻ bo góc 22px, hiển thị phòng thi đang mở từ `ProfileService.fetchActiveLiveRoom()`, chỉ báo xanh lục nhấp nháy realtime và tích hợp trực tiếp ô nhập mã PIN phòng thi chuẩn Fira Code (`Nhập mã phòng PTxxxxxx...`) kèm nút "Vào ngay".
    - **Hàng 8 Chips Môn Học Trực Quan (`📚 Danh Mục Môn Học`):** Tích hợp 8 môn học phổ thông (Toán, Vật lý, Hóa học, Tiếng Anh, Sinh học, Lịch sử, Địa lý, Ngữ văn) dạng thẻ pill bo tròn với icon đặc trưng, click vào chuyển hướng trực tiếp sang `/search?subject=...`.
    - **Thanh Chỉ Số Nhanh (Quick Stats Bar):** Đồng bộ dữ liệu thực tế Supabase (`_studentStats`, `_teacherStats`).
+   - **Danh Mục Học Tập Tinh Gọn (Refined Learning Categories Grid):** Tinh giản phân hệ Học sinh bằng cách loại bỏ các thẻ trùng lặp ('Vào Phòng Thi' và 'Bài Đang Làm' đã có trên TopNavBar và Lưới điều hướng thông minh). Duy trì 4 chức năng cốt lõi: `Tìm Đề Luyện Tập`, `Lịch Sử & Kết Quả`, `Thành Tích Cá Nhân`, và `Bảng Xếp Hạng`. Bố cục lưới tự động co giãn 4 cột trên desktop rộng ($\ge 950\text{px}$), 2x2 trên tablet và 1 cột trên mobile.
    - Danh sách đề thi nổi bật và đề thi mới nhất được nâng cấp với `cardRadius` (16px) và `cardShadow` đa tầng mềm mại.
 3. **Tìm kiếm & Bộ lọc ([`SearchScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
    - Thẻ kết quả thi dạng Card hiện đại hóa, chip chọn môn và bộ lọc cấp độ dạng con nhộng mềm mại.

@@ -1086,18 +1086,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- 5. 6 FEATURE CARDS GRID ---
+  // --- 5. FEATURE CARDS GRID ---
   Widget _buildFeatureCardsGrid(BuildContext context, bool isStudent, bool isMobile) {
     final List<Map<String, dynamic>> items = isStudent
         ? [
-            {
-              'title': 'Vào Phòng Thi',
-              'desc': 'Tham gia thi trực tiếp với mã phòng từ Giáo viên',
-              'icon': Icons.door_front_door_outlined,
-              'gradient': const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
-              'route': '/student_waiting_room',
-              'isLive': false,
-            },
             {
               'title': 'Tìm Đề Luyện Tập',
               'desc': 'Khám phá hàng ngàn đề trắc nghiệm chuẩn cấu trúc',
@@ -1105,16 +1097,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'gradient': const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
               'route': '/search',
               'isLive': false,
-            },
-            {
-              'title': 'Bài Đang Làm',
-              'desc': _activeAttemptId != null
-                  ? 'Đang có bài làm dở dang - Bấm để tiếp tục'
-                  : 'Tiếp tục hoàn thành bài thi chưa nộp',
-              'icon': Icons.edit_note_rounded,
-              'gradient': const [Color(0xFF059669), Color(0xFF047857)],
-              'route': '/taking_exam',
-              'isLive': _activeAttemptId != null,
             },
             {
               'title': 'Lịch Sử & Kết Quả',
@@ -1194,26 +1176,49 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             },
           ];
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isMobile ? 1 : 3,
-        crossAxisSpacing: 20,
-        mainAxisSpacing: 20,
-        childAspectRatio: isMobile ? 2.4 : 1.6,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _buildGamifiedCard(
-          context: context,
-          title: item['title'],
-          desc: item['desc'],
-          icon: item['icon'],
-          gradient: item['gradient'],
-          route: item['route'],
-          isLive: item['isLive'],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount;
+        double childAspectRatio;
+
+        if (isMobile) {
+          crossAxisCount = 1;
+          childAspectRatio = 2.4;
+        } else if (items.length == 4) {
+          if (constraints.maxWidth >= 950) {
+            crossAxisCount = 4;
+            childAspectRatio = 1.35;
+          } else {
+            crossAxisCount = 2;
+            childAspectRatio = 1.9;
+          }
+        } else {
+          crossAxisCount = 3;
+          childAspectRatio = 1.6;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 20,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final item = items[index];
+            return _buildGamifiedCard(
+              context: context,
+              title: item['title'],
+              desc: item['desc'],
+              icon: item['icon'],
+              gradient: item['gradient'],
+              route: item['route'],
+              isLive: item['isLive'],
+            );
+          },
         );
       },
     );

@@ -76,7 +76,7 @@ void main() {
     );
   }
 
-  testWidgets('Tapping "Bài Đang Làm" without active attempt shows snackbar and navigates to /search', (tester) async {
+  testWidgets('Danh Mục Học Tập excludes "Vào Phòng Thi" & "Bài Đang Làm" and active attempt card navigates to /search when no attempt', (tester) async {
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -89,10 +89,21 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final card = find.text('Bài Đang Làm');
-    expect(card, findsOneWidget);
+    // Verify "Vào Phòng Thi" and "Bài Đang Làm" are completely removed from Danh Mục Học Tập
+    expect(find.text('Vào Phòng Thi'), findsNothing);
+    expect(find.text('Bài Đang Làm'), findsNothing);
 
-    await tester.tap(card);
+    // Verify the 4 remaining learning category cards are present
+    expect(find.text('Tìm Đề Luyện Tập'), findsOneWidget);
+    expect(find.text('Lịch Sử & Kết Quả'), findsOneWidget);
+    expect(find.text('Thành Tích Cá Nhân'), findsOneWidget);
+    expect(find.text('Bảng Xếp Hạng'), findsOneWidget);
+
+    // Verify smart nav card action when no active attempt
+    final cardBtn = find.text('Khám phá đề thi');
+    expect(cardBtn, findsOneWidget);
+
+    await tester.tap(cardBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -100,7 +111,7 @@ void main() {
     expect(lastNav, '/search');
   });
 
-  testWidgets('Tapping "Bài Đang Làm" with active attempt navigates to /taking_exam with attemptId & examId', (tester) async {
+  testWidgets('Tapping active attempt card with active attempt navigates to /taking_exam with attemptId & examId', (tester) async {
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -114,10 +125,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final card = find.text('Bài Đang Làm');
-    expect(card, findsOneWidget);
+    final cardBtn = find.text('Tiếp tục làm bài');
+    expect(cardBtn, findsOneWidget);
 
-    await tester.tap(card);
+    await tester.tap(cardBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
