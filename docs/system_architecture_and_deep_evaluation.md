@@ -92,7 +92,7 @@ graph TD
    - Danh sách đề thi nổi bật và đề thi mới nhất được nâng cấp với `cardRadius` (16px) và `cardShadow` đa tầng mềm mại.
 3. **Tìm kiếm & Bộ lọc ([`SearchScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
    - Thẻ kết quả thi dạng Card hiện đại hóa, chip chọn môn và bộ lọc cấp độ dạng con nhộng mềm mại.
-   - **Nút Lưu Nhanh 1-Chạm (One-Touch Bookmark Save):** Tích hợp nút icon bookmark ngay trên mỗi thẻ kết quả thi, hiển thị trực quan trạng thái đã lưu/chưa lưu (`Icons.bookmark_rounded` vs `Icons.bookmark_border_rounded`), thông báo SnackBar tức thì và đồng bộ với kho đề thi cá nhân.
+   - **Nút Lưu Đề Nổi Bật (Prominent Save Exam Button):** Tích hợp nút có nhãn rõ ràng `'Lưu đề'` / `'Đã lưu'` kèm icon bookmark (`Icons.bookmark_rounded` vs `Icons.bookmark_border_rounded`), tooltip chỉ dẫn, màu tím Stitch thanh lịch và thiết kế responsive linh hoạt (trên cả desktop lẫn mobile) ngay trên mỗi thẻ kết quả thi. Đồng bộ tức thời với kho cá nhân và SnackBar thông báo.
    - Định dạng thời gian tương đối động (`formatRelativeTime`).
 4. **Chi tiết đề thi ([`ExamDetailScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/exam_detail_screen.dart)):**
    - Thẻ tóm tắt thông tin đề bài và bảng thao tác hành động bổ sung `luminescenceShadow` phát sáng ánh tím nhẹ nhàng.

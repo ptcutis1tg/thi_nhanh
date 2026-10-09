@@ -530,82 +530,137 @@ class _ResultsGrid extends StatelessWidget {
           color: Colors.white,
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: const Color(0xFFF0ECFF),
-                  child: const Icon(Icons.assignment_outlined, color: AppTheme.primary, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+            child: LayoutBuilder(
+              builder: (context, cardConstraints) {
+                final isNarrow = cardConstraints.maxWidth < 640;
+
+                final infoSection = Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: const Color(0xFFF0ECFF),
+                      child: const Icon(Icons.assignment_outlined, color: AppTheme.primary, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              item.subject,
-                              style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  item.subject,
+                                  style: const TextStyle(color: AppTheme.primary, fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              if (item.code.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '#${item.code}',
+                                  style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
+                                ),
+                              ],
+                            ],
                           ),
-                          if (item.code.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '#${item.code}',
-                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
-                            ),
-                          ],
+                          const SizedBox(height: 6),
+                          Text(
+                            item.title,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${item.questions} câu hỏi • Thời gian: ${item.duration} phút • GV: ${item.teacher}',
+                            style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        item.title,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
+                );
+
+                final actionButtons = Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  alignment: isNarrow ? WrapAlignment.end : WrapAlignment.start,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Tooltip(
+                      message: isSaved ? 'Bỏ lưu đề' : 'Lưu đề vào kho',
+                      child: OutlinedButton.icon(
+                        key: ValueKey('save_exam_btn_${item.id}'),
+                        onPressed: () => onToggleSave(item),
+                        icon: Icon(
+                          isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                          size: 18,
+                          color: isSaved ? AppTheme.primary : AppTheme.textSecondary,
+                        ),
+                        label: Text(
+                          isSaved ? 'Đã lưu' : 'Lưu đề',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isSaved ? AppTheme.primary : AppTheme.textMain,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: isSaved ? AppTheme.primary : const Color(0xFFD9D5EC),
+                            width: isSaved ? 1.5 : 1.0,
+                          ),
+                          backgroundColor: isSaved ? const Color(0xFFF0ECFF) : Colors.white,
+                          foregroundColor: isSaved ? AppTheme.primary : AppTheme.textMain,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${item.questions} câu hỏi • Thời gian: ${item.duration} phút • GV: ${item.teacher}',
-                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        if (item.id.isNotEmpty) {
+                          context.go('/exam_detail?examId=${item.id}');
+                        } else {
+                          context.go('/exam_detail');
+                        }
+                      },
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                      label: const Text('Xem Đề'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                       ),
+                    ),
+                  ],
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      infoSection,
+                      const SizedBox(height: 14),
+                      actionButtons,
                     ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  tooltip: isSaved ? 'Bỏ lưu đề' : 'Lưu đề vào kho',
-                  icon: Icon(
-                    isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                    color: isSaved ? AppTheme.primary : AppTheme.textSecondary,
-                    size: 24,
-                  ),
-                  onPressed: () => onToggleSave(item),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    if (item.id.isNotEmpty) {
-                      context.go('/exam_detail?examId=${item.id}');
-                    } else {
-                      context.go('/exam_detail');
-                    }
-                  },
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-                  label: const Text('Xem Đề'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: infoSection),
+                    const SizedBox(width: 16),
+                    actionButtons,
+                  ],
+                );
+              },
             ),
           ),
         );

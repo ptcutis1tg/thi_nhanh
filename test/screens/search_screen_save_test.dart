@@ -81,10 +81,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Verify bookmark buttons exist
+    // Verify bookmark buttons exist with explicit text labels
     final bookmarkButtons = find.byTooltip('Lưu đề vào kho');
     final savedBookmarkButtons = find.byTooltip('Bỏ lưu đề');
     expect(bookmarkButtons.evaluate().length + savedBookmarkButtons.evaluate().length, equals(2));
+    expect(find.text('Đã lưu'), findsOneWidget); // exam_1 was initially saved
+    expect(find.text('Lưu đề'), findsOneWidget); // exam_2 was not yet saved
 
     // Toggle save on exam_2
     final exam2Button = bookmarkButtons.first;
@@ -93,5 +95,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(await fakeRepo.isExamSaved('exam_2'), isTrue);
+    expect(find.text('Đã lưu'), findsNWidgets(2));
   });
 }
