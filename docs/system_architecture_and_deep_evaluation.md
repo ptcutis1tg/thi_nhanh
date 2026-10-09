@@ -267,10 +267,10 @@ graph TD
   - [x] Duy trì tỷ lệ kiểm thử tuyệt đối: **186 / 186 bài kiểm thử tự động đạt 100% PASS**.
 - ✅ **Giai đoạn 6: Lưu Đề Về Kho Cá Nhân & Mở Phòng Thi Từ Đề Cộng Đồng (Host-Authorized Bookmark & Full Question Preview):**
   - [x] Cơ sở dữ liệu: Tạo bảng `saved_exams` (khóa chính ghép `user_id, exam_id`), thiết lập RLS chặt chẽ và cập nhật RPC `create_teacher_room` cho phép giáo viên host đề đã lưu từ cộng đồng mà không cần sao chép nhân bản (`Zero Duplication`).
-  - [x] Repository: Xây dựng `SavedExamRepository` với cơ chế đồng bộ Supabase + local cache, đăng ký `MultiProvider` tại `main.dart`.
+  - [x] Repository: Xây dựng `SavedExamRepository` với kiến trúc bền bỉ đa tầng: lưu trữ cục bộ lâu dài qua `SharedPreferences`, đồng bộ đám mây Supabase, và tự động kích hoạt cơ chế truy vấn dự phòng trực tiếp bảng `exams` theo ID đã lưu khi bảng `saved_exams` chưa khởi tạo trên Supabase hoặc ngoại tuyến. Đảm bảo đề đã lưu luôn xuất hiện 100% tại `CreateRoomScreen` và `TeacherExamsScreen`.
   - [x] Nâng cấp `ExamDetailScreen`: Bổ sung nút Lưu đề 1 chạm, chỉ báo mũi tên nảy cuộn xuống "Xem chi tiết câu hỏi & đáp án", khu vực hiển thị danh sách câu hỏi xem trước đầy đủ (highlight đáp án đúng xanh lá, giải thích chi tiết, toggle ẩn/hiện đáp án), và bảng con Sidebar Quick-Jump Navigator cuộn mượt đến câu hỏi 1..N.
-  - [x] Nâng cấp `SearchScreen`: Thêm icon Bookmark 1 chạm trên mỗi thẻ đề thi, phản hồi tức thời trạng thái lưu/bỏ lưu kèm SnackBar thông báo.
-  - [x] Nâng cấp `CreateRoomScreen` & `TeacherExamsScreen`: Hỗ trợ nạp song song đề của tôi và đề đã lưu, bổ sung bộ lọc nguồn đề 3 tab (`Tất cả`, `Đề của tôi`, `Đề đã lưu`) cùng huy hiệu "Đề lưu từ cộng đồng".
+  - [x] Nâng cấp `SearchScreen`: Thêm nút bấm nổi bật có chữ rõ ràng `'Lưu đề'` / `'Đã lưu'` kèm icon bookmark, tự co giãn thích ứng responsive (cả desktop lẫn mobile), phản hồi tức thời trạng thái lưu/bỏ lưu kèm SnackBar thông báo.
+  - [x] Nâng cấp `CreateRoomScreen` & `TeacherExamsScreen`: Hỗ trợ nạp song song đề của tôi và đề đã lưu, bổ sung bộ lọc nguồn đề 3 tab (`Tất cả`, `Đề của tôi`, `Đề đã lưu`) cùng huy hiệu "Đề lưu từ cộng đồng", kèm thông báo hướng dẫn rõ ràng nếu cần chạy SQL migration.
   - [x] Nâng tổng số bài kiểm thử tự động lên **192 / 192 bài kiểm thử (100% PASS)**.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)

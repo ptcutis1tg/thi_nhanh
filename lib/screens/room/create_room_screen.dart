@@ -147,10 +147,15 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
       if (mounted) context.go('/teacher_waiting_room?roomId=${room.id}');
     } catch (error) {
       if (mounted) {
+        String msg = error.toString();
+        if (msg.contains('Chỉ có thể tạo phòng từ đề đã xuất bản của bạn')) {
+          msg = 'Đề này được lưu từ cộng đồng. Hãy chạy file migration SQL trên Supabase để cấp quyền mở phòng từ đề đã lưu!';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Không thể tạo phòng: $error'),
+            content: Text('Không thể tạo phòng: $msg'),
             backgroundColor: AppTheme.error,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
