@@ -11,6 +11,7 @@ import 'core/providers/auth_provider.dart';
 import 'core/repositories/assessment_repository.dart';
 import 'core/repositories/teacher_exam_repository.dart';
 import 'core/repositories/room_repository.dart';
+import 'core/repositories/saved_exam_repository.dart';
 import 'core/services/developer_mode_service.dart';
 import 'shared/widgets/developer_log_overlay.dart';
 import 'screens/auth/greeting_screen.dart';
@@ -139,6 +140,10 @@ void main() async {
         if (isSupabaseInitialized)
           Provider<RoomRepository>(
             create: (_) => RoomRepository(Supabase.instance.client),
+          ),
+        if (isSupabaseInitialized)
+          Provider<SavedExamRepository>(
+            create: (_) => SavedExamRepository(Supabase.instance.client),
           ),
       ],
       child: const ThiNhanhApp(),
