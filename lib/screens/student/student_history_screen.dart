@@ -9,7 +9,13 @@ import '../../shared/widgets/google_pagination_bar.dart';
 
 class StudentHistoryScreen extends StatefulWidget {
   final StudentProfileData? testData;
-  const StudentHistoryScreen({super.key, this.testData});
+  final String? initialTab;
+
+  const StudentHistoryScreen({
+    super.key,
+    this.testData,
+    this.initialTab,
+  });
 
   @override
   State<StudentHistoryScreen> createState() => _StudentHistoryScreenState();
@@ -21,6 +27,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
 
   bool _isLoading = true;
   StudentProfileData _data = StudentProfileData.empty();
+  String _selectedMainTab = 'completed'; // 'completed' or 'in_progress'
 
   // Filters
   String _searchQuery = '';
@@ -52,7 +59,20 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialTab == 'in_progress') {
+      _selectedMainTab = 'in_progress';
+    }
     _loadData();
+  }
+
+  @override
+  void didUpdateWidget(covariant StudentHistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTab != oldWidget.initialTab && widget.initialTab != null) {
+      setState(() {
+        _selectedMainTab = widget.initialTab == 'in_progress' ? 'in_progress' : 'completed';
+      });
+    }
   }
 
   @override
@@ -231,6 +251,13 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    AuthProvider? auth;
+    try {
+      auth = context.watch<AuthProvider>();
+    } catch (_) {
+      auth = null;
+    }
+
     final filteredItems = _filteredAndSortedItems;
     final totalPages = (filteredItems.length / _pageSize).ceil().clamp(1, 99999);
     if (_currentPage > totalPages) {
@@ -285,7 +312,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                     const SizedBox(height: 20),
 
                     // Guest Reminder Banner
-                    if (!context.watch<AuthProvider>().isAuthenticated) ...[
+                    if (auth != null && !auth.isAuthenticated) ...[
                       Container(
                         margin: const EdgeInsets.only(bottom: 20),
                         padding: const EdgeInsets.all(16),
@@ -361,104 +388,112 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                       ),
                     ],
 
-                    // Metrics Row
-                    LayoutBuilder(
-                      builder: (context, metricConstraints) {
-                        final isNarrow = metricConstraints.maxWidth < 650;
-                        if (isNarrow) {
-                          return Column(
+                    // 2-Tab Selector (Đã hoàn thành vs Chưa hoàn thành)
+                    _buildMainTabs(),
+                    const SizedBox(height: 16),
+
+                    if (_selectedMainTab == 'in_progress') ...[
+                      _buildInProgressContent(),
+                    ] else ...[
+                      // Metrics Row
+                      LayoutBuilder(
+                        builder: (context, metricConstraints) {
+                          final isNarrow = metricConstraints.maxWidth < 650;
+                          if (isNarrow) {
+                            return Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildMetricCard(
+                                        'Đã làm',
+                                        '${_data.completedTestsCount} bài',
+                                        Icons.assignment_turned_in_outlined,
+                                        const Color(0xFF7C3AED),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: _buildMetricCard(
+                                        'Điểm TB',
+                                        '${_data.averageScore.toStringAsFixed(1)} / 10',
+                                        Icons.analytics_outlined,
+                                        const Color(0xFF2563EB),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                _buildMetricCard(
+                                  'Điểm cao nhất',
+                                  '${_data.highestScore.toStringAsFixed(1)} / 10',
+                                  Icons.star_outline_rounded,
+                                  const Color(0xFFD97706),
+                                ),
+                              ],
+                            );
+                          }
+                          return Row(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildMetricCard(
-                                      'Đã làm',
-                                      '${_data.completedTestsCount} bài',
-                                      Icons.assignment_turned_in_outlined,
-                                      const Color(0xFF7C3AED),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: _buildMetricCard(
-                                      'Điểm TB',
-                                      '${_data.averageScore.toStringAsFixed(1)} / 10',
-                                      Icons.analytics_outlined,
-                                      const Color(0xFF2563EB),
-                                    ),
-                                  ),
-                                ],
+                              Expanded(
+                                child: _buildMetricCard(
+                                  'Tổng số bài đã làm',
+                                  '${_data.completedTestsCount} bài',
+                                  Icons.assignment_turned_in_outlined,
+                                  const Color(0xFF7C3AED),
+                                ),
                               ),
-                              const SizedBox(height: 10),
-                              _buildMetricCard(
-                                'Điểm cao nhất',
-                                '${_data.highestScore.toStringAsFixed(1)} / 10',
-                                Icons.star_outline_rounded,
-                                const Color(0xFFD97706),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _buildMetricCard(
+                                  'Điểm trung bình',
+                                  '${_data.averageScore.toStringAsFixed(1)} / 10',
+                                  Icons.analytics_outlined,
+                                  const Color(0xFF2563EB),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _buildMetricCard(
+                                  'Điểm cao nhất',
+                                  '${_data.highestScore.toStringAsFixed(1)} / 10',
+                                  Icons.star_outline_rounded,
+                                  const Color(0xFFD97706),
+                                ),
                               ),
                             ],
                           );
-                        }
-                        return Row(
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Search Box
+                      _buildSearchBox(),
+                      const SizedBox(height: 20),
+
+                      // Mode Tabs
+                      _buildModeTabs(),
+
+                      // Main Layout: Filter Panel + Results List
+                      if (compact) ...[
+                        _buildMobileQuickFilterBar(),
+                        const SizedBox(height: 16),
+                        _buildResultsContent(filteredItems, pageItems, startIndex, totalPages),
+                      ] else ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _buildMetricCard(
-                                'Tổng số bài đã làm',
-                                '${_data.completedTestsCount} bài',
-                                Icons.assignment_turned_in_outlined,
-                                const Color(0xFF7C3AED),
-                              ),
+                            SizedBox(
+                              width: 270,
+                              child: _buildFilterPanel(),
                             ),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 28),
                             Expanded(
-                              child: _buildMetricCard(
-                                'Điểm trung bình',
-                                '${_data.averageScore.toStringAsFixed(1)} / 10',
-                                Icons.analytics_outlined,
-                                const Color(0xFF2563EB),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _buildMetricCard(
-                                'Điểm cao nhất',
-                                '${_data.highestScore.toStringAsFixed(1)} / 10',
-                                Icons.star_outline_rounded,
-                                const Color(0xFFD97706),
-                              ),
+                              child: _buildResultsContent(filteredItems, pageItems, startIndex, totalPages),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Search Box
-                    _buildSearchBox(),
-                    const SizedBox(height: 20),
-
-                    // Mode Tabs
-                    _buildModeTabs(),
-
-                    // Main Layout: Filter Panel + Results List
-                    if (compact) ...[
-                      _buildMobileQuickFilterBar(),
-                      const SizedBox(height: 16),
-                      _buildResultsContent(filteredItems, pageItems, startIndex, totalPages),
-                    ] else ...[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 270,
-                            child: _buildFilterPanel(),
-                          ),
-                          const SizedBox(width: 28),
-                          Expanded(
-                            child: _buildResultsContent(filteredItems, pageItems, startIndex, totalPages),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -1332,5 +1367,432 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildMainTabs() {
+    final completedCount = _data.recentTests.length;
+    final inProgressCount = _data.inProgressTests.length;
+
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE9E4FA)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x06000000),
+            blurRadius: 10,
+            offset: Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildMainTabItem(
+            label: 'Đã hoàn thành',
+            count: completedCount,
+            keyName: 'completed',
+            icon: Icons.task_alt_rounded,
+            activeColor: AppTheme.primary,
+          ),
+          _buildMainTabItem(
+            label: 'Chưa hoàn thành',
+            count: inProgressCount,
+            keyName: 'in_progress',
+            icon: Icons.pending_actions_rounded,
+            activeColor: const Color(0xFFD97706),
+            hasAlertBadge: inProgressCount > 0,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainTabItem({
+    required String label,
+    required int count,
+    required String keyName,
+    required IconData icon,
+    required Color activeColor,
+    bool hasAlertBadge = false,
+  }) {
+    final isSelected = _selectedMainTab == keyName;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedMainTab = keyName;
+            _currentPage = 1;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : AppTheme.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? Colors.white : AppTheme.textMain,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : (hasAlertBadge ? const Color(0xFFFEF3C7) : const Color(0xFFF3F4F6)),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected
+                        ? Colors.white
+                        : (hasAlertBadge ? const Color(0xFFB45309) : AppTheme.textSecondary),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInProgressContent() {
+    final list = _data.inProgressTests;
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (list.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(48),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0ECFF),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle_outline_rounded, size: 48, color: AppTheme.primary),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Không có bài thi nào đang làm dở dang',
+              style: TextStyle(color: AppTheme.textMain, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Mọi tiến trình thi của bạn đều đã được hoàn tất hoặc nộp bài.',
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => context.go('/search'),
+              icon: const Icon(Icons.search_rounded, size: 18),
+              label: const Text('Khám phá đề thi ngay'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFD97706)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Danh sách gồm ${list.length} bài thi bạn chưa hoàn tất. Bạn có thể làm tiếp các bài còn hạn hoặc hủy/xóa bỏ bài cũ.',
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (context, index) => _buildInProgressCard(list[index]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInProgressCard(StudentTestHistoryData item) {
+    final isExpired = item.isExpired;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isExpired ? const Color(0xFFFCA5A5) : const Color(0xFFFDE68A),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: isExpired ? const Color(0xFFFEF2F2) : const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Text(item.subjectIcon, style: const TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isExpired ? const Color(0xFFFEE2E2) : const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isExpired ? Icons.timer_off_outlined : Icons.timelapse_rounded,
+                                size: 13,
+                                color: isExpired ? AppTheme.error : const Color(0xFFD97706),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isExpired ? 'Đã hết hạn làm bài' : 'Đang làm dở',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isExpired ? AppTheme.error : const Color(0xFFB45309),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          'Môn: ${item.subject}',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          '• Bắt đầu: ${item.date}',
+                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      item.title,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Divider(height: 1, color: Color(0xFFF3F0FC)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            alignment: WrapAlignment.end,
+            children: [
+              if (!isExpired) ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final query = <String>[
+                      'attemptId=${item.id}',
+                      if (item.roomId != null) 'roomId=${item.roomId}',
+                    ].join('&');
+                    context.go('/taking_exam?$query');
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded, size: 16),
+                  label: const Text('Tiếp tục làm bài'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _confirmCancelAttempt(item.id, item.title),
+                  icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppTheme.error),
+                  label: const Text('Hủy bài', style: TextStyle(color: AppTheme.error)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+              ] else ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final query = <String>[
+                      'attemptId=${item.id}',
+                      if (item.roomId != null) 'roomId=${item.roomId}',
+                    ].join('&');
+                    context.go('/taking_exam?$query');
+                  },
+                  icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                  label: const Text('Nộp để chấm điểm'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD97706),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _confirmCancelAttempt(item.id, item.title),
+                  icon: const Icon(Icons.delete_forever_rounded, size: 16, color: AppTheme.error),
+                  label: const Text('Xóa bài', style: TextStyle(color: AppTheme.error)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFFECACA)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmCancelAttempt(String attemptId, String title) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.error),
+            SizedBox(width: 8),
+            Text('Hủy bài thi dở dang?'),
+          ],
+        ),
+        content: Text('Bạn có chắc muốn hủy bài thi "$title" khỏi danh sách bài đang làm? Dữ liệu nháp của bài này sẽ bị xóa bỏ.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Không, giữ lại'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Đồng ý hủy'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final success = await ProfileService.cancelOrDeleteAttempt(attemptId);
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã hủy bài thi dở dang thành công.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          _loadData();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể hủy bài thi. Vui lòng thử lại.'),
+              backgroundColor: AppTheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
   }
 }
