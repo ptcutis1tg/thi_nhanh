@@ -46,6 +46,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   String? _activeAttemptId;
   String? _activeExamId;
   String? _activeRoomId;
+  int _inProgressCount = 0;
+  int _totalUnfinishedCount = 0;
   String? _activeLiveRoomCode;
   String? _activeLiveRoomId;
   String? _activeLiveRoomStatus;
@@ -120,16 +122,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     ]);
 
     if (mounted) {
-      final activeAttempt = results[2] as Map<String, String?>?;
+      final activeAttempt = results[2] as Map<String, dynamic>?;
       final activeLiveRoom = results[3] as Map<String, String?>?;
 
       setState(() {
         _studentStats = results[0] as StudentProfileData;
         _teacherStats = results[1] as TeacherProfileData;
         if (widget.initialActiveAttemptId == null && activeAttempt != null) {
-          _activeAttemptId = activeAttempt['attemptId'];
-          _activeExamId = activeAttempt['examId'];
-          _activeRoomId = activeAttempt['roomId'];
+          _activeAttemptId = activeAttempt['attemptId']?.toString();
+          _activeExamId = activeAttempt['examId']?.toString();
+          _activeRoomId = activeAttempt['roomId']?.toString();
+          _inProgressCount = (activeAttempt['inProgressCount'] as num?)?.toInt() ?? 0;
+          _totalUnfinishedCount = (activeAttempt['totalUnfinishedCount'] as num?)?.toInt() ?? 0;
+        }
+        if (_totalUnfinishedCount == 0 && _studentStats.inProgressTests.isNotEmpty) {
+          _totalUnfinishedCount = _studentStats.inProgressTests.length;
+          _inProgressCount = _studentStats.inProgressTests.where((t) => !t.isExpired).length;
         }
         if (widget.initialActiveLiveRoomCode == null && activeLiveRoom != null) {
           _activeLiveRoomCode = activeLiveRoom['code'];
@@ -593,7 +601,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildActiveAttemptCard(BuildContext context) {
-    final hasActive = _activeAttemptId != null && _activeAttemptId!.isNotEmpty;
+    final unfinishedCount = _totalUnfinishedCount > 0
+        ? _totalUnfinishedCount
+        : (_activeAttemptId != null && _activeAttemptId!.isNotEmpty ? 1 : 0);
+    final hasActive = unfinishedCount > 0;
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -634,7 +645,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      hasActive ? 'BÀI THI CHƯA HOÀN TẤT' : 'TIẾN ĐỘ HỌC TẬP',
+                      hasActive
+                          ? 'BÀI THI CHƯA HOÀN TẤT ($unfinishedCount)'
+                          : 'TIẾN ĐỘ HỌC TẬP',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -661,7 +674,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
           const SizedBox(height: 14),
           Text(
-            hasActive ? 'Bạn đang có bài thi chưa nộp' : 'Không có bài thi dở dang',
+            hasActive
+                ? (unfinishedCount > 1
+                    ? 'Bạn đang có $unfinishedCount bài thi chưa nộp'
+                    : 'Bạn đang có bài thi chưa nộp')
+                : 'Không có bài thi dở dang',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
@@ -671,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           const SizedBox(height: 6),
           Text(
             hasActive
-                ? 'Hệ thống đã tự động lưu lại tiến trình bài làm. Bạn có thể tiếp tục ngay.'
+                ? 'Hệ thống đã tự động lưu lại tiến trình bài làm. Bạn có thể xem danh sách và tiếp tục bất cứ lúc nào.'
                 : 'Mọi tiến trình thi sẽ tự động được lưu nháp để bạn có thể làm tiếp bất cứ lúc nào.',
             style: const TextStyle(
               fontSize: 12,
@@ -685,7 +702,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () => _onCardTap('Bài Đang Làm', '/taking_exam'),
+              onPressed: () => _onCardTap('Bài Đang Làm', '/student/history?tab=in_progress'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: hasActive ? const Color(0xFFD97706) : AppTheme.surfaceLavender,
                 foregroundColor: hasActive ? Colors.white : AppTheme.primary,
@@ -700,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    hasActive ? 'Tiếp tục làm bài' : 'Khám phá đề thi',
+                    hasActive ? 'Xem bài dở dang' : 'Khám phá đề thi',
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                   const SizedBox(width: 6),
@@ -1226,13 +1243,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _onCardTap(String title, String defaultRoute) {
     if (title == 'Bài Đang Làm') {
-      if (_activeAttemptId != null && _activeAttemptId!.isNotEmpty) {
-        final queryParams = <String>[
-          'attemptId=$_activeAttemptId',
-          if (_activeExamId != null && _activeExamId!.isNotEmpty) 'examId=$_activeExamId',
-          if (_activeRoomId != null && _activeRoomId!.isNotEmpty) 'roomId=$_activeRoomId',
-        ].join('&');
-        context.go('/taking_exam?$queryParams');
+      final unfinishedCount = _totalUnfinishedCount > 0
+          ? _totalUnfinishedCount
+          : (_activeAttemptId != null && _activeAttemptId!.isNotEmpty ? 1 : 0);
+      if (unfinishedCount > 0) {
+        context.go('/student/history?tab=in_progress');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

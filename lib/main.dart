@@ -275,7 +275,9 @@ final GoRouter _router = GoRouter(
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
             state: state,
-            child: const StudentHistoryScreen(),
+            child: StudentHistoryScreen(
+              initialTab: state.uri.queryParameters['tab'],
+            ),
           ),
         ),
         GoRoute(

@@ -43,6 +43,13 @@ void main() {
           },
         ),
         GoRoute(
+          path: '/student/history',
+          builder: (context, state) {
+            onNavigated?.call(state.uri.toString());
+            return Scaffold(body: Text('History Target: ${state.uri.queryParameters['tab']}'));
+          },
+        ),
+        GoRoute(
           path: '/search',
           builder: (context, state) {
             onNavigated?.call(state.uri.toString());
@@ -111,7 +118,7 @@ void main() {
     expect(lastNav, '/search');
   });
 
-  testWidgets('Tapping active attempt card with active attempt navigates to /taking_exam with attemptId & examId', (tester) async {
+  testWidgets('Tapping active attempt card with active attempt navigates to /student/history?tab=in_progress', (tester) async {
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -125,14 +132,17 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final cardBtn = find.text('Tiếp tục làm bài');
+    expect(find.textContaining('BÀI THI CHƯA HOÀN TẤT (1)'), findsOneWidget);
+    expect(find.text('Bạn đang có bài thi chưa nộp'), findsOneWidget);
+
+    final cardBtn = find.text('Xem bài dở dang');
     expect(cardBtn, findsOneWidget);
 
     await tester.tap(cardBtn);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(lastNav, contains('/taking_exam?attemptId=att-123456&examId=exam-999'));
+    expect(lastNav, '/student/history?tab=in_progress');
   });
 
   testWidgets('Tapping "Phòng Đang Diễn Ra" without active room shows snackbar and navigates to /create_room', (tester) async {
