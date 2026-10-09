@@ -281,9 +281,29 @@ graph TD
   - [x] Đồng bộ trạng thái động qua `didUpdateWidget`: Hỗ trợ chuyển đổi mượt mà giữa các môn học mà không cần tải lại widget.
   - [x] Bổ sung đầy đủ 'Ngữ văn' vào danh sách bộ lọc `_FilterPanel.availableSubjects`.
   - [x] Nâng tổng số bài kiểm thử tự động lên **194 / 194 bài kiểm thử (100% PASS)**.
+- ✅ **Giai đoạn 8: Phân Hệ Quản Lý Bài Thi Dở Dang & Điều Hướng Lịch Sử 2 Tab (In-Progress Exam Recovery & Student History Multi-Tab Navigation):**
+  - [x] Lớp Dữ liệu & Service (`ProfileService`, `StudentTestHistoryData`, `StudentProfileData`):
+    - Mở rộng model `StudentTestHistoryData` với các trường `status`, `startedAt`, `expiresAt`, `totalQuestions`, `answeredCount`, và getter thông minh `isExpired`.
+    - Phân tách tự động `completedTests` và `inProgressTests` trong `fetchStudentData`.
+    - Nâng cấp `fetchActiveAttempt`: Tự động lọc bỏ các bài thi đã hết hạn (`isExpired`), chỉ trả về attempt còn hiệu lực thực sự, đồng thời bổ sung `inProgressCount` (số bài còn hạn) và `totalUnfinishedCount` (tổng số bài dở dang bao gồm cả hết hạn).
+    - Bổ sung phương thức an toàn `cancelOrDeleteAttempt(attemptId)` hỗ trợ học sinh tự hủy hoặc xóa bản ghi bài thi dở dang không mong muốn.
+  - [x] Giao diện Lịch sử Học sinh 2 Tab (`StudentHistoryScreen`):
+    - Tích hợp 2 tab chuyên biệt: **"Đã hoàn thành"** và **"Chưa hoàn thành"** với số đếm động và huy hiệu cảnh báo màu hổ phách `badge`.
+    - Hỗ trợ deep-link và điều hướng tab qua query parameter URL (`/student/history?tab=in_progress`) và đồng bộ qua `didUpdateWidget`.
+    - Danh sách bài dở dang: Thẻ bài thi hiển thị rõ ràng thời gian bắt đầu, tiến độ làm câu hỏi (VD: "Đã làm 3/20 câu"), thời gian còn lại hoặc nhãn "Đã hết hạn".
+    - Hành vi tương tác linh hoạt: Với bài còn hạn: "Tiếp tục làm bài" + "Hủy bài"; với bài đã hết hạn: "Nộp để chấm điểm" + "Xóa bài" kèm dialog xác nhận an toàn.
+  - [x] Tối ưu hóa Thẻ Trang Chủ (`HomeScreen` & `GoRoute`):
+    - Cập nhật route `/student/history` chuyển tiếp `initialTab` từ URL.
+    - Nâng cấp thẻ "BÀI THI CHƯA HOÀN TẤT" trên `HomeScreen`: Hiển thị số lượng bài chưa nộp `($unfinishedCount)`, đổi nhãn nút bấm thành "Xem bài dở dang", dẫn thẳng học sinh vào tab `/student/history?tab=in_progress` để xem toàn cảnh bài dở dang thay vì nhảy mù vào bài thi đã hết hạn.
+  - [x] Phòng vệ Toàn diện Màn hình Làm bài (`TakingExamScreen`):
+    - Bổ sung getter `isExpired` trên `AttemptPayload`.
+    - Chặn đứng lỗi nộp bài tự động khi attempt đã hết hạn: Nếu mở bài thi đã hết giờ, hiển thị dialog lịch sự "Bài thi đã hết thời gian", cho phép "Nộp bài chấm điểm" hoặc "Quay về Lịch sử".
+    - Xử lý mượt mà bài thi đã nộp trước đó ("Bài thi đã nộp") chuyển sang xem kết quả.
+    - Bắt lỗi RPC / RLS `Attempt is closed` và hiển thị thông báo thân thiện hướng dẫn học sinh quay về lịch sử thay vì kẹt vĩnh viễn ở thanh lỗi đỏ thô ráp.
+  - [x] 100% kiểm thử tự động đạt chuẩn: Viết mới `student_in_progress_data_test.dart`, `student_history_tabs_test.dart`, `taking_exam_expired_guard_test.dart`, cập nhật `home_smart_navigation_test.dart`.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 8: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 9: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
 2. **Giai đoạn 9: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
