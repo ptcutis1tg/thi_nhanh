@@ -64,6 +64,7 @@ class AttemptPayload {
   final bool isAuthorPreview;
 
   bool get isOpen => status == 'in_progress';
+  bool get isExpired => status == 'expired' || DateTime.now().isAfter(expiresAt);
 
   factory AttemptPayload.fromJson(Map<String, dynamic> json) {
     final rawAnswers = (json['answers'] as Map<dynamic, dynamic>? ?? const {});

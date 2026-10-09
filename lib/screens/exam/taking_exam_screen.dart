@@ -323,7 +323,9 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
-        _startTimer();
+        if (widget.attemptId == null || widget.attemptId!.isEmpty) {
+          _startTimer();
+        }
       }
     }
   }
@@ -363,7 +365,163 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     }
     _hasSubmitted = attempt.status == 'submitted';
     if (mounted) setState(() => _isLoading = false);
+
+    if (_hasSubmitted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showAlreadySubmittedDialog(attempt.attemptId);
+      });
+      return;
+    }
+
+    if (attempt.isExpired || _remainingSeconds <= 0) {
+      _remainingSeconds = 0;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showExpiredAttemptDialog(attempt);
+      });
+      return;
+    }
+
     if (attempt.isOpen) _startTimer();
+  }
+
+  Future<void> _showExpiredAttemptDialog(AttemptPayload attempt) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFEF3C7),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.access_time_filled_rounded,
+                color: Color(0xFFD97706),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text(
+                'Bài thi đã hết thời gian',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textMain,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Thời gian làm bài cho đề thi này đã kết thúc trước đó. Bạn có thể nộp các câu đã làm để hệ thống chấm điểm hoặc quay lại danh sách bài thi.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9FAFB),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline_rounded, size: 16, color: AppTheme.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Đã làm: ${_selectedAnswers.length}/${_questions.length} câu',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              if (mounted) {
+                context.go('/student/history?tab=in_progress');
+              }
+            },
+            child: const Text('Quay về Lịch sử'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _submitExam();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD97706),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Nộp bài chấm điểm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAlreadySubmittedDialog(String attemptId) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: const Text('Bài thi đã nộp'),
+        content: const Text(
+          'Bài thi này đã được hoàn thành và nộp trước đó. Bạn có thể chuyển sang xem kết quả làm bài.',
+          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.go('/student/history');
+            },
+            child: const Text('Về Lịch sử'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              final resolvedRoomId = widget.roomId;
+              context.go(
+                '/result?attemptId=${Uri.encodeComponent(attemptId)}'
+                '${resolvedRoomId == null ? '' : '&roomId=${Uri.encodeComponent(resolvedRoomId)}'}',
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Xem kết quả'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _handlePressSubmit() async {
@@ -604,6 +762,45 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     debugPrint('Lỗi nộp bài thi: $error');
     if (!mounted) return;
     setState(() => _isSubmitting = false);
+
+    final errorStr = error.toString().toLowerCase();
+    final isClosedOrExpired = errorStr.contains('closed') ||
+        errorStr.contains('expired') ||
+        errorStr.contains('hết hạn') ||
+        errorStr.contains('đã đóng') ||
+        errorStr.contains('submitted');
+
+    if (isClosedOrExpired) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Bài thi đã kết thúc'),
+          content: const Text(
+            'Bài thi này đã được hệ thống ghi nhận kết thúc hoặc đã quá hạn làm bài.',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context.go('/student/history?tab=in_progress');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Về danh sách bài thi'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Không thể nộp bài: $error'),
