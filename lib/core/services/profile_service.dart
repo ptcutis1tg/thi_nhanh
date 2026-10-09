@@ -26,10 +26,15 @@ class StudentTestHistoryData {
   final String score;
   final double scoreValue;
   final String subject;
+  final String status; // 'submitted', 'in_progress', 'expired', 'cancelled'
   final DateTime? submittedAt;
+  final DateTime? startedAt;
+  final DateTime? expiresAt;
   final String? roomId;
   final String? roomCode;
   final int? durationSeconds;
+  final int? totalQuestions;
+  final int? answeredCount;
   final bool isLiveRoom;
   final bool resultReleased;
 
@@ -41,13 +46,20 @@ class StudentTestHistoryData {
     required this.score,
     required this.scoreValue,
     this.subject = 'Khác',
+    this.status = 'submitted',
     this.submittedAt,
+    this.startedAt,
+    this.expiresAt,
     this.roomId,
     this.roomCode,
     this.durationSeconds,
+    this.totalQuestions,
+    this.answeredCount,
     this.isLiveRoom = false,
     this.resultReleased = true,
   });
+
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   String get durationFormatted {
     if (durationSeconds == null || durationSeconds! <= 0) return '--:--';
@@ -69,6 +81,7 @@ class StudentProfileData {
   final Duration totalTimeSpent;
   final List<AchievementItemData> achievements;
   final List<StudentTestHistoryData> recentTests;
+  final List<StudentTestHistoryData> inProgressTests;
 
   StudentProfileData({
     required this.completedTestsCount,
@@ -80,6 +93,7 @@ class StudentProfileData {
     required this.totalTimeSpent,
     required this.achievements,
     required this.recentTests,
+    this.inProgressTests = const [],
   });
 
   factory StudentProfileData.empty() {
@@ -122,6 +136,7 @@ class StudentProfileData {
         ),
       ],
       recentTests: [],
+      inProgressTests: [],
     );
   }
 }
@@ -301,10 +316,12 @@ class ProfileService {
         status,
         started_at,
         submitted_at,
+        expires_at,
         result_released_at,
         exams (
           title,
-          subject
+          subject,
+          duration_minutes
         ),
         rooms (
           code,
@@ -510,6 +527,62 @@ class ProfileService {
         );
       }
 
+      // In-Progress / Unfinished Tests
+      final inProgressRaw = attemptsList.where((a) {
+        final st = a['status']?.toString();
+        return st == 'in_progress' || (st == 'expired' && a['score'] == null);
+      }).toList();
+
+      final List<StudentTestHistoryData> inProgressTests = [];
+      for (var a in inProgressRaw) {
+        final examMap = a['exams'] as Map<String, dynamic>?;
+        final title = examMap?['title'] as String? ?? 'Bài kiểm tra';
+        final subject = examMap?['subject'] as String? ?? 'Khác';
+        final icon = getSubjectIcon(subject);
+
+        DateTime? startedAt;
+        if (a['started_at'] != null) {
+          startedAt = DateTime.tryParse(a['started_at'].toString())?.toLocal();
+        }
+
+        DateTime? expiresAt;
+        if (a['expires_at'] != null) {
+          expiresAt = DateTime.tryParse(a['expires_at'].toString())?.toLocal();
+        } else if (startedAt != null) {
+          final durationMins = examMap?['duration_minutes'] as int? ?? 45;
+          expiresAt = startedAt.add(Duration(minutes: durationMins));
+        }
+
+        String dateStr = 'Mới đây';
+        if (startedAt != null) {
+          dateStr = '${startedAt.day.toString().padLeft(2, '0')}/${startedAt.month.toString().padLeft(2, '0')}/${startedAt.year}';
+        }
+
+        final roomMap = a['rooms'] as Map<String, dynamic>?;
+        final roomCode = roomMap?['code'] as String?;
+        final roomId = a['room_id']?.toString();
+        final isLiveRoom = roomId != null && roomId.isNotEmpty;
+
+        inProgressTests.add(
+          StudentTestHistoryData(
+            id: a['id'].toString(),
+            subjectIcon: icon,
+            title: title,
+            date: dateStr,
+            score: '--',
+            scoreValue: 0.0,
+            status: a['status']?.toString() ?? 'in_progress',
+            startedAt: startedAt,
+            expiresAt: expiresAt,
+            subject: subject,
+            roomId: roomId,
+            roomCode: roomCode,
+            isLiveRoom: isLiveRoom,
+            resultReleased: false,
+          ),
+        );
+      }
+
       return StudentProfileData(
         completedTestsCount: completedTestsCount,
         averageScore: averageScore,
@@ -520,6 +593,7 @@ class ProfileService {
         totalTimeSpent: totalDuration,
         achievements: achievements,
         recentTests: recentTests,
+        inProgressTests: inProgressTests,
       );
     } catch (e) {
       debugPrint('Lỗi tải dữ liệu Hồ sơ Học sinh từ Supabase: $e');
@@ -1039,8 +1113,8 @@ class ProfileService {
     }
   }
 
-  /// Truy vấn bài thi đang làm dở dang gần nhất của học sinh (status == 'in_progress')
-  static Future<Map<String, String?>?> fetchActiveAttempt({
+  /// Truy vấn bài thi đang làm dở dang gần nhất của học sinh (status == 'in_progress' và chưa hết hạn)
+  static Future<Map<String, dynamic>?> fetchActiveAttempt({
     required String? userId,
     required String? userEmail,
   }) async {
@@ -1051,7 +1125,18 @@ class ProfileService {
       return await SupabaseRetryHelper.run(() async {
         var query = client
             .from('attempts')
-            .select('id, exam_id, room_id, status, started_at')
+            .select('''
+              id,
+              exam_id,
+              room_id,
+              status,
+              started_at,
+              expires_at,
+              exams (
+                title,
+                duration_minutes
+              )
+            ''')
             .eq('status', 'in_progress');
 
         if (userId != null) {
@@ -1060,19 +1145,78 @@ class ProfileService {
           query = query.eq('guest_name', userEmail);
         }
 
-        final res = await query.order('started_at', ascending: false).limit(1).maybeSingle();
-        if (res != null) {
+        final res = await query.order('started_at', ascending: false);
+        final list = res as List<dynamic>;
+        if (list.isEmpty) return null;
+
+        final now = DateTime.now();
+        final validAttempts = list.where((item) {
+          if (item['expires_at'] != null) {
+            final exp = DateTime.tryParse(item['expires_at'].toString());
+            if (exp != null && exp.isBefore(now)) return false;
+          } else if (item['started_at'] != null) {
+            final started = DateTime.tryParse(item['started_at'].toString());
+            final durationMins = (item['exams'] as Map<String, dynamic>?)?['duration_minutes'] as int? ?? 45;
+            if (started != null && started.add(Duration(minutes: durationMins)).isBefore(now)) {
+              return false;
+            }
+          }
+          return true;
+        }).toList();
+
+        final first = validAttempts.isNotEmpty ? validAttempts.first : null;
+        if (first != null) {
+          final examMap = first['exams'] as Map<String, dynamic>?;
           return {
-            'attemptId': res['id']?.toString(),
-            'examId': res['exam_id']?.toString(),
-            'roomId': res['room_id']?.toString(),
+            'attemptId': first['id']?.toString(),
+            'examId': first['exam_id']?.toString(),
+            'roomId': first['room_id']?.toString(),
+            'examTitle': examMap?['title']?.toString(),
+            'inProgressCount': validAttempts.length,
+            'totalUnfinishedCount': list.length,
+          };
+        } else {
+          return {
+            'attemptId': null,
+            'examId': null,
+            'roomId': null,
+            'examTitle': null,
+            'inProgressCount': 0,
+            'totalUnfinishedCount': list.length,
           };
         }
-        return null;
       });
     } catch (e) {
       debugPrint('Lỗi truy vấn bài thi đang làm dở dang: $e');
       return null;
+    }
+  }
+
+  /// Hủy hoặc đóng một bài thi dở dang
+  static Future<bool> cancelOrDeleteAttempt(String attemptId) async {
+    final client = _client;
+    if (client == null || attemptId.isEmpty) return false;
+
+    try {
+      return await SupabaseRetryHelper.run(() async {
+        await client
+            .from('attempts')
+            .update({
+              'status': 'cancelled',
+              'submitted_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', attemptId);
+        return true;
+      });
+    } catch (e) {
+      debugPrint('Lỗi khi hủy bài thi $attemptId: $e');
+      try {
+        await client.from('attempts').delete().eq('id', attemptId);
+        return true;
+      } catch (errDelete) {
+        debugPrint('Lỗi khi xóa bài thi: $errDelete');
+        return false;
+      }
     }
   }
 
