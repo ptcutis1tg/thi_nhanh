@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/google_pagination_bar.dart';
 
@@ -65,6 +67,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   List<SearchExamItem> _realItems = [];
   bool _isLoading = true;
+  final Set<String> _savedExamIds = {};
 
   @override
   void initState() {
@@ -74,6 +77,57 @@ class _SearchScreenState extends State<SearchScreen> {
       _isLoading = false;
     } else {
       _fetchRealSearchData();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSavedExamIds();
+    });
+  }
+
+  Future<void> _loadSavedExamIds() async {
+    if (!mounted) return;
+    try {
+      final savedRepo = context.read<SavedExamRepository?>();
+      if (savedRepo != null) {
+        final ids = await savedRepo.getSavedExamIds();
+        if (mounted) {
+          setState(() {
+            _savedExamIds.clear();
+            _savedExamIds.addAll(ids);
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleSave(SearchExamItem item) async {
+    try {
+      final savedRepo = context.read<SavedExamRepository?>();
+      if (savedRepo == null) return;
+      final isNowSaved = await savedRepo.toggleSaveExam(item.id);
+      if (mounted) {
+        setState(() {
+          if (isNowSaved) {
+            _savedExamIds.add(item.id);
+          } else {
+            _savedExamIds.remove(item.id);
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isNowSaved ? 'Đã lưu đề vào kho của bạn' : 'Đã hủy lưu đề',
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e')),
+        );
+      }
     }
   }
 
@@ -303,7 +357,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                       ),
                                     ),
                                   ],
-                                  _ResultsGrid(items: pageItems),
+                                  _ResultsGrid(
+                                    items: pageItems,
+                                    savedExamIds: _savedExamIds,
+                                    onToggleSave: _toggleSave,
+                                  ),
                                   if (totalPages > 1) ...[
                                     const SizedBox(height: 16),
                                     GooglePaginationBar(
@@ -430,8 +488,15 @@ class _FilterPanel extends StatelessWidget {
 }
 
 class _ResultsGrid extends StatelessWidget {
-  const _ResultsGrid({required this.items});
+  const _ResultsGrid({
+    required this.items,
+    required this.savedExamIds,
+    required this.onToggleSave,
+  });
+
   final List<SearchExamItem> items;
+  final Set<String> savedExamIds;
+  final ValueChanged<SearchExamItem> onToggleSave;
 
   @override
   Widget build(BuildContext context) {
@@ -457,6 +522,7 @@ class _ResultsGrid extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
+        final isSaved = savedExamIds.contains(item.id);
         return Card(
           margin: const EdgeInsets.only(bottom: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -511,7 +577,17 @@ class _ResultsGrid extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
+                IconButton(
+                  tooltip: isSaved ? 'Bỏ lưu đề' : 'Lưu đề vào kho',
+                  icon: Icon(
+                    isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                    color: isSaved ? AppTheme.primary : AppTheme.textSecondary,
+                    size: 24,
+                  ),
+                  onPressed: () => onToggleSave(item),
+                ),
+                const SizedBox(width: 8),
                 ElevatedButton.icon(
                   onPressed: () {
                     if (item.id.isNotEmpty) {

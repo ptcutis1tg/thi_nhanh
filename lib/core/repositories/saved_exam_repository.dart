@@ -11,6 +11,31 @@ class SavedExamRepository {
 
   Set<String> get localSavedExamIds => Set.unmodifiable(_localSavedExamIds);
 
+  Future<Set<String>> getSavedExamIds() async {
+    final client = _client;
+    if (client == null || client.auth.currentUser == null) {
+      return Set.unmodifiable(_localSavedExamIds);
+    }
+    try {
+      final res = await SupabaseRetryHelper.run(
+        () => client
+            .from('saved_exams')
+            .select('exam_id')
+            .eq('user_id', client.auth.currentUser!.id),
+      );
+      final list = res as List<dynamic>;
+      for (final item in list) {
+        final eid = item['exam_id']?.toString();
+        if (eid != null && eid.isNotEmpty) {
+          _localSavedExamIds.add(eid);
+        }
+      }
+      return Set.unmodifiable(_localSavedExamIds);
+    } catch (_) {
+      return Set.unmodifiable(_localSavedExamIds);
+    }
+  }
+
   Future<bool> isExamSaved(String examId) async {
     if (examId.isEmpty) return false;
     final client = _client;
