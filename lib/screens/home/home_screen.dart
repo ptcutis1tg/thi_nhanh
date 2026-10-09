@@ -923,7 +923,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           return Padding(
             padding: const EdgeInsets.only(right: 10),
             child: InkWell(
-              onTap: () => context.go('/search?subject=${sub['name']}'),
+              onTap: () => context.go('/search?subject=${Uri.encodeComponent(sub['name']!)}'),
               borderRadius: BorderRadius.circular(AppTheme.pillRadius),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

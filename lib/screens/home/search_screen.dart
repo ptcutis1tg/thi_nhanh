@@ -47,9 +47,14 @@ class SearchExamItem {
 }
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key, this.initialItems});
+  const SearchScreen({
+    super.key,
+    this.initialItems,
+    this.initialSubject,
+  });
 
   final List<SearchExamItem>? initialItems;
+  final String? initialSubject;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -72,6 +77,9 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialSubject != null && widget.initialSubject!.trim().isNotEmpty) {
+      _subjects.add(widget.initialSubject!.trim());
+    }
     if (widget.initialItems != null) {
       _realItems = List.of(widget.initialItems!);
       _isLoading = false;
@@ -81,6 +89,20 @@ class _SearchScreenState extends State<SearchScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadSavedExamIds();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant SearchScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialSubject != oldWidget.initialSubject) {
+      setState(() {
+        _subjects.clear();
+        if (widget.initialSubject != null && widget.initialSubject!.trim().isNotEmpty) {
+          _subjects.add(widget.initialSubject!.trim());
+        }
+        _currentPage = 1;
+      });
+    }
   }
 
   Future<void> _loadSavedExamIds() async {
@@ -254,7 +276,14 @@ class _SearchScreenState extends State<SearchScreen> {
     final results = _realItems.where((item) {
       final matchesQuery = query.isEmpty ||
           '${item.title} ${item.teacher} ${item.subject} ${item.code}'.toLowerCase().contains(query);
-      final matchesSubject = _subjects.isEmpty || _subjects.contains(item.subject);
+      final matchesSubject = _subjects.isEmpty ||
+          _subjects.any((s) {
+            final sLow = s.trim().toLowerCase();
+            final itemLow = item.subject.trim().toLowerCase();
+            return sLow == itemLow ||
+                itemLow.contains(sLow) ||
+                sLow.contains(itemLow);
+          });
       final matchesType = _type == null || _type == item.type;
       return matchesQuery && matchesSubject && matchesType;
     }).toList();
@@ -307,7 +336,15 @@ class _SearchScreenState extends State<SearchScreen> {
                           type: _type,
                           sort: _sort,
                           onSubjectChanged: (subject, selected) => setState(() {
-                            selected ? _subjects.add(subject) : _subjects.remove(subject);
+                            if (selected) {
+                              _subjects.add(subject);
+                            } else {
+                              _subjects.removeWhere((s) {
+                                final sLow = s.trim().toLowerCase();
+                                final subLow = subject.trim().toLowerCase();
+                                return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+                              });
+                            }
                             _currentPage = 1;
                           }),
                           onTypeChanged: (type) => setState(() {
@@ -441,10 +478,11 @@ class _FilterPanel extends StatelessWidget {
     'Toán học',
     'Vật lý',
     'Hóa học',
-    'Sinh học',
     'Tiếng Anh',
+    'Sinh học',
     'Lịch sử',
     'Địa lý',
+    'Ngữ văn',
     'Tin học',
   ];
 
@@ -458,12 +496,16 @@ class _FilterPanel extends StatelessWidget {
             children: [
               const Text('Bộ Lọc Tìm Kiếm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 16),
-              const Text('Môn học (8 môn)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text('Môn học (${availableSubjects.length} môn)', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 8),
               ...availableSubjects.map(
                 (sub) => CheckboxListTile(
                   title: Text(sub, style: const TextStyle(fontSize: 13)),
-                  value: subjects.contains(sub),
+                  value: subjects.any((s) {
+                    final sLow = s.trim().toLowerCase();
+                    final subLow = sub.trim().toLowerCase();
+                    return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+                  }),
                   onChanged: (val) => onSubjectChanged(sub, val ?? false),
                   contentPadding: EdgeInsets.zero,
                   dense: true,

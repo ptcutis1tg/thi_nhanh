@@ -273,13 +273,21 @@ graph TD
   - [x] Nâng cấp `SearchScreen`: Thêm nút bấm nổi bật có chữ rõ ràng `'Lưu đề'` / `'Đã lưu'` kèm icon bookmark, tự co giãn thích ứng responsive (cả desktop lẫn mobile), phản hồi tức thời trạng thái lưu/bỏ lưu kèm SnackBar thông báo.
   - [x] Nâng cấp `CreateRoomScreen` & `TeacherExamsScreen`: Hỗ trợ nạp song song đề của tôi và đề đã lưu, bổ sung bộ lọc nguồn đề 3 tab (`Tất cả`, `Đề của tôi`, `Đề đã lưu`) cùng huy hiệu "Đề lưu từ cộng đồng", kèm thông báo hướng dẫn rõ ràng nếu cần chạy SQL migration.
   - [x] Nâng tổng số bài kiểm thử tự động lên **192 / 192 bài kiểm thử (100% PASS)**.
+- ✅ **Giai đoạn 7: Trải Nghiệm Khám Phá Nhanh & Lọc Tự Động Theo Môn Học (Seamless Quick Subject Exploration & Auto-Filtering):**
+  - [x] Tối ưu hóa khối "Danh Mục Học Tập" trên `HomeScreen`: Loại bỏ các nút dư thừa ("vào phòng thi", "bài đang làm"), tinh gọn trải nghiệm trang chủ.
+  - [x] Tích hợp bộ chuyển hướng nhanh từ hàng chip 8 môn học GDPT chuẩn (`HomeScreen`): Khi nhấn vào môn học (VD: Toán học, Vật lý, Ngữ văn...), ứng dụng tự động điều hướng sang `/search?subject=...` với mã hóa URI chuẩn (`Uri.encodeComponent`).
+  - [x] Khởi tạo bộ lọc tìm kiếm tức thì (`SearchScreen`): Nhận tham số `initialSubject` qua GoRoute, tự động tick sẵn môn học tương ứng trong `_FilterPanel`, lọc danh sách đề thi ngay lập tức.
+  - [x] Thuật toán khớp môn học linh hoạt (Bidirectional Resilient Matching): Xử lý tương thích hoàn hảo giữa nhãn UI ("Toán học") và dữ liệu máy chủ ("Toán"), đảm bảo không bỏ sót kết quả.
+  - [x] Đồng bộ trạng thái động qua `didUpdateWidget`: Hỗ trợ chuyển đổi mượt mà giữa các môn học mà không cần tải lại widget.
+  - [x] Bổ sung đầy đủ 'Ngữ văn' vào danh sách bộ lọc `_FilterPanel.availableSubjects`.
+  - [x] Nâng tổng số bài kiểm thử tự động lên **194 / 194 bài kiểm thử (100% PASS)**.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 7: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 8: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
-2. **Giai đoạn 8: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+2. **Giai đoạn 9: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 9: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 10: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
 

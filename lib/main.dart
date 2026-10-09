@@ -225,7 +225,9 @@ final GoRouter _router = GoRouter(
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
             state: state,
-            child: const SearchScreen(),
+            child: SearchScreen(
+              initialSubject: state.uri.queryParameters['subject'],
+            ),
           ),
         ),
         GoRoute(
