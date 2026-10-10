@@ -317,13 +317,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 const SizedBox(height: 32),
 
                 // 5. MAIN SECTION TITLE
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       isStudent ? '🚀 Danh Mục Học Tập' : '🛠️ Chức Năng Quản Lý',
-                      style: const TextStyle(
-                        fontSize: 22,
+                      style: TextStyle(
+                        fontSize: isMobile ? 18 : 22,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.textMain,
                       ),
@@ -331,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     Text(
                       isStudent ? 'Chế độ Học tập & Thi thử' : 'Chế độ Soạn đề & Quản lý',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.primary.withValues(alpha: 0.8),
                       ),
@@ -462,32 +465,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 6),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
-                        SizedBox(width: 6),
-                        Text(
-                          'Tài khoản Toàn quyền',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                   ),
-                ],
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text(
+                        'Tài khoản Toàn quyền',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -873,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(100),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
@@ -894,8 +897,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          spacing: 12,
+          runSpacing: 4,
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             const Text(
               '📚 Danh Mục Môn Học',
@@ -1200,7 +1206,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
         if (isMobile) {
           crossAxisCount = 1;
-          childAspectRatio = 2.4;
+          childAspectRatio = 1.85;
         } else if (items.length == 4) {
           if (constraints.maxWidth >= 950) {
             crossAxisCount = 4;
@@ -1234,6 +1240,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               gradient: item['gradient'],
               route: item['route'],
               isLive: item['isLive'],
+              isMobile: isMobile,
             );
           },
         );
@@ -1290,27 +1297,28 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     required List<Color> gradient,
     required String route,
     required bool isLive,
+    bool isMobile = false,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _onCardTap(title, route),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         hoverColor: Colors.white.withValues(alpha: 0.1),
         child: Ink(
-          padding: const EdgeInsets.all(22),
+          padding: EdgeInsets.all(isMobile ? 16 : 22),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: gradient,
             ),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
                 color: gradient.first.withValues(alpha: 0.3),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -1322,13 +1330,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: isMobile ? 40 : 48,
+                    height: isMobile ? 40 : 48,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 26),
+                    child: Icon(icon, color: Colors.white, size: isMobile ? 22 : 26),
                   ),
                   if (isLive)
                     Container(
@@ -1369,8 +1377,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 18,
+                    style: TextStyle(
+                      fontSize: isMobile ? 16 : 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -1379,7 +1387,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   Text(
                     desc,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: isMobile ? 11.5 : 12,
                       color: Colors.white.withValues(alpha: 0.85),
                     ),
                     maxLines: 2,
@@ -1555,8 +1563,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   // --- 8. BOTTOM UTILITY BAR ---
   Widget _buildBottomUtilityBar(BuildContext context, AuthProvider authProvider) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Wrap(
+      spacing: 12,
+      runSpacing: 8,
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         TextButton.icon(
           onPressed: () => context.go('/profile'),

@@ -311,114 +311,62 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 850;
+        final isMobile = constraints.maxWidth < 768;
+
         return SingleChildScrollView(
           controller: _scrollController,
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(isMobile ? 16 : 32),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1200),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SearchBox(
                     controller: _controller,
+                    isMobile: isMobile,
+                    activeFilterCount: _subjects.length + (_type != null ? 1 : 0),
                     onChanged: () => setState(() => _currentPage = 1),
+                    onOpenFilter: isMobile ? () => _showMobileFilterBottomSheet(context) : null,
                   ),
-                  const SizedBox(height: 32),
-                  Flex(
-                    direction: compact ? Axis.vertical : Axis.horizontal,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: compact ? double.infinity : 230,
-                        child: _FilterPanel(
-                          subjects: _subjects,
-                          type: _type,
-                          sort: _sort,
-                          onSubjectChanged: (subject, selected) => setState(() {
-                            if (selected) {
-                              _subjects.add(subject);
-                            } else {
-                              _subjects.removeWhere((s) {
-                                final sLow = s.trim().toLowerCase();
-                                final subLow = subject.trim().toLowerCase();
-                                return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
-                              });
-                            }
-                            _currentPage = 1;
-                          }),
-                          onTypeChanged: (type) => setState(() {
-                            _type = type;
-                            _currentPage = 1;
-                          }),
-                          onSortChanged: (sort) => setState(() {
-                            _sort = sort;
-                            _currentPage = 1;
-                          }),
+                  const SizedBox(height: 14),
+
+                  // Horizontal GDPT Subject Chips Bar
+                  _buildSubjectChipsBar(),
+                  const SizedBox(height: 18),
+
+                  if (isMobile) ...[
+                    // Mobile Results View
+                    _buildResultsContent(results, pageItems, startIndex, totalPages),
+                  ] else ...[
+                    // Desktop 2-Column View
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 240,
+                          child: _FilterPanel(
+                            subjects: _subjects,
+                            type: _type,
+                            sort: _sort,
+                            onSubjectChanged: _handleSubjectChanged,
+                            onTypeChanged: (type) => setState(() {
+                              _type = type;
+                              _currentPage = 1;
+                            }),
+                            onSortChanged: (sort) => setState(() {
+                              _sort = sort;
+                              _currentPage = 1;
+                            }),
+                          ),
                         ),
-                      ),
-                      SizedBox(width: compact ? 0 : 32, height: compact ? 24 : 0),
-                      Expanded(
-                        child: _isLoading
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(32),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (results.isNotEmpty) ...[
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
-                                      child: Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.find_in_page_outlined,
-                                            size: 18,
-                                            color: AppTheme.textSecondary,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'Tìm thấy khoảng ${results.length} đề thi • Đang hiện ${startIndex + 1} - ${math.min(startIndex + _pageSize, results.length)} (Trang $_currentPage / $totalPages)',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
-                                                color: AppTheme.textSecondary,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  _ResultsGrid(
-                                    items: pageItems,
-                                    savedExamIds: _savedExamIds,
-                                    onToggleSave: _toggleSave,
-                                  ),
-                                  if (totalPages > 1) ...[
-                                    const SizedBox(height: 16),
-                                    GooglePaginationBar(
-                                      currentPage: _currentPage,
-                                      totalPages: totalPages,
-                                      onPageChanged: (page) {
-                                        setState(() => _currentPage = page);
-                                        _scrollController.animateTo(
-                                          0,
-                                          duration: const Duration(milliseconds: 350),
-                                          curve: Curves.easeOutCubic,
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ],
-                              ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          child: _buildResultsContent(results, pageItems, startIndex, totalPages),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -427,34 +375,397 @@ class _SearchScreenState extends State<SearchScreen> {
       },
     );
   }
+
+  void _handleSubjectChanged(String subject, bool selected) {
+    setState(() {
+      if (selected) {
+        _subjects.add(subject);
+      } else {
+        _subjects.removeWhere((s) {
+          final sLow = s.trim().toLowerCase();
+          final subLow = subject.trim().toLowerCase();
+          return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+        });
+      }
+      _currentPage = 1;
+    });
+  }
+
+  Widget _buildSubjectChipsBar() {
+    final standardSubjects = [
+      'Tất cả',
+      'Toán học',
+      'Vật lý',
+      'Hóa học',
+      'Tiếng Anh',
+      'Sinh học',
+      'Lịch sử',
+      'Địa lý',
+      'Ngữ văn',
+      'Tin học',
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: standardSubjects.map((sub) {
+          final isAll = sub == 'Tất cả';
+          final isSelected = isAll
+              ? _subjects.isEmpty
+              : _subjects.any((s) {
+                  final sLow = s.trim().toLowerCase();
+                  final subLow = sub.trim().toLowerCase();
+                  return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+                });
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: InkWell(
+              onTap: () {
+                setState(() {
+                  if (isAll) {
+                    _subjects.clear();
+                  } else {
+                    if (isSelected) {
+                      _subjects.removeWhere((s) {
+                        final sLow = s.trim().toLowerCase();
+                        final subLow = sub.trim().toLowerCase();
+                        return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+                      });
+                    } else {
+                      _subjects.clear();
+                      _subjects.add(sub);
+                    }
+                  }
+                  _currentPage = 1;
+                });
+              },
+              borderRadius: BorderRadius.circular(100),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(
+                    color: isSelected ? AppTheme.primary : AppTheme.border,
+                    width: 1.2,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : const [
+                          BoxShadow(
+                            color: Color(0x04000000),
+                            blurRadius: 4,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                ),
+                child: Text(
+                  sub,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    color: isSelected ? Colors.white : AppTheme.textMain,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildResultsContent(
+    List<SearchExamItem> results,
+    List<SearchExamItem> pageItems,
+    int startIndex,
+    int totalPages,
+  ) {
+    if (_isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final endCount = math.min(startIndex + _pageSize, results.length);
+    final statusText =
+        'Tìm thấy khoảng ${results.length} đề thi • Đang hiện ${startIndex + 1} - $endCount (Trang $_currentPage / $totalPages)';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (results.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.find_in_page_outlined,
+                  size: 16,
+                  color: AppTheme.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    statusText,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        _ResultsGrid(
+          items: pageItems,
+          savedExamIds: _savedExamIds,
+          onToggleSave: _toggleSave,
+        ),
+        if (totalPages > 1) ...[
+          const SizedBox(height: 16),
+          GooglePaginationBar(
+            currentPage: _currentPage,
+            totalPages: totalPages,
+            onPageChanged: (page) {
+              setState(() => _currentPage = page);
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showMobileFilterBottomSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Bộ lọc tìm kiếm',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                        ),
+                        if (_subjects.isNotEmpty)
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _subjects.clear();
+                                _currentPage = 1;
+                              });
+                              setSheetState(() {});
+                            },
+                            child: const Text('Đặt lại', style: TextStyle(fontSize: 13, color: AppTheme.error)),
+                          ),
+                      ],
+                    ),
+                    const Divider(height: 20, color: AppTheme.border),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Sắp xếp theo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: ['Mới nhất', 'Thời gian tăng dần', 'Thời gian giảm dần'].map((s) {
+                                final isSelected = _sort == s;
+                                return ChoiceChip(
+                                  label: Text(s, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : AppTheme.textMain)),
+                                  selected: isSelected,
+                                  selectedColor: AppTheme.primary,
+                                  onSelected: (_) {
+                                    setState(() {
+                                      _sort = s;
+                                      _currentPage = 1;
+                                    });
+                                    setSheetState(() {});
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Môn học', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            const SizedBox(height: 8),
+                            ..._FilterPanel.availableSubjects.map((sub) {
+                              final isSelected = _subjects.any((s) {
+                                final sLow = s.trim().toLowerCase();
+                                final subLow = sub.trim().toLowerCase();
+                                return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+                              });
+                              return CheckboxListTile(
+                                title: Text(sub, style: const TextStyle(fontSize: 13)),
+                                value: isSelected,
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                onChanged: (val) {
+                                  _handleSubjectChanged(sub, val ?? false);
+                                  setSheetState(() {});
+                                },
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text('Áp dụng (${_filteredItems.length} đề thi)'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class _SearchBox extends StatelessWidget {
-  const _SearchBox({required this.controller, required this.onChanged});
+  const _SearchBox({
+    required this.controller,
+    required this.onChanged,
+    this.isMobile = false,
+    this.activeFilterCount = 0,
+    this.onOpenFilter,
+  });
+
   final TextEditingController controller;
   final VoidCallback onChanged;
+  final bool isMobile;
+  final int activeFilterCount;
+  final VoidCallback? onOpenFilter;
 
   @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: (_) => onChanged(),
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Tìm kiếm đề thi theo tên, môn học, giáo viên, mã đề...',
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            onChanged: (_) => onChanged(),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primary),
+              hintText: isMobile ? 'Tìm đề thi, môn, GV...' : 'Tìm kiếm đề thi theo tên, môn học, giáo viên, mã đề...',
+              hintStyle: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppTheme.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppTheme.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
               ),
             ),
           ),
+        ),
+        if (isMobile && onOpenFilter != null) ...[
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: 'Mở bộ lọc',
+            icon: Badge(
+              isLabelVisible: activeFilterCount > 0,
+              label: Text('$activeFilterCount', style: const TextStyle(fontSize: 10)),
+              child: const Icon(Icons.tune_rounded, size: 20),
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: activeFilterCount > 0 ? AppTheme.surfaceLavender : Colors.white,
+              foregroundColor: AppTheme.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: activeFilterCount > 0 ? AppTheme.primary : AppTheme.border),
+              ),
+              padding: const EdgeInsets.all(12),
+            ),
+            onPressed: onOpenFilter,
+          ),
+        ] else if (!isMobile) ...[
           const SizedBox(width: 12),
           ElevatedButton.icon(
             onPressed: onChanged,
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search_rounded, size: 18),
             label: const Text('Tìm kiếm'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
           ),
         ],
-      );
+      ],
+    );
+  }
 }
 
 class _FilterPanel extends StatelessWidget {
