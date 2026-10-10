@@ -871,76 +871,80 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
       child: Scaffold(
         backgroundColor: AppTheme.background,
         appBar: _buildMinimalAppBar(),
-        body: Column(
-          children: [
-            if (_isAuthorPreview)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 16,
-                ),
-                color: const Color(0xFFFEF3C7),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.visibility_outlined,
-                      color: Color(0xFFD97706),
-                      size: 18,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 700;
+
+            return Column(
+              children: [
+                if (_isAuthorPreview)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 16,
                     ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'Chế độ xem trước của tác giả (không tính vào Bảng xếp hạng công khai)',
-                        style: TextStyle(
-                          color: Color(0xFF92400E),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                    color: const Color(0xFFFEF3C7),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.visibility_outlined,
+                          color: Color(0xFFD97706),
+                          size: 18,
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Chế độ xem trước của tác giả (không tính vào Bảng xếp hạng công khai)',
+                            style: TextStyle(
+                              color: Color(0xFF92400E),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isMobile = constraints.maxWidth < 700;
-                      if (isMobile) {
-                        return Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: _buildQuestionArea(),
-                        );
-                      }
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: _buildQuestionArea(),
-                            ),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: _buildSidebarNavigator(),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
                   ),
+
+                if (isMobile && _questions.isNotEmpty)
+                  _buildMobileQuestionQuickStrip(),
+
+                Expanded(
+                  child: isMobile
+                      ? _buildMobileQuestionView()
+                      : Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 1200),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: _buildQuestionArea(isMobile: false),
+                                  ),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: _buildSidebarNavigator(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                 ),
-              ),
-            ),
-          ],
+
+                if (isMobile && _questions.isNotEmpty)
+                  _buildMobileBottomActionBar(),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -954,7 +958,20 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.edit_square, color: AppTheme.primary, size: 20),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain, size: 22),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: 'Thoát bài thi',
+            onPressed: () async {
+              final shouldPop = await _onWillPop();
+              if (shouldPop && mounted) {
+                context.pop();
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          const Icon(Icons.edit_square, color: AppTheme.primary, size: 18),
           const SizedBox(width: 6),
           Flexible(
             child: Text(
@@ -964,7 +981,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
               style: const TextStyle(
                 color: AppTheme.primary,
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontSize: 14,
               ),
             ),
           ),
@@ -972,7 +989,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
       ),
       actions: [
         Container(
-          margin: const EdgeInsets.symmetric(vertical: 10),
+          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: AppTheme.primary,
@@ -981,28 +998,18 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.timer_outlined, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
+              const Icon(Icons.timer_outlined, color: Colors.white, size: 15),
+              const SizedBox(width: 5),
               Text(
                 _remainingTime,
                 style: AppTheme.firaCodeStyle.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 13,
                 ),
               ),
             ],
           ),
-        ),
-        IconButton(
-          tooltip: 'Thoát',
-          icon: const Icon(Icons.logout, color: AppTheme.textSecondary),
-          onPressed: () async {
-            final shouldPop = await _onWillPop();
-            if (shouldPop && mounted) {
-              context.pop();
-            }
-          },
         ),
       ],
       bottom: PreferredSize(
@@ -1012,14 +1019,524 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     );
   }
 
-  Widget _buildQuestionArea() {
+  Widget _buildMobileQuestionQuickStrip() {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.border, width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _questions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, index) {
+                final isCurrent = index == _currentQuestionIndex;
+                final isAnswered = _selectedAnswers.containsKey(index);
+                final isFlagged = _flaggedQuestions[index] == true;
+
+                Color bgColor = Colors.white;
+                Color textColor = AppTheme.textMain;
+                Border border = Border.all(color: AppTheme.border);
+
+                if (isCurrent) {
+                  bgColor = AppTheme.surfaceLavender;
+                  textColor = AppTheme.primary;
+                  border = Border.all(color: AppTheme.primary, width: 2);
+                } else if (isAnswered) {
+                  bgColor = AppTheme.primary;
+                  textColor = Colors.white;
+                  border = Border.all(color: AppTheme.primaryDark);
+                }
+
+                return InkWell(
+                  onTap: _isSubmitting
+                      ? null
+                      : () => setState(() => _currentQuestionIndex = index),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(8),
+                      border: border,
+                    ),
+                    alignment: Alignment.center,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: textColor,
+                          ),
+                        ),
+                        if (isFlagged)
+                          Positioned(
+                            top: 1,
+                            right: 1,
+                            child: Icon(
+                              Icons.flag,
+                              size: 10,
+                              color: isAnswered ? Colors.amberAccent : AppTheme.warning,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            height: 28,
+            width: 1,
+            color: AppTheme.border,
+          ),
+          IconButton(
+            icon: const Icon(Icons.grid_view_rounded, color: AppTheme.primary, size: 22),
+            tooltip: 'Xem ma trận câu hỏi',
+            onPressed: () => _showQuestionGridBottomSheet(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuestionGridBottomSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final answeredCount = _selectedAnswers.length;
+            final totalCount = _questions.length;
+
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.75,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Danh sách câu hỏi',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceLavender,
+                            borderRadius: BorderRadius.circular(100),
+                          ),
+                          child: Text(
+                            '$answeredCount / $totalCount câu',
+                            style: AppTheme.firaCodeStyle.copyWith(
+                              color: AppTheme.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 6,
+                      children: [
+                        _buildLegendItem(AppTheme.primary, 'Đã làm', isFilled: true),
+                        _buildLegendItem(AppTheme.surfaceLavender, 'Đang làm', isOutline: true),
+                        _buildLegendItem(AppTheme.border, 'Chưa làm'),
+                        _buildLegendItem(AppTheme.warning, 'Cờ xem lại', isFlag: true),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 1.1,
+                        ),
+                        itemCount: _questions.length,
+                        itemBuilder: (context, index) {
+                          final isCurrent = index == _currentQuestionIndex;
+                          final isAnswered = _selectedAnswers.containsKey(index);
+                          final isFlagged = _flaggedQuestions[index] == true;
+
+                          Color bgColor = Colors.white;
+                          Color textColor = AppTheme.textMain;
+                          Border border = Border.all(color: AppTheme.border);
+
+                          if (isCurrent) {
+                            bgColor = AppTheme.surfaceLavender;
+                            textColor = AppTheme.primary;
+                            border = Border.all(color: AppTheme.primary, width: 2);
+                          } else if (isAnswered) {
+                            bgColor = AppTheme.primary;
+                            textColor = Colors.white;
+                            border = Border.all(color: AppTheme.primaryDark);
+                          }
+
+                          return InkWell(
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              setState(() => _currentQuestionIndex = index);
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: bgColor,
+                                borderRadius: BorderRadius.circular(8),
+                                border: border,
+                              ),
+                              alignment: Alignment.center,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                  if (isFlagged)
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: Icon(
+                                        Icons.flag,
+                                        size: 10,
+                                        color: isAnswered ? Colors.amberAccent : AppTheme.warning,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label, {bool isFilled = false, bool isOutline = false, bool isFlag = false}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isFlag)
+          const Icon(Icons.flag, size: 14, color: AppTheme.warning)
+        else
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: isFilled ? color : (isOutline ? color : Colors.white),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: isOutline ? AppTheme.primary : color),
+            ),
+          ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileQuestionView() {
     if (_questions.isEmpty) {
       return const Center(
         child: Text('Bài thi hiện chưa có câu hỏi trong cơ sở dữ liệu.'),
       );
     }
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final q = _questions[_currentQuestionIndex];
+    final qBody = q['body']?.toString() ?? '';
+    final options =
+        (q['question_options'] as List<dynamic>?)
+            ?.cast<Map<String, dynamic>>() ??
+        (q['options'] as List<dynamic>?)?.cast<Map<String, dynamic>>() ??
+        [];
+    if (!widget.shuffleQuestions) {
+      options.sort(
+        (a, b) =>
+            (a['position'] as int? ?? 0).compareTo(b['position'] as int? ?? 0),
+      );
+    }
+
+    final isFlagged = _flaggedQuestions[_currentQuestionIndex] == true;
+
+    return SelectionContainer.disabled(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      'Câu ${_currentQuestionIndex + 1}/${_questions.length}',
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        _flaggedQuestions[_currentQuestionIndex] = !isFlagged;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isFlagged ? Icons.flag : Icons.flag_outlined,
+                            size: 18,
+                            color: isFlagged ? AppTheme.warning : AppTheme.textSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isFlagged ? 'Đã ghim cờ' : 'Ghim cờ',
+                            style: TextStyle(
+                              color: isFlagged ? AppTheme.warning : AppTheme.textSecondary,
+                              fontSize: 12,
+                              fontWeight: isFlagged ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                qBody,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, height: 1.4),
+              ),
+              const SizedBox(height: 20),
+              Column(
+                children: List.generate(options.length, (optIdx) {
+                  final opt = options[optIdx];
+                  final optId =
+                      opt['id']?.toString() ??
+                      opt['body']?.toString() ??
+                      optIdx.toString();
+                  final optLetter = String.fromCharCode(65 + optIdx);
+                  final optBody = opt['body']?.toString() ?? '';
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildOptionTile(optId, optLetter, optBody),
+                  );
+                }),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileBottomActionBar() {
+    final isFirstQuestion = _currentQuestionIndex == 0;
+    final isLastQuestion = _currentQuestionIndex >= _questions.length - 1;
+    final isFlagged = _flaggedQuestions[_currentQuestionIndex] == true;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: const Border(top: BorderSide(color: AppTheme.border)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 10,
+        bottom: 10 + MediaQuery.of(context).padding.bottom,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: OutlinedButton.icon(
+              onPressed: !isFirstQuestion && !_isSubmitting
+                  ? () => setState(() => _currentQuestionIndex--)
+                  : null,
+              icon: const Icon(Icons.chevron_left_rounded, size: 20),
+              label: const Text('Câu trước', maxLines: 1, overflow: TextOverflow.ellipsis),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            tooltip: isFlagged ? 'Bỏ cờ' : 'Đánh dấu cờ',
+            icon: Icon(
+              isFlagged ? Icons.flag_rounded : Icons.flag_outlined,
+              color: isFlagged ? AppTheme.warning : AppTheme.textSecondary,
+            ),
+            style: IconButton.styleFrom(
+              backgroundColor: isFlagged
+                  ? AppTheme.warning.withValues(alpha: 0.1)
+                  : AppTheme.background,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(
+                  color: isFlagged ? AppTheme.warning : AppTheme.border,
+                ),
+              ),
+            ),
+            onPressed: () {
+              setState(() {
+                _flaggedQuestions[_currentQuestionIndex] = !isFlagged;
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 1,
+            child: ElevatedButton.icon(
+              onPressed: (_isSubmitting || _hasSubmitted)
+                  ? null
+                  : (!isLastQuestion
+                      ? () => setState(() => _currentQuestionIndex++)
+                      : _handlePressSubmit),
+              icon: _isSubmitting && isLastQuestion
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Icon(
+                      !isLastQuestion
+                          ? Icons.chevron_right_rounded
+                          : (_hasSubmitted ? Icons.check_circle_outline : Icons.send_rounded),
+                      size: 20,
+                    ),
+              label: Text(
+                _isSubmitting && isLastQuestion
+                    ? 'Đang nộp...'
+                    : (_hasSubmitted && isLastQuestion
+                        ? 'Đã nộp'
+                        : (!isLastQuestion ? 'Câu sau' : 'Nộp bài')),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: !isLastQuestion
+                    ? AppTheme.primary
+                    : (_hasSubmitted ? AppTheme.textSecondary : AppTheme.success),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuestionArea({bool isMobile = false}) {
+    if (_questions.isEmpty) {
+      return const Center(
+        child: Text('Bài thi hiện chưa có câu hỏi trong cơ sở dữ liệu.'),
+      );
+    }
+
     final q = _questions[_currentQuestionIndex];
     final qBody = q['body']?.toString() ?? '';
     final options =
@@ -1039,168 +1556,168 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
 
     return SelectionContainer.disabled(
       child: Container(
-        padding: EdgeInsets.all(isMobile ? 16 : 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  'Câu hỏi ${_currentQuestionIndex + 1}/${_questions.length}',
-                  style: const TextStyle(
-                    color: AppTheme.primary,
-                    fontWeight: FontWeight.bold,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: Text(
+                    'Câu hỏi ${_currentQuestionIndex + 1}/${_questions.length}',
+                    style: const TextStyle(
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _flaggedQuestions[_currentQuestionIndex] = !isFlagged;
-                  });
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isFlagged ? Icons.flag : Icons.flag_outlined,
-                      size: 18,
-                      color: isFlagged
-                          ? AppTheme.warning
-                          : AppTheme.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      isFlagged ? 'Đã đánh dấu' : 'Đánh dấu xem lại',
-                      style: TextStyle(
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _flaggedQuestions[_currentQuestionIndex] = !isFlagged;
+                    });
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isFlagged ? Icons.flag : Icons.flag_outlined,
+                        size: 18,
                         color: isFlagged
                             ? AppTheme.warning
                             : AppTheme.textSecondary,
-                        fontSize: 12,
-                        fontWeight: isFlagged
-                            ? FontWeight.bold
-                            : FontWeight.normal,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            qBody,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 24),
-
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: isMobile ? 1 : 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: isMobile ? 5 : 4,
-              children: List.generate(options.length, (optIdx) {
-                final opt = options[optIdx];
-                final optId =
-                    opt['id']?.toString() ??
-                    opt['body']?.toString() ??
-                    optIdx.toString();
-                final optLetter = String.fromCharCode(65 + optIdx);
-                final optBody = opt['body']?.toString() ?? '';
-
-                return _buildOptionTile(optId, optLetter, optBody);
-              }),
-            ),
-          ),
-
-          const Divider(height: 32, color: AppTheme.border),
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _currentQuestionIndex > 0 && !_isSubmitting
-                    ? () => setState(() => _currentQuestionIndex--)
-                    : null,
-                icon: const Icon(Icons.chevron_left),
-                label: const Text('Câu trước'),
-              ),
-              ElevatedButton.icon(
-                onPressed: (_isSubmitting || _hasSubmitted)
-                    ? null
-                    : (!isLastQuestion
-                          ? () => setState(() => _currentQuestionIndex++)
-                          : _handlePressSubmit),
-                icon: _isSubmitting && isLastQuestion
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                      const SizedBox(width: 4),
+                      Text(
+                        isFlagged ? 'Đã đánh dấu' : 'Đánh dấu xem lại',
+                        style: TextStyle(
+                          color: isFlagged
+                              ? AppTheme.warning
+                              : AppTheme.textSecondary,
+                          fontSize: 12,
+                          fontWeight: isFlagged
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
-                      )
-                    : Icon(
-                        !isLastQuestion
-                            ? Icons.chevron_right
-                            : (_hasSubmitted
-                                  ? Icons.check_circle_outline
-                                  : Icons.send),
                       ),
-                label: Text(
-                  _isSubmitting && isLastQuestion
-                      ? 'Đang nộp bài...'
-                      : (_hasSubmitted && isLastQuestion
-                            ? 'Đã nộp bài'
-                            : (!isLastQuestion ? 'Câu sau' : 'Nộp bài')),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: !isLastQuestion
-                      ? null
-                      : (_hasSubmitted
-                            ? AppTheme.textSecondary
-                            : AppTheme.success),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+                    ],
                   ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              qBody,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 24),
+
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 4,
+                children: List.generate(options.length, (optIdx) {
+                  final opt = options[optIdx];
+                  final optId =
+                      opt['id']?.toString() ??
+                      opt['body']?.toString() ??
+                      optIdx.toString();
+                  final optLetter = String.fromCharCode(65 + optIdx);
+                  final optBody = opt['body']?.toString() ?? '';
+
+                  return _buildOptionTile(optId, optLetter, optBody);
+                }),
               ),
-            ],
-          ),
-        ],
+            ),
+
+            const Divider(height: 32, color: AppTheme.border),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _currentQuestionIndex > 0 && !_isSubmitting
+                    ? () => setState(() => _currentQuestionIndex--)
+                    : null,
+                  icon: const Icon(Icons.chevron_left),
+                  label: const Text('Câu trước'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: (_isSubmitting || _hasSubmitted)
+                      ? null
+                      : (!isLastQuestion
+                            ? () => setState(() => _currentQuestionIndex++)
+                            : _handlePressSubmit),
+                  icon: _isSubmitting && isLastQuestion
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          !isLastQuestion
+                              ? Icons.chevron_right
+                              : (_hasSubmitted
+                                    ? Icons.check_circle_outline
+                                    : Icons.send),
+                        ),
+                  label: Text(
+                    _isSubmitting && isLastQuestion
+                        ? 'Đang nộp bài...'
+                        : (_hasSubmitted && isLastQuestion
+                              ? 'Đã nộp bài'
+                              : (!isLastQuestion ? 'Câu sau' : 'Nộp bài')),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: !isLastQuestion
+                        ? null
+                        : (_hasSubmitted
+                              ? AppTheme.textSecondary
+                              : AppTheme.success),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildOptionTile(String optId, String letter, String text) {
     final isSelected = _selectedAnswers[_currentQuestionIndex] == optId;
@@ -1241,6 +1758,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
             },
       borderRadius: BorderRadius.circular(16),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 52),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.white,
@@ -1274,7 +1792,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(width: 8),
-            Expanded(child: Text(text)),
+            Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
           ],
         ),
       ),
@@ -1434,3 +1952,5 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     );
   }
 }
+
+
