@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onthi_community/core/models/scientific_shortcut.dart';
 import 'package:onthi_community/core/models/visual_math_block.dart';
 import 'package:onthi_community/screens/exam/widgets/scientific_bottom_toolbar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets(
     'ScientificBottomToolbar displays categories and inserts fraction snippet',
     (tester) async {
@@ -58,6 +61,47 @@ void main() {
 
       expect(insertedBlock, isNull);
       expect(inserted, contains(r'\rightarrow'));
+    },
+  );
+
+  testWidgets(
+    'chemistry tab supports search, collapse, and settings for every symbol',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: ScientificBottomToolbar(
+              initialCategory: ScientificCategory.chemistry,
+              onInsertSnippet: (_, _, _) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(
+        find.byKey(const Key('scientific-symbol-search')),
+        'Amoni',
+      );
+      await tester.pump();
+      expect(find.byTooltip('Ion Amoni'), findsOneWidget);
+
+      final collapse = find.byTooltip('Thu gọn thanh ký hiệu');
+      await tester.ensureVisible(collapse);
+      await tester.tap(collapse);
+      await tester.pump();
+      expect(find.byTooltip('Ion Amoni'), findsNothing);
+
+      final expand = find.byTooltip('Mở thanh ký hiệu');
+      await tester.ensureVisible(expand);
+      await tester.tap(expand);
+      await tester.pump();
+      final settings = find.byKey(const Key('scientific-shortcut-settings'));
+      await tester.ensureVisible(settings);
+      await tester.tap(settings);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('shortcut-command-27')), findsOneWidget);
     },
   );
 }

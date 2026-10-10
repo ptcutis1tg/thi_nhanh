@@ -12,6 +12,7 @@ import 'widgets/latex_math_view.dart';
 import 'widgets/question_answers_editor.dart';
 import 'widgets/quick_bulk_import_dialog.dart';
 import 'widgets/scientific_bottom_toolbar.dart';
+import 'widgets/scientific_text_field.dart';
 import 'widgets/student_exam_preview_dialog.dart';
 import 'widgets/inline_visual_math_editor.dart';
 import '../../core/models/scientific_shortcut.dart';
@@ -43,10 +44,19 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   final List<QuestionDraft> _questions = [];
 
-  // Active controller and focus tracking for snippet insertion
-  TextEditingController? _activeTextController;
-  final Map<String, TextEditingController> _bodyControllers = {};
-  final Map<String, TextEditingController> _explanationControllers = {};
+  ScientificInputTarget? _activeInputTarget;
+
+  ScientificCategory _categoryForSubject(String? subject) {
+    final normalized = subject?.toLowerCase() ?? '';
+    if (normalized.contains('hóa')) return ScientificCategory.chemistry;
+    if (normalized.contains('lý') || normalized.contains('vật')) {
+      return ScientificCategory.physics;
+    }
+    if (normalized.contains('anh') || normalized.contains('ngoại')) {
+      return ScientificCategory.languages;
+    }
+    return ScientificCategory.math;
+  }
 
   double get _totalPoints => _questions.fold<double>(
     0,
@@ -87,6 +97,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         _examNameController.text = exam['title'] as String;
         _durationController.text = '${exam['durationMinutes']}';
         _selectedSubject = exam['subject'] as String;
+        _scientificCategory = _categoryForSubject(_selectedSubject);
         _status = exam['status'] as String;
 
         _questions.clear();
@@ -116,12 +127,6 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   void dispose() {
     _examNameController.dispose();
     _durationController.dispose();
-    for (var c in _bodyControllers.values) {
-      c.dispose();
-    }
-    for (var c in _explanationControllers.values) {
-      c.dispose();
-    }
     super.dispose();
   }
 
@@ -142,6 +147,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     }
     setState(() {
       _isConfigured = true;
+      _scientificCategory = _categoryForSubject(_selectedSubject);
       if (_questions.isEmpty) {
         _addQuestion();
       }
@@ -154,6 +160,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         QuestionDraft(id: DateTime.now().microsecondsSinceEpoch.toString()),
       );
       _activeQuestionIndex = _questions.length - 1;
+      _activeInputTarget = null;
     });
   }
 
@@ -165,6 +172,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     setState(() {
       _questions.insert(index + 1, copy);
       _activeQuestionIndex = index + 1;
+      _activeInputTarget = null;
     });
     _showMessage('Đã nhân bản câu hỏi ${index + 1}.');
   }
@@ -180,6 +188,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         0,
         _questions.length - 1,
       );
+      _activeInputTarget = null;
     });
   }
 
@@ -188,6 +197,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       final item = _questions.removeAt(oldIndex);
       _questions.insert(newIndex, item);
       _activeQuestionIndex = newIndex;
+      _activeInputTarget = null;
     });
   }
 
@@ -207,6 +217,14 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     int selectionOffset,
     int selectionLength,
   ) {
+    if (_activeInputTarget != null) {
+      _activeInputTarget!.insertText(
+        template,
+        selectionOffset,
+        selectionLength,
+      );
+      return;
+    }
     final q = _questions[_activeQuestionIndex];
     setState(() {
       q.body = q.body.isEmpty ? template : '${q.body} $template';
@@ -404,7 +422,10 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 ExamLeftSidebar(
                   questions: _questions,
                   activeIndex: _activeQuestionIndex,
-                  onSelect: (idx) => setState(() => _activeQuestionIndex = idx),
+                  onSelect: (idx) => setState(() {
+                    _activeQuestionIndex = idx;
+                    _activeInputTarget = null;
+                  }),
                   onAdd: _addQuestion,
                   onDuplicate: _duplicateQuestion,
                   onDelete: _removeQuestion,
@@ -423,9 +444,17 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     children: [
                       Expanded(child: _buildCenterEditor()),
                       ScientificBottomToolbar(
+                        initialCategory: _scientificCategory,
                         onInsertSnippet: _insertSnippetAtCursor,
-                        onInsertMathBlock: (type) =>
-                            _editorController.insertMathBlock(type),
+                        activeTargetLabel: _activeInputTarget?.label,
+                        onInsertMathBlock: (type) {
+                          final target = _activeInputTarget;
+                          if (target != null) {
+                            target.insertBlock(type);
+                          } else {
+                            _editorController.insertMathBlock(type);
+                          }
+                        },
                         onCategoryChanged: (category) {
                           setState(() => _scientificCategory = category);
                         },
@@ -730,6 +759,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     shortcutCategory: _scientificCategory,
                     shortcuts:
                         _scientificShortcuts[_scientificCategory] ?? const [],
+                    onFocusTarget: (target) {
+                      setState(() => _activeInputTarget = target);
+                    },
                     onChanged: (val) {
                       question.body = val;
                       setState(() {});
@@ -788,6 +820,12 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   QuestionAnswersEditor(
                     question: question,
                     onChanged: () => setState(() {}),
+                    shortcutCategory: _scientificCategory,
+                    shortcuts:
+                        _scientificShortcuts[_scientificCategory] ?? const [],
+                    onFocusTarget: (target) {
+                      setState(() => _activeInputTarget = target);
+                    },
                   ),
                   const SizedBox(height: 28),
                   // Explanation field
@@ -796,10 +834,17 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 10),
-                  TextFormField(
+                  ScientificTextField(
                     key: ValueKey('explanation-${question.id}'),
                     initialValue: question.explanation,
                     maxLines: 3,
+                    category: _scientificCategory,
+                    shortcuts:
+                        _scientificShortcuts[_scientificCategory] ?? const [],
+                    fieldLabel: 'Lời giải thích',
+                    onFocused: (target) {
+                      setState(() => _activeInputTarget = target);
+                    },
                     onChanged: (val) => question.explanation = val,
                     decoration: const InputDecoration(
                       hintText:

@@ -30,12 +30,16 @@ class ScientificBottomToolbar extends StatefulWidget {
     this.onInsertMathBlock,
     this.onCategoryChanged,
     this.onShortcutsChanged,
+    this.initialCategory = ScientificCategory.math,
+    this.activeTargetLabel,
   });
 
   final void Function(String template, int selectionOffset, int selectionLength)
   onInsertSnippet;
   final void Function(MathBlockType type)? onInsertMathBlock;
   final ValueChanged<ScientificCategory>? onCategoryChanged;
+  final ScientificCategory initialCategory;
+  final String? activeTargetLabel;
   final void Function(
     Map<ScientificCategory, List<ScientificShortcut>> shortcuts,
   )?
@@ -48,6 +52,8 @@ class ScientificBottomToolbar extends StatefulWidget {
 
 class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
   int _activeCategory = 0;
+  bool _isCollapsed = false;
+  String _query = '';
   Map<ScientificCategory, List<ScientificShortcut>> _shortcuts =
       ScientificShortcutStore.freshDefaults();
 
@@ -57,6 +63,7 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
   @override
   void initState() {
     super.initState();
+    _activeCategory = widget.initialCategory.index;
     _loadShortcuts();
   }
 
@@ -67,8 +74,38 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
     widget.onShortcutsChanged?.call(_shortcuts);
   }
 
+  ScientificShortcut _bindingForSnippet(
+    ScientificSnippet snippet,
+    List<ScientificShortcut> saved,
+  ) {
+    final normalizedTemplate =
+        (snippet.isLatex ? '\$${snippet.template.trim()}\$' : snippet.template)
+            .replaceAll(' ', '');
+    for (final shortcut in saved) {
+      if (snippet.blockType != null &&
+          shortcut.blockType == snippet.blockType) {
+        return shortcut;
+      }
+      if ((shortcut.template ?? '').replaceAll(' ', '') == normalizedTemplate) {
+        return shortcut;
+      }
+    }
+    return ScientificShortcut(
+      command: '',
+      label: snippet.tooltip,
+      template: snippet.isLatex
+          ? '\$${snippet.template.trim()}\$'
+          : snippet.template,
+      blockType: snippet.blockType,
+    );
+  }
+
   Future<void> _openShortcutSettings() async {
-    final current = _shortcuts[_category]!;
+    final saved = _shortcuts[_category]!;
+    final current = [
+      for (final snippet in _currentSnippets)
+        _bindingForSnippet(snippet, saved),
+    ];
     final controllers = [
       for (final shortcut in current)
         TextEditingController(text: shortcut.command),
@@ -133,11 +170,14 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
               final commands = controllers
                   .map((item) => item.text.trim())
                   .toList();
+              final assigned = commands
+                  .where((command) => command.isNotEmpty)
+                  .toList();
               final valid =
-                  commands.every(
+                  assigned.every(
                     (item) => item.startsWith('/') && item.length >= 2,
                   ) &&
-                  commands.toSet().length == commands.length;
+                  assigned.toSet().length == assigned.length;
               if (!valid) {
                 ScaffoldMessenger.of(dialogContext).showSnackBar(
                   const SnackBar(
@@ -162,7 +202,11 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
       controller.dispose();
     }
     if (updated == null) return;
-    setState(() => _shortcuts[_category] = updated);
+    setState(
+      () => _shortcuts[_category] = updated
+          .where((shortcut) => shortcut.command.isNotEmpty)
+          .toList(),
+    );
     await ScientificShortcutStore.save(_shortcuts);
     widget.onShortcutsChanged?.call(_shortcuts);
   }
@@ -652,6 +696,18 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
     }
   }
 
+  List<ScientificSnippet> get _visibleSnippets {
+    final query = _query.trim().toLowerCase();
+    if (query.isEmpty) return _currentSnippets;
+    return _currentSnippets
+        .where(
+          (snippet) =>
+              snippet.label.toLowerCase().contains(query) ||
+              snippet.tooltip.toLowerCase().contains(query),
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -712,64 +768,110 @@ class _ScientificBottomToolbarState extends State<ScientificBottomToolbar> {
                   onPressed: _openShortcutSettings,
                   icon: const Icon(Icons.settings_outlined, size: 19),
                 ),
+                SizedBox(
+                  width: 180,
+                  child: TextField(
+                    key: const Key('scientific-symbol-search'),
+                    onChanged: (value) => setState(() => _query = value),
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: 'Tìm ký hiệu...',
+                      prefixIcon: Icon(Icons.search, size: 17),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: _isCollapsed
+                      ? 'Mở thanh ký hiệu'
+                      : 'Thu gọn thanh ký hiệu',
+                  onPressed: () => setState(() => _isCollapsed = !_isCollapsed),
+                  icon: Icon(
+                    _isCollapsed
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                  ),
+                ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppTheme.border),
+          if (!_isCollapsed) const Divider(height: 1, color: AppTheme.border),
+          if (!_isCollapsed && widget.activeTargetLabel != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.edit_location_alt_outlined,
+                    size: 15,
+                    color: AppTheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Đang chèn vào: ${widget.activeTargetLabel}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // Snippet buttons row
-          Container(
-            height: 52,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _currentSnippets.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (ctx, index) {
-                final item = _currentSnippets[index];
-                return Tooltip(
-                  message: item.tooltip,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      if (widget.onInsertMathBlock != null &&
-                          item.blockType != null) {
-                        widget.onInsertMathBlock!(item.blockType!);
-                        return;
-                      }
-                      final str = item.isLatex
-                          ? '\$${item.template}\$'
-                          : item.template;
-                      widget.onInsertSnippet(
-                        str,
-                        item.selectionOffset,
-                        item.selectionLength,
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
-                      ),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: AppTheme.background,
-                        border: Border.all(color: AppTheme.border),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        item.label,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
+          if (!_isCollapsed)
+            Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _visibleSnippets.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (ctx, index) {
+                  final item = _visibleSnippets[index];
+                  return Tooltip(
+                    message: item.tooltip,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        if (widget.onInsertMathBlock != null &&
+                            item.blockType != null) {
+                          widget.onInsertMathBlock!(item.blockType!);
+                          return;
+                        }
+                        final str = item.isLatex
+                            ? '\$${item.template}\$'
+                            : item.template;
+                        widget.onInsertSnippet(
+                          str,
+                          item.selectionOffset,
+                          item.selectionLength,
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppTheme.background,
+                          border: Border.all(color: AppTheme.border),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item.label,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primary,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
         ],
       ),
     );

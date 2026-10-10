@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'visual_math_block.dart';
 
@@ -192,27 +193,85 @@ class ScientificShortcutStore {
       entry.key: entry.value.map((shortcut) => shortcut.copyWith()).toList(),
   };
 
-  static Future<Map<ScientificCategory, List<ScientificShortcut>>>
-  load() async {
-    final result = freshDefaults();
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_preferenceKey);
-    if (raw == null) return result;
+  static Map<String, dynamic> _encode(
+    Map<ScientificCategory, List<ScientificShortcut>> shortcuts,
+  ) => {
+    for (final entry in shortcuts.entries)
+      entry.key.name: [
+        for (final shortcut in entry.value)
+          {
+            'command': shortcut.command,
+            'label': shortcut.label,
+            'template': shortcut.template,
+            'blockType': shortcut.blockType?.name,
+          },
+      ],
+  };
 
-    try {
-      final saved = jsonDecode(raw) as Map<String, dynamic>;
-      for (final category in ScientificCategory.values) {
-        final commands = saved[category.name] as Map<String, dynamic>?;
-        if (commands == null) continue;
+  static Map<ScientificCategory, List<ScientificShortcut>> _decode(
+    Map<String, dynamic> saved,
+  ) {
+    final result = freshDefaults();
+    for (final category in ScientificCategory.values) {
+      final value = saved[category.name];
+      if (value is List) {
+        result[category] = value
+            .whereType<Map>()
+            .map((raw) {
+              final blockName = raw['blockType'] as String?;
+              MathBlockType? blockType;
+              if (blockName != null) {
+                for (final type in MathBlockType.values) {
+                  if (type.name == blockName) blockType = type;
+                }
+              }
+              return ScientificShortcut(
+                command: raw['command'] as String? ?? '',
+                label: raw['label'] as String? ?? '',
+                template: raw['template'] as String?,
+                blockType: blockType,
+              );
+            })
+            .where((shortcut) => shortcut.command.isNotEmpty)
+            .toList();
+      } else if (value is Map) {
+        // Backward compatibility with the first label -> command format.
         result[category] = result[category]!.map((shortcut) {
-          final command = commands[shortcut.label] as String?;
+          final command = value[shortcut.label] as String?;
           return command == null
               ? shortcut
               : shortcut.copyWith(command: command);
         }).toList();
       }
+    }
+    return result;
+  }
+
+  static Future<Map<ScientificCategory, List<ScientificShortcut>>>
+  load() async {
+    final result = freshDefaults();
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final remote = Supabase
+          .instance
+          .client
+          .auth
+          .currentUser
+          ?.userMetadata?[_preferenceKey];
+      if (remote is Map) {
+        return _decode(Map<String, dynamic>.from(remote));
+      }
     } catch (_) {
-      return freshDefaults();
+      // Supabase may not be configured in tests or offline sessions.
+    }
+
+    final raw = prefs.getString(_preferenceKey);
+    if (raw != null) {
+      try {
+        return _decode(jsonDecode(raw) as Map<String, dynamic>);
+      } catch (_) {
+        return result;
+      }
     }
     return result;
   }
@@ -221,15 +280,17 @@ class ScientificShortcutStore {
     Map<ScientificCategory, List<ScientificShortcut>> shortcuts,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _preferenceKey,
-      jsonEncode({
-        for (final entry in shortcuts.entries)
-          entry.key.name: {
-            for (final shortcut in entry.value)
-              shortcut.label: shortcut.command,
-          },
-      }),
-    );
+    final encoded = _encode(shortcuts);
+    await prefs.setString(_preferenceKey, jsonEncode(encoded));
+    try {
+      final client = Supabase.instance.client;
+      if (client.auth.currentUser != null) {
+        await client.auth.updateUser(
+          UserAttributes(data: {_preferenceKey: encoded}),
+        );
+      }
+    } catch (_) {
+      // Local persistence remains authoritative while offline.
+    }
   }
 }

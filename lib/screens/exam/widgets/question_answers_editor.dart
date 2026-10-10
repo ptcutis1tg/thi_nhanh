@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/question_draft.dart';
+import '../../../core/models/scientific_shortcut.dart';
 import '../../../core/theme/app_theme.dart';
+import 'scientific_text_field.dart';
 
 class QuestionAnswersEditor extends StatelessWidget {
   const QuestionAnswersEditor({
     super.key,
     required this.question,
     required this.onChanged,
-    this.onFocusField,
+    this.shortcutCategory = ScientificCategory.math,
+    this.shortcuts = const [],
+    this.onFocusTarget,
   });
 
   final QuestionDraft question;
   final VoidCallback onChanged;
-  final void Function(TextEditingController controller)? onFocusField;
+  final ScientificCategory shortcutCategory;
+  final List<ScientificShortcut> shortcuts;
+  final ValueChanged<ScientificInputTarget>? onFocusTarget;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +53,9 @@ class QuestionAnswersEditor extends StatelessWidget {
               children: [
                 Radio<int>(
                   value: index,
-                  groupValue: question.correctAnswers.isNotEmpty ? question.correctAnswers.first : -1,
+                  groupValue: question.correctAnswers.isNotEmpty
+                      ? question.correctAnswers.first
+                      : -1,
                   activeColor: AppTheme.primary,
                   onChanged: (val) {
                     if (val != null) {
@@ -57,19 +65,32 @@ class QuestionAnswersEditor extends StatelessWidget {
                   },
                 ),
                 Expanded(
-                  child: TextFormField(
+                  child: ScientificTextField(
                     key: ValueKey('answer-${question.id}-$index'),
                     initialValue: question.answers[index],
+                    category: shortcutCategory,
+                    shortcuts: shortcuts,
+                    fieldLabel: 'Đáp án $letter',
+                    onFocused: onFocusTarget,
                     onChanged: (val) {
                       question.answers[index] = val;
                       onChanged();
                     },
                     decoration: InputDecoration(
                       labelText: '$letter. Đáp án *',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       suffixIcon: isSelected
-                          ? const Icon(Icons.check_circle, color: AppTheme.success, size: 20)
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: AppTheme.success,
+                              size: 20,
+                            )
                           : null,
                     ),
                   ),
@@ -82,19 +103,26 @@ class QuestionAnswersEditor extends StatelessWidget {
                       : () {
                           question.answers.removeAt(index);
                           question.correctAnswers.remove(index);
-                          for (int i = 0; i < question.correctAnswers.length; i++) {
+                          for (
+                            int i = 0;
+                            i < question.correctAnswers.length;
+                            i++
+                          ) {
                             if (question.correctAnswers[i] > index) {
                               question.correctAnswers[i]--;
                             }
                           }
-                          if (question.correctAnswers.isEmpty && question.answers.isNotEmpty) {
+                          if (question.correctAnswers.isEmpty &&
+                              question.answers.isNotEmpty) {
                             question.correctAnswers = [0];
                           }
                           onChanged();
                         },
                   icon: Icon(
                     Icons.close,
-                    color: question.answers.length <= 2 ? Colors.grey.shade300 : AppTheme.error,
+                    color: question.answers.length <= 2
+                        ? Colors.grey.shade300
+                        : AppTheme.error,
                   ),
                 ),
               ],
@@ -147,19 +175,32 @@ class QuestionAnswersEditor extends StatelessWidget {
                   },
                 ),
                 Expanded(
-                  child: TextFormField(
+                  child: ScientificTextField(
                     key: ValueKey('answer-multi-${question.id}-$index'),
                     initialValue: question.answers[index],
+                    category: shortcutCategory,
+                    shortcuts: shortcuts,
+                    fieldLabel: 'Đáp án $letter',
+                    onFocused: onFocusTarget,
                     onChanged: (val) {
                       question.answers[index] = val;
                       onChanged();
                     },
                     decoration: InputDecoration(
                       labelText: '$letter. Đáp án *',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       suffixIcon: isChecked
-                          ? const Icon(Icons.check_circle, color: AppTheme.success, size: 20)
+                          ? const Icon(
+                              Icons.check_circle,
+                              color: AppTheme.success,
+                              size: 20,
+                            )
                           : null,
                     ),
                   ),
@@ -172,7 +213,11 @@ class QuestionAnswersEditor extends StatelessWidget {
                       : () {
                           question.answers.removeAt(index);
                           question.correctAnswers.remove(index);
-                          for (int i = 0; i < question.correctAnswers.length; i++) {
+                          for (
+                            int i = 0;
+                            i < question.correctAnswers.length;
+                            i++
+                          ) {
                             if (question.correctAnswers[i] > index) {
                               question.correctAnswers[i]--;
                             }
@@ -181,7 +226,9 @@ class QuestionAnswersEditor extends StatelessWidget {
                         },
                   icon: Icon(
                     Icons.close,
-                    color: question.answers.length <= 2 ? Colors.grey.shade300 : AppTheme.error,
+                    color: question.answers.length <= 2
+                        ? Colors.grey.shade300
+                        : AppTheme.error,
                   ),
                 ),
               ],
@@ -220,42 +267,64 @@ class QuestionAnswersEditor extends StatelessWidget {
             Expanded(
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isTrueCorrect ? AppTheme.success : AppTheme.background,
-                  foregroundColor: isTrueCorrect ? Colors.white : AppTheme.textMain,
+                  backgroundColor: isTrueCorrect
+                      ? AppTheme.success
+                      : AppTheme.background,
+                  foregroundColor: isTrueCorrect
+                      ? Colors.white
+                      : AppTheme.textMain,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   side: BorderSide(
                     color: isTrueCorrect ? AppTheme.success : AppTheme.border,
                     width: 2,
                   ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: () {
                   question.correctAnswers = [0];
                   onChanged();
                 },
-                icon: Icon(isTrueCorrect ? Icons.check_circle : Icons.circle_outlined),
-                label: const Text('ĐÚNG', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                icon: Icon(
+                  isTrueCorrect ? Icons.check_circle : Icons.circle_outlined,
+                ),
+                label: const Text(
+                  'ĐÚNG',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: !isTrueCorrect ? AppTheme.error : AppTheme.background,
-                  foregroundColor: !isTrueCorrect ? Colors.white : AppTheme.textMain,
+                  backgroundColor: !isTrueCorrect
+                      ? AppTheme.error
+                      : AppTheme.background,
+                  foregroundColor: !isTrueCorrect
+                      ? Colors.white
+                      : AppTheme.textMain,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   side: BorderSide(
                     color: !isTrueCorrect ? AppTheme.error : AppTheme.border,
                     width: 2,
                   ),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
                 onPressed: () {
                   question.correctAnswers = [1];
                   onChanged();
                 },
-                icon: Icon(!isTrueCorrect ? Icons.cancel : Icons.circle_outlined),
-                label: const Text('SAI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                icon: Icon(
+                  !isTrueCorrect ? Icons.cancel : Icons.circle_outlined,
+                ),
+                label: const Text(
+                  'SAI',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
             ),
           ],
@@ -283,18 +352,31 @@ class QuestionAnswersEditor extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: TextFormField(
+                  child: ScientificTextField(
                     key: ValueKey('short-ans-${question.id}-$idx'),
                     initialValue: question.answers[idx],
+                    category: shortcutCategory,
+                    shortcuts: shortcuts,
+                    fieldLabel: idx == 0
+                        ? 'Đáp án chính'
+                        : 'Đáp án tương đương ${idx + 1}',
+                    onFocused: onFocusTarget,
                     onChanged: (val) {
                       question.answers[idx] = val;
                       onChanged();
                     },
                     decoration: InputDecoration(
-                      labelText: idx == 0 ? 'Đáp án chính *' : 'Đáp án tương đương chấp nhận',
+                      labelText: idx == 0
+                          ? 'Đáp án chính *'
+                          : 'Đáp án tương đương chấp nhận',
                       hintText: 'Ví dụ: 42 hoặc H2O',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                   ),
                 ),

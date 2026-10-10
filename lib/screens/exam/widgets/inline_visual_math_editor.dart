@@ -5,6 +5,7 @@ import '../../../core/models/scientific_shortcut.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/visual_math_compiler.dart';
 import 'visual_math_block_widget.dart';
+import 'scientific_text_field.dart';
 
 class InlineVisualMathEditorController {
   _InlineVisualMathEditorState? _state;
@@ -22,6 +23,7 @@ class InlineVisualMathEditor extends StatefulWidget {
     this.controller,
     this.shortcutCategory = ScientificCategory.math,
     this.shortcuts = const [],
+    this.onFocusTarget,
   });
 
   final String initialLatex;
@@ -29,6 +31,7 @@ class InlineVisualMathEditor extends StatefulWidget {
   final InlineVisualMathEditorController? controller;
   final ScientificCategory shortcutCategory;
   final List<ScientificShortcut> shortcuts;
+  final ValueChanged<ScientificInputTarget>? onFocusTarget;
 
   @override
   State<InlineVisualMathEditor> createState() => _InlineVisualMathEditorState();
@@ -94,26 +97,49 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
     int commandStart,
     int commandEnd,
   ) {
+    if (shortcut.blockType != null) {
+      _insertBlockAt(
+        segmentIndex,
+        shortcut.blockType!,
+        commandStart,
+        commandEnd,
+      );
+      return;
+    }
     final segment = _segments[segmentIndex] as TextContentSegment;
     final before = segment.text.substring(0, commandStart);
     final after = segment.text.substring(commandEnd);
     setState(() {
-      if (shortcut.blockType != null) {
-        segment.text = before;
-        _segments.insert(
-          segmentIndex + 1,
-          MathBlockSegment(
-            id: 'mb_${DateTime.now().microsecondsSinceEpoch}',
-            type: shortcut.blockType!,
-          ),
-        );
-        _segments.insert(
-          segmentIndex + 2,
-          TextContentSegment(after.isEmpty ? ' ' : after),
-        );
-      } else {
-        segment.text = '$before${shortcut.template ?? ''}$after';
-      }
+      segment.text = '$before${shortcut.template ?? ''}$after';
+      _rawLatexController.text = VisualMathCompiler.compile(_segments);
+    });
+    _notifyChange();
+  }
+
+  void _insertBlockAt(
+    int segmentIndex,
+    MathBlockType type,
+    int selectionStart,
+    int selectionEnd,
+  ) {
+    final segment = _segments[segmentIndex] as TextContentSegment;
+    final safeStart = selectionStart.clamp(0, segment.text.length);
+    final safeEnd = selectionEnd.clamp(safeStart, segment.text.length);
+    final before = segment.text.substring(0, safeStart);
+    final after = segment.text.substring(safeEnd);
+    setState(() {
+      segment.text = before;
+      _segments.insert(
+        segmentIndex + 1,
+        MathBlockSegment(
+          id: 'mb_${DateTime.now().microsecondsSinceEpoch}',
+          type: type,
+        ),
+      );
+      _segments.insert(
+        segmentIndex + 2,
+        TextContentSegment(after.isEmpty ? ' ' : after),
+      );
       _rawLatexController.text = VisualMathCompiler.compile(_segments);
     });
     _notifyChange();
@@ -236,13 +262,21 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
 
         // Editor Body
         if (!_isVisualMode)
-          TextFormField(
-            controller: _rawLatexController,
+          ScientificTextField(
+            key: const Key('raw-latex-scientific-field'),
+            initialValue: _rawLatexController.text,
             maxLines: 4,
+            category: widget.shortcutCategory,
+            shortcuts: widget.shortcuts,
+            fieldLabel: 'Mã nguồn LaTeX',
+            onFocused: widget.onFocusTarget,
             decoration: const InputDecoration(
               hintText: r'Nhập công thức dạng \frac{a}{b} hoặc văn bản...',
             ),
-            onChanged: (val) => _notifyChange(),
+            onChanged: (val) {
+              _rawLatexController.text = val;
+              _notifyChange();
+            },
           )
         else
           Container(
@@ -299,6 +333,9 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
       category: widget.shortcutCategory,
       onAcceptShortcut: (shortcut, start, end) =>
           _applyShortcut(index, shortcut, start, end),
+      onFocused: widget.onFocusTarget,
+      onInsertBlock: (type, start, end) =>
+          _insertBlockAt(index, type, start, end),
     );
   }
 }
@@ -312,6 +349,8 @@ class _TextSegmentField extends StatefulWidget {
     required this.shortcuts,
     required this.category,
     required this.onAcceptShortcut,
+    required this.onInsertBlock,
+    this.onFocused,
   });
 
   final String initialText;
@@ -321,6 +360,8 @@ class _TextSegmentField extends StatefulWidget {
   final ScientificCategory category;
   final void Function(ScientificShortcut shortcut, int start, int end)
   onAcceptShortcut;
+  final void Function(MathBlockType type, int start, int end) onInsertBlock;
+  final ValueChanged<ScientificInputTarget>? onFocused;
 
   @override
   State<_TextSegmentField> createState() => _TextSegmentFieldState();
@@ -337,7 +378,8 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialText);
-    _focusNode = FocusNode(onKeyEvent: _handleKeyEvent);
+    _focusNode = FocusNode(onKeyEvent: _handleKeyEvent)
+      ..addListener(_handleFocus);
   }
 
   @override
@@ -355,8 +397,45 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
+    _focusNode
+      ..removeListener(_handleFocus)
+      ..dispose();
     super.dispose();
+  }
+
+  void _handleFocus() {
+    if (!_focusNode.hasFocus) return;
+    widget.onFocused?.call(
+      ScientificInputTarget(
+        label: 'Nội dung câu hỏi',
+        insertText: _insertText,
+        insertBlock: (type) {
+          final selection = _controller.selection.isValid
+              ? _controller.selection
+              : TextSelection.collapsed(offset: _controller.text.length);
+          widget.onInsertBlock(type, selection.start, selection.end);
+        },
+      ),
+    );
+  }
+
+  void _insertText(String text, int selectionOffset, int selectionLength) {
+    final selection = _controller.selection.isValid
+        ? _controller.selection
+        : TextSelection.collapsed(offset: _controller.text.length);
+    final start = selection.start.clamp(0, _controller.text.length);
+    final end = selection.end.clamp(start, _controller.text.length);
+    final updated = _controller.text.replaceRange(start, end, text);
+    final caret = (start + text.length - selectionLength).clamp(
+      start,
+      updated.length,
+    );
+    _controller.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: caret),
+    );
+    widget.onChanged(updated);
+    _focusNode.requestFocus();
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
