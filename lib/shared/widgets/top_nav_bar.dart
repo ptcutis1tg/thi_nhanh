@@ -28,12 +28,26 @@ class _TopNavBarState extends State<TopNavBar> {
     super.dispose();
   }
 
+  static const Set<String> _coreTabRoutes = {
+    '/home',
+    '/',
+    '/search',
+    '/teacher_exams',
+    '/create_room',
+    '/student/history',
+  };
+
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final avatarUrl = authProvider.userAvatarUrl;
-
     final avatarImage = parseAvatarImage(avatarUrl);
+
+    String currentLocation = '';
+    try {
+      currentLocation = GoRouterState.of(context).matchedLocation;
+    } catch (_) {}
+    final isCoreTab = _coreTabRoutes.contains(currentLocation) || currentLocation.isEmpty;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -42,7 +56,7 @@ class _TopNavBarState extends State<TopNavBar> {
         final isMobile = constraints.maxWidth < 600;
 
         return Container(
-          height: 72,
+          height: isMobile ? 58 : 72,
           padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : (isCompact ? 16 : 28)),
           decoration: BoxDecoration(
             color: AppTheme.surface,
@@ -60,85 +74,116 @@ class _TopNavBarState extends State<TopNavBar> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Logo & Title
-              InkWell(
-                onTap: () => context.go('/home'),
-                borderRadius: BorderRadius.circular(10),
-                child: Row(
+              // Left: Back button (if on sub-screen on mobile) or Logo & Title
+              if (isMobile && !isCoreTab) ...[
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppTheme.primary, AppTheme.primaryDark],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain, size: 22),
+                      tooltip: 'Quay lại',
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/home');
+                        }
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    InkWell(
+                      onTap: () => context.go('/home'),
+                      child: const Text(
+                        'Thi Nhanh',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textMain,
+                          letterSpacing: -0.3,
                         ),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x336557E8),
-                            blurRadius: 8,
-                            offset: Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.check_rounded,
-                        color: Colors.white,
-                        size: 22,
                       ),
                     ),
-                    if (!isMobile) ...[
-                      const SizedBox(width: 12),
+                  ],
+                ),
+              ] else ...[
+                // Logo & Title
+                InkWell(
+                  onTap: () => context.go('/home'),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: isMobile ? 32 : 36,
+                        height: isMobile ? 32 : 36,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [AppTheme.primary, AppTheme.primaryDark],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x336557E8),
+                              blurRadius: 8,
+                              offset: Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: isMobile ? 18 : 22,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       const Text(
                         'Thi Nhanh',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textMain,
                           letterSpacing: -0.5,
                         ),
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
+              ],
 
-              // Menu items (Core features available for all users)
-              Expanded(
-                child: Builder(
-                  builder: (context) {
-                    String currentLocation = '';
-                    try {
-                      currentLocation = GoRouterState.of(context).matchedLocation;
-                    } catch (_) {}
-
-                    return SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(width: 8),
-                          _buildNavItem(context, 'Home', '/home', isActive: currentLocation == '/home', isCompact: isCompact),
-                          _buildNavItem(context, 'Tìm kiếm', '/search', isActive: currentLocation == '/search', isCompact: isCompact),
-                          _buildNavItem(context, 'Quản lí đề', '/teacher_exams', isActive: currentLocation == '/teacher_exams', isCompact: isCompact),
-                          _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: currentLocation == '/create_room', isCompact: isCompact),
-                          const SizedBox(width: 8),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+              // Middle Menu items (Only on desktop / tablet)
+              if (!isMobile)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(width: 8),
+                        _buildNavItem(context, 'Home', '/home', isActive: currentLocation == '/home', isCompact: isCompact),
+                        _buildNavItem(context, 'Tìm kiếm', '/search', isActive: currentLocation == '/search', isCompact: isCompact),
+                        _buildNavItem(context, 'Quản lí đề', '/teacher_exams', isActive: currentLocation == '/teacher_exams', isCompact: isCompact),
+                        _buildNavItem(context, 'Tạo phòng thi', '/create_room', isActive: currentLocation == '/create_room', isCompact: isCompact),
+                        const SizedBox(width: 8),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                const Spacer(),
 
               // Right Profile & Quick Room Input
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (!isVeryCompact)
+                  if (isMobile) ...[
+                    IconButton(
+                      tooltip: 'Vào phòng thi nhanh',
+                      icon: const Icon(Icons.pin_outlined, color: AppTheme.primary, size: 22),
+                      onPressed: () => _showQuickJoinModal(context),
+                    ),
+                  ] else if (!isVeryCompact) ...[
                     ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: isCompact ? 135 : 170),
                       child: TextField(
@@ -184,6 +229,7 @@ class _TopNavBarState extends State<TopNavBar> {
                         ),
                       ),
                     ),
+                  ],
                   const SizedBox(width: 8),
                   if (!isMobile)
                     IconButton(
@@ -308,6 +354,68 @@ class _TopNavBarState extends State<TopNavBar> {
           ),
         );
       },
+    );
+  }
+
+  void _showQuickJoinModal(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.meeting_room_outlined, color: AppTheme.primary),
+            SizedBox(width: 8),
+            Text('Vào phòng thi', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Nhập mã PIN phòng thi để tham gia ngay:',
+              style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              style: AppTheme.firaCodeStyle.copyWith(fontSize: 15, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'VD: PT067664...',
+                filled: true,
+                fillColor: AppTheme.background,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onSubmitted: (val) {
+                Navigator.pop(dialogCtx);
+                _handleQuickJoinRoom(context, val);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final code = controller.text;
+              Navigator.pop(dialogCtx);
+              _handleQuickJoinRoom(context, code);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+            ),
+            child: const Text('Tham gia'),
+          ),
+        ],
+      ),
     );
   }
 

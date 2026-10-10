@@ -74,4 +74,36 @@ void main() {
     expect(find.text('Phòng thi đã tạo'), findsOneWidget);
     expect(find.text('Đăng xuất'), findsOneWidget);
   });
+
+  testWidgets('TopNavBar shows compact logo and quick PIN icon on mobile without horizontal menu', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final authProvider = AuthProvider(isSupabaseInitialized: false);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthProvider>.value(
+        value: authProvider,
+        child: const MaterialApp(
+          home: Scaffold(
+            appBar: TopNavBar(),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify horizontal text menu is hidden on mobile
+    expect(find.text('Home'), findsNothing);
+    expect(find.text('Tìm kiếm'), findsNothing);
+    expect(find.text('Quản lí đề'), findsNothing);
+    expect(find.text('Tạo phòng thi'), findsNothing);
+
+    // Verify compact logo exists
+    expect(find.text('Thi Nhanh'), findsOneWidget);
+
+    // Verify quick PIN icon button exists
+    expect(find.byIcon(Icons.pin_outlined), findsOneWidget);
+  });
 }
