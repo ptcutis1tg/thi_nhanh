@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/room_url_helper.dart';
 
 class RoomQrDialog extends StatelessWidget {
   const RoomQrDialog({
@@ -13,7 +14,7 @@ class RoomQrDialog extends StatelessWidget {
   final String roomCode;
   final String roomName;
 
-  String get _joinUrl => 'https://thinhành.vn/join?code=$roomCode';
+  String get _joinUrl => RoomUrlHelper.buildJoinUrl(roomCode);
 
   void _copyLink(BuildContext context) {
     Clipboard.setData(ClipboardData(text: _joinUrl));

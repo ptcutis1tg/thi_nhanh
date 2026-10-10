@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/room_url_helper.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 import 'widgets/live_leaderboard_view.dart';
 import 'widgets/room_qr_dialog.dart';
@@ -422,7 +423,7 @@ class _RoomCodeCard extends StatelessWidget {
   final String code;
   final String roomName;
 
-  String get _joinUrl => 'https://thinhành.vn/join?code=$code';
+  String get _joinUrl => RoomUrlHelper.buildJoinUrl(code);
 
   void _copyLink(BuildContext context) {
     Clipboard.setData(ClipboardData(text: _joinUrl));

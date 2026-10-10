@@ -1,8 +1,8 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 10/10/2026 *(Cập nhật sau khi hoàn thành Tối Ưu Hóa Trải Nghiệm Mobile Toàn Diện, Mobile Bottom Navigation Shell, Kho Phím Tắt Khoa Học Chuyên Sâu & Triệt Tiêu Lỗi RenderFlex Overflow)*  
+> **Ngày thực hiện:** 10/10/2026 *(Cập nhật sau khi hoàn thành Sửa Lỗi Quét QR Phòng Thi, Tích Hợp Dynamic Origin Link Sharing & Màn Hình Tham Gia Phòng Thi `/join` Chuyên Dụng)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **215 / 215 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
+> **Trạng thái kiểm thử:** **219 / 219 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động trên cả thiết bị Desktop, Tablet và Mobile.
 
 ---

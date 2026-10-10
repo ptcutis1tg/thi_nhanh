@@ -37,6 +37,7 @@ import 'screens/teacher/teacher_student_results_screen.dart';
 import 'screens/teacher/teacher_analytics_screen.dart';
 import 'screens/main_layout_screen.dart';
 import 'screens/room/room_password_screen.dart';
+import 'screens/room/join_room_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -353,6 +354,18 @@ final GoRouter _router = GoRouter(
         roomId: state.uri.queryParameters['roomId'],
         participantId: state.uri.queryParameters['participantId'],
         guestToken: state.uri.queryParameters['guestToken'],
+      ),
+    ),
+    GoRoute(
+      path: '/join',
+      builder: (context, state) => JoinRoomScreen(
+        initialRoomCode: state.uri.queryParameters['code'],
+      ),
+    ),
+    GoRoute(
+      path: '/room/join',
+      builder: (context, state) => JoinRoomScreen(
+        initialRoomCode: state.uri.queryParameters['code'],
       ),
     ),
     GoRoute(
