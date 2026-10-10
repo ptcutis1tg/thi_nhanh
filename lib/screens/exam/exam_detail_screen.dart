@@ -317,6 +317,63 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
     }
   }
 
+  void _showQuestionGridBottomSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Mục lục câu hỏi', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: List.generate(_questions.length, (idx) {
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _jumpToQuestion(idx);
+                      },
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7F5FE),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE4DFFF)),
+                        ),
+                        child: Text(
+                          '${idx + 1}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primary),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -337,9 +394,21 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5FE),
+      floatingActionButton: MediaQuery.of(context).size.width < 900 && _questions.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () => _showQuestionGridBottomSheet(context),
+              backgroundColor: AppTheme.primary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.format_list_bulleted_rounded, size: 18),
+              label: Text('Mục lục (${_questions.length})'),
+            )
+          : null,
       body: SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+        padding: EdgeInsets.symmetric(
+          vertical: 24,
+          horizontal: MediaQuery.of(context).size.width < 600 ? 14 : 24,
+        ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1200),
@@ -347,14 +416,17 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Breadcrumbs
-                Row(
-                  children: [
-                    TextButton(onPressed: () => context.go('/home'), child: const Text('Trang chủ')),
-                    const Icon(Icons.chevron_right, size: 16),
-                    TextButton(onPressed: () => context.go('/search'), child: const Text('Tìm kiếm')),
-                    const Icon(Icons.chevron_right, size: 16),
-                    const Text('Chi tiết đề thi', style: TextStyle(fontWeight: FontWeight.bold)),
-                  ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      TextButton(onPressed: () => context.go('/home'), child: const Text('Trang chủ')),
+                      const Icon(Icons.chevron_right, size: 16),
+                      TextButton(onPressed: () => context.go('/search'), child: const Text('Tìm kiếm')),
+                      const Icon(Icons.chevron_right, size: 16),
+                      const Text('Chi tiết đề thi', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -462,8 +534,8 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Section Header with Toggle
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
@@ -476,21 +548,24 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
                                 child: const Icon(Icons.quiz_rounded, color: AppTheme.primary, size: 22),
                               ),
                               const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Nội Dung Chi Tiết Đề Thi',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.textMain),
-                                  ),
-                                  Text(
-                                    'Hiển thị toàn bộ ${_questions.length} câu hỏi & đáp án chuẩn',
-                                    style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                                  ),
-                                ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Nội Dung Chi Tiết Đề Thi',
+                                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.textMain),
+                                    ),
+                                    Text(
+                                      'Hiển thị toàn bộ ${_questions.length} câu hỏi & đáp án chuẩn',
+                                      style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 12),
                           FilterChip(
                             avatar: Icon(
                               _showAnswers ? Icons.visibility_rounded : Icons.visibility_off_rounded,
@@ -578,48 +653,51 @@ class _ExamSummaryCard extends StatelessWidget {
   final String code;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(26),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          border: Border.all(color: AppTheme.border),
-          boxShadow: AppTheme.luminescenceShadow,
-        ),
-        child: LayoutBuilder(builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 760;
-          final cover = Container(
-            width: narrow ? double.infinity : 290,
-            height: 210,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: const LinearGradient(colors: [Color(0xFFE7E4FF), Color(0xFFF7F4FF)]),
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 16 : 26),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+        border: Border.all(color: AppTheme.border),
+        boxShadow: AppTheme.luminescenceShadow,
+      ),
+      child: LayoutBuilder(builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 760;
+        final cover = Container(
+          width: narrow ? double.infinity : 290,
+          height: isMobile ? 160 : 210,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: const LinearGradient(colors: [Color(0xFFE7E4FF), Color(0xFFF7F4FF)]),
+          ),
+          child: Icon(Icons.description_outlined, size: isMobile ? 64 : 92, color: AppTheme.primary),
+        );
+        final details = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(spacing: 8, runSpacing: 6, children: [Chip(label: Text(subject)), Chip(label: Text('Mã: $code'))]),
+            const SizedBox(height: 12),
+            Text(title, style: Theme.of(context).textTheme.headlineSmall),
+            const Divider(height: 36),
+            Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              children: [
+                _Fact(Icons.format_list_numbered, '$questionsCount câu hỏi'),
+                _Fact(Icons.schedule_outlined, '$durationMinutes phút'),
+                const _Fact(Icons.bar_chart_rounded, 'Độ khó: Chuẩn kiến thức'),
+              ],
             ),
-            child: const Icon(Icons.description_outlined, size: 92, color: AppTheme.primary),
-          );
-          final details = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(spacing: 8, children: [Chip(label: Text(subject)), Chip(label: Text('Mã: $code'))]),
-              const SizedBox(height: 12),
-              Text(title, style: Theme.of(context).textTheme.headlineSmall),
-              const Divider(height: 36),
-              Wrap(
-                spacing: 30,
-                runSpacing: 16,
-                children: [
-                  _Fact(Icons.format_list_numbered, '$questionsCount câu hỏi'),
-                  _Fact(Icons.schedule_outlined, '$durationMinutes phút'),
-                  const _Fact(Icons.bar_chart_rounded, 'Độ khó: Chuẩn kiến thức'),
-                ],
-              ),
-            ],
-          );
-          return narrow
-              ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [cover, const SizedBox(height: 24), details])
-              : Row(children: [cover, const SizedBox(width: 26), Expanded(child: details)]);
-        }),
-      );
+          ],
+        );
+        return narrow
+            ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [cover, const SizedBox(height: 24), details])
+            : Row(children: [cover, const SizedBox(width: 26), Expanded(child: details)]);
+      }),
+    );
+  }
 }
 
 class _Fact extends StatelessWidget {
@@ -629,7 +707,13 @@ class _Fact extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
         mainAxisSize: MainAxisSize.min,
-        children: [Icon(icon, color: AppTheme.primary), const SizedBox(width: 8), Text(text)],
+        children: [
+          Icon(icon, color: AppTheme.primary, size: 20),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          ),
+        ],
       );
 }
 
@@ -753,7 +837,18 @@ class _InfoBox extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(children: [Icon(icon, color: AppTheme.primary), const SizedBox(width: 10), Text(title, style: Theme.of(context).textTheme.titleLarge)]),
+            Row(
+              children: [
+                Icon(icon, color: AppTheme.primary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             Text(body, style: const TextStyle(height: 1.7)),
           ],

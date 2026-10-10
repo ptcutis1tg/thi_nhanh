@@ -46,3 +46,8 @@ app.*.map.json
 
 # Environment Variables
 .env
+
+# Supabase temp & UI mocks
+supabase/.temp/
+stitch_web_redesign_extracted/
+stitch_web_redesign_html_mockups.zip

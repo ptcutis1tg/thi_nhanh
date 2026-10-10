@@ -209,7 +209,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5FE),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 14 : 32),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
@@ -217,28 +217,29 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => context.go('/home'),
-                            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: () => context.go('/home'),
+                          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
+                        ),
+                        const SizedBox(width: 8),
+                        const Flexible(
+                          child: Text(
+                            '📁 Quản Lý Kho Đề Thi Trắc Nghiệm',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(width: 8),
-                          const Flexible(
-                            child: Text(
-                              '📁 Quản Lý Kho Đề Thi Trắc Nghiệm',
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
                     ElevatedButton.icon(
                       onPressed: () => context.go('/create_exam'),
                       icon: const Icon(Icons.add_rounded),
@@ -498,209 +499,225 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     final isDraft = exam.isDraft && !isSaved;
     final codeDisplay = exam.code.isNotEmpty ? exam.code : 'Mã: Đang tạo';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(
-          color: isDraft ? const Color(0xFFFDE68A) : (isSaved ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.border),
-          width: isDraft ? 1.5 : 1.0,
-        ),
-        boxShadow: AppTheme.cardShadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          onTap: () {
-            if (isDraft) {
-              context.go('/create_exam?examId=${exam.id}');
-            } else {
-              context.go('/exam_detail?examId=${exam.id}');
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
+    return LayoutBuilder(
+      builder: (context, cardConstraints) {
+        final isNarrow = cardConstraints.maxWidth < 640;
+
+        final avatar = Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: isDraft ? const Color(0xFFFFFBEB) : (isSaved ? const Color(0xFFF0ECFF) : AppTheme.surfaceLavender),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Icon(
+            isSaved ? Icons.bookmark_added_rounded : (isDraft ? Icons.edit_note_rounded : Icons.assignment_outlined),
+            color: isDraft ? const Color(0xFFD97706) : AppTheme.primary,
+            size: 26,
+          ),
+        );
+
+        final mainInfo = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                // Subject Icon Avatar
+                Text(
+                  exam.title,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                ),
                 Container(
-                  width: 52,
-                  height: 52,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isDraft ? const Color(0xFFFFFBEB) : (isSaved ? const Color(0xFFF0ECFF) : AppTheme.surfaceLavender),
-                    borderRadius: BorderRadius.circular(14),
+                    color: isSaved
+                        ? const Color(0xFFEDE9FE)
+                        : (isDraft ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5)),
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                   ),
-                  child: Icon(
-                    isSaved ? Icons.bookmark_added_rounded : (isDraft ? Icons.edit_note_rounded : Icons.assignment_outlined),
-                    color: isDraft ? const Color(0xFFD97706) : AppTheme.primary,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 16),
-
-                // Main Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              exam.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Status Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isSaved
-                                  ? const Color(0xFFEDE9FE)
-                                  : (isDraft ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5)),
-                              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isSaved
-                                      ? Icons.bookmark_added_rounded
-                                      : (isDraft ? Icons.edit_note_rounded : Icons.check_circle_rounded),
-                                  size: 14,
-                                  color: isSaved
-                                      ? AppTheme.primary
-                                      : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  isSaved ? 'Đề lưu từ cộng đồng' : (isDraft ? 'Bản nháp' : 'Đã công khai'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isSaved
-                                        ? AppTheme.primary
-                                        : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        isSaved
+                            ? Icons.bookmark_added_rounded
+                            : (isDraft ? Icons.edit_note_rounded : Icons.check_circle_rounded),
+                        size: 14,
+                        color: isSaved
+                            ? AppTheme.primary
+                            : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(width: 4),
                       Text(
-                        'Môn: ${exam.subject} • ${exam.questionCount} câu hỏi • ${exam.durationMinutes} phút • Mã: $codeDisplay',
-                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                        isSaved ? 'Đề lưu từ cộng đồng' : (isDraft ? 'Bản nháp' : 'Đã công khai'),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: isSaved
+                              ? AppTheme.primary
+                              : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 16),
-
-                // Action Buttons
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (isSaved) ...[
-                      // Create Room Button
-                      ElevatedButton.icon(
-                        onPressed: () => context.go('/create_room?examId=${exam.id}'),
-                        icon: const Icon(Icons.meeting_room_outlined, size: 16),
-                        label: const Text('Tạo Phòng Thi'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // View Detail Button
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/exam_detail?examId=${exam.id}'),
-                        icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
-                        label: const Text('Xem chi tiết'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                        ),
-                      ),
-                    ] else if (isDraft) ...[
-                      // Primary Public Button
-                      ElevatedButton.icon(
-                        onPressed: () => _handlePublish(exam),
-                        icon: const Icon(Icons.rocket_launch_rounded, size: 16),
-                        label: const Text('Public đề'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Edit Button
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/create_exam?examId=${exam.id}'),
-                        icon: const Icon(Icons.edit_outlined, size: 16),
-                        label: const Text('Sửa'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Delete Button
-                      IconButton(
-                        tooltip: 'Xóa bản nháp',
-                        onPressed: () => _handleDeleteDraft(exam),
-                        icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
-                      ),
-                    ] else ...[
-                      // Create Room Button
-                      ElevatedButton.icon(
-                        onPressed: () => context.go('/create_room?examId=${exam.id}'),
-                        icon: const Icon(Icons.meeting_room_outlined, size: 16),
-                        label: const Text('Tạo Phòng Thi'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // View Detail Button
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/exam_detail?examId=${exam.id}'),
-                        icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
-                        label: const Text('Xem chi tiết'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Edit Button
-                      IconButton(
-                        tooltip: 'Chỉnh sửa đề thi',
-                        onPressed: () => context.go('/create_exam?examId=${exam.id}'),
-                        icon: const Icon(Icons.edit_outlined, color: AppTheme.primary),
-                      ),
-                    ],
-                  ],
                 ),
               ],
             ),
+            const SizedBox(height: 6),
+            Text(
+              'Môn: ${exam.subject} • ${exam.questionCount} câu hỏi • ${exam.durationMinutes} phút • Mã: $codeDisplay',
+              style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+            ),
+          ],
+        );
+
+        final actions = Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: isNarrow ? WrapAlignment.end : WrapAlignment.start,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (isSaved) ...[
+              // Create Room Button
+              ElevatedButton.icon(
+                onPressed: () => context.go('/create_room?examId=${exam.id}'),
+                icon: const Icon(Icons.meeting_room_outlined, size: 16),
+                label: const Text('Tạo Phòng Thi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                ),
+              ),
+              // View Detail Button
+              OutlinedButton.icon(
+                onPressed: () => context.go('/exam_detail?examId=${exam.id}'),
+                icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+                label: const Text('Xem chi tiết'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                ),
+              ),
+            ] else if (isDraft) ...[
+              // Primary Public Button
+              ElevatedButton.icon(
+                onPressed: () => _handlePublish(exam),
+                icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                label: const Text('Public đề'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                ),
+              ),
+              // Edit Button
+              OutlinedButton.icon(
+                onPressed: () => context.go('/create_exam?examId=${exam.id}'),
+                icon: const Icon(Icons.edit_outlined, size: 16),
+                label: const Text('Sửa'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                ),
+              ),
+              // Delete Button
+              IconButton(
+                tooltip: 'Xóa bản nháp',
+                onPressed: () => _handleDeleteDraft(exam),
+                icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
+              ),
+            ] else ...[
+              // Create Room Button
+              ElevatedButton.icon(
+                onPressed: () => context.go('/create_room?examId=${exam.id}'),
+                icon: const Icon(Icons.meeting_room_outlined, size: 16),
+                label: const Text('Tạo Phòng Thi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                ),
+              ),
+              // View Detail Button
+              OutlinedButton.icon(
+                onPressed: () => context.go('/exam_detail?examId=${exam.id}'),
+                icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
+                label: const Text('Xem chi tiết'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                ),
+              ),
+              // Edit Button
+              IconButton(
+                tooltip: 'Chỉnh sửa đề thi',
+                onPressed: () => context.go('/create_exam?examId=${exam.id}'),
+                icon: const Icon(Icons.edit_outlined, color: AppTheme.primary),
+              ),
+            ],
+          ],
+        );
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+            border: Border.all(
+              color: isDraft ? const Color(0xFFFDE68A) : (isSaved ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.border),
+              width: isDraft ? 1.5 : 1.0,
+            ),
+            boxShadow: AppTheme.cardShadow,
           ),
-        ),
-      ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
+              onTap: () {
+                if (isDraft) {
+                  context.go('/create_exam?examId=${exam.id}');
+                } else {
+                  context.go('/exam_detail?examId=${exam.id}');
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: isNarrow
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              avatar,
+                              const SizedBox(width: 14),
+                              Expanded(child: mainInfo),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          actions,
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          avatar,
+                          const SizedBox(width: 16),
+                          Expanded(child: mainInfo),
+                          const SizedBox(width: 16),
+                          actions,
+                        ],
+                      ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

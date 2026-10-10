@@ -33,32 +33,32 @@
 - Test: `test/widgets/mobile_bottom_nav_bar_test.dart`
 - Modify Test: `test/widgets/top_nav_bar_test.dart`
 
-- [ ] **Step 1: Write failing widget test for `MobileBottomNavBar`**
+- [x] **Step 1: Write failing widget test for `MobileBottomNavBar`**
   - Create `test/widgets/mobile_bottom_nav_bar_test.dart` testing:
     - 5 icon tabs render correctly: Home, Search, Book, Add Room, History.
     - Active tab highlights with Stitch purple color `#6557E8` and purple capsule background.
     - Tapping an icon triggers navigation to the respective route (`/home`, `/search`, `/teacher_exams`, `/create_room`, `/student/history`).
   - Run `flutter test test/widgets/mobile_bottom_nav_bar_test.dart` and verify it fails (file not created yet).
 
-- [ ] **Step 2: Implement `MobileBottomNavBar`**
+- [x] **Step 2: Implement `MobileBottomNavBar`**
   - Create `lib/shared/widgets/mobile_bottom_nav_bar.dart`:
     - Pure icon buttons with custom tooltips/accessibility semantics.
     - Styled with `AppTheme.surface`, top border, subtle shadow, and safe area padding.
     - Active state: `#6557E8` icon in `#F4F3FE` rounded capsule.
     - Inactive state: `#9CA3AF` icon with smooth transition.
 
-- [ ] **Step 3: Update `TopNavBar` for Mobile Viewport**
+- [x] **Step 3: Update `TopNavBar` for Mobile Viewport**
   - In `lib/shared/widgets/top_nav_bar.dart`:
     - On mobile (`width < 600px`):
       - If on 5 core tabs: Show compact logo + app name, quick PIN action button (opens join room dialog), and user avatar menu. Hide horizontal text navigation menu.
       - If on sub-screens outside 5 core tabs: Show round back/exit button (`Icons.arrow_back_rounded`) on the left, centered title, and optional actions on the right.
     - On desktop (`width >= 600px`): Preserve existing full desktop navigation bar.
 
-- [ ] **Step 4: Integrate `MobileBottomNavBar` into 5 Core Screens**
+- [x] **Step 4: Integrate `MobileBottomNavBar` into 5 Core Screens**
   - In `HomeScreen`, `SearchScreen`, `TeacherExamsScreen`, `CreateRoomScreen`, `StudentHistoryScreen`:
     - Add `bottomNavigationBar: LayoutBuilder(builder: (ctx, constraints) => MediaQuery.of(ctx).size.width < 600 ? const MobileBottomNavBar() : const SizedBox.shrink())` (or equivalent responsive helper).
 
-- [ ] **Step 5: Run tests and verify**
+- [x] **Step 5: Run tests and verify**
   - Run `flutter test test/widgets/mobile_bottom_nav_bar_test.dart test/widgets/top_nav_bar_test.dart`.
   - Commit Task 1 changes.
 
@@ -70,7 +70,7 @@
 - Modify: `lib/screens/exam/taking_exam_screen.dart`
 - Test: `test/screens/taking_exam_mobile_layout_test.dart`
 
-- [ ] **Step 1: Write failing widget test for `TakingExamScreen` mobile layout**
+- [x] **Step 1: Write failing widget test for `TakingExamScreen` mobile layout**
   - Create `test/screens/taking_exam_mobile_layout_test.dart` on viewport size `360x800`:
     - Tests that top header shows exit button, title, and Fira Code timer countdown.
     - Tests that horizontal Quick-Strip questions bar (1..N) renders and is scrollable.
@@ -79,7 +79,7 @@
     - Tests that radio options A, B, C, D render as spacious cards with min-height >= 52px.
   - Run test and verify failure or missing mobile elements.
 
-- [ ] **Step 2: Implement Mobile Layout & Quick-Strip in `TakingExamScreen`**
+- [x] **Step 2: Implement Mobile Layout & Quick-Strip in `TakingExamScreen`**
   - In `lib/screens/exam/taking_exam_screen.dart`:
     - Detect `isMobile = MediaQuery.of(context).size.width < 600`.
     - Mobile Header: Back button on top-left (with `_onWillPop` confirmation dialog), truncated title, and timer pill.
@@ -92,7 +92,7 @@
     - Bottom Action Bar: Fixed bottom container with `SafeArea`, thumb-friendly buttons for "Câu trước", "Cờ", "Câu sau" / "Nộp bài".
     - Option cards: Touch-friendly vertical stack with 52px+ height, active glowing border.
 
-- [ ] **Step 3: Run tests and verify**
+- [x] **Step 3: Run tests and verify**
   - Run `flutter test test/screens/taking_exam_mobile_layout_test.dart test/screens/taking_exam_expired_guard_test.dart test/screens/taking_exam_anti_cheat_test.dart test/screens/taking_exam_spam_submission_test.dart`.
   - Commit Task 2 changes.
 
@@ -106,7 +106,7 @@
 - Test: `test/screens/search_screen_mobile_test.dart`
 - Test: `test/screens/home_mobile_layout_test.dart`
 
-- [ ] **Step 1: Write failing tests for mobile search & home layout**
+- [x] **Step 1: Write failing tests for mobile search & home layout**
   - Create `test/screens/search_screen_mobile_test.dart`:
     - Test 8 GDPT horizontal subject chips bar under search bar.
     - Test filter button toggling collapsible filter panel / bottom sheet.
@@ -115,20 +115,20 @@
     - Test responsive hero banner, workspace mode toggle, vertical active attempt cards on 360px viewport.
   - Run tests and verify expectations.
 
-- [ ] **Step 2: Implement Mobile Enhancements in `SearchScreen`**
+- [x] **Step 2: Implement Mobile Enhancements in `SearchScreen`**
   - In `lib/screens/home/search_screen.dart`:
     - On mobile, display horizontal scrollable subject chips bar directly below the search bar.
     - Add compact filter icon button next to search input that expands/collapses the advanced filter options (grades, sort, duration).
     - Refactor exam card layout on mobile: Title with 2-line ellipsis, tags row, and 2 full-width or split action buttons ("Vào thi" and "Lưu đề") with no overflow.
 
-- [ ] **Step 3: Polish `HomeScreen` for Mobile Viewport**
+- [x] **Step 3: Polish `HomeScreen` for Mobile Viewport**
   - In `lib/screens/home/home_screen.dart`:
     - Optimize hero banner padding and typography for mobile.
     - Ensure quick room PIN code field is compact and easy to tap.
     - Verify vertical stacking of "Bài Đang Làm" and "Phòng Đang Diễn Ra" cards has zero flex overflow on 360px.
     - Render gamified cards in a clean 2-column or 1-column responsive grid on mobile.
 
-- [ ] **Step 4: Run tests and verify**
+- [x] **Step 4: Run tests and verify**
   - Run `flutter test test/screens/search_screen_mobile_test.dart test/screens/home_mobile_layout_test.dart test/screens/home_smart_navigation_test.dart test/screens/search_screen_subject_filter_test.dart`.
   - Commit Task 3 changes.
 
@@ -142,12 +142,12 @@
 - Modify: `lib/screens/teacher/teacher_exams_screen.dart`
 - Test: `test/screens/exam_detail_mobile_test.dart`
 
-- [ ] **Step 1: Write failing test for `ExamDetailScreen` mobile layout**
+- [x] **Step 1: Write failing test for `ExamDetailScreen` mobile layout**
   - Create `test/screens/exam_detail_mobile_test.dart`:
     - Test on 360x800: Top-left back button, exam header summary, prominent "Bắt đầu làm bài" and "Lưu đề" buttons, preview questions list without 300px fixed sidebar overflow.
   - Run test and verify.
 
-- [ ] **Step 2: Optimize `ExamDetailScreen` for Mobile**
+- [x] **Step 2: Optimize `ExamDetailScreen` for Mobile**
   - In `lib/screens/exam/exam_detail_screen.dart`:
     - On mobile (`width < 600px`):
       - Remove fixed 300px sidebar from horizontal row layout.
@@ -155,13 +155,13 @@
       - Stack action buttons ("Bắt đầu làm bài" & "Lưu đề") with large tap targets.
       - Ensure question body, math formulas, and explanation text wrap properly without horizontal viewport overflow.
 
-- [ ] **Step 3: Polish `CreateRoomScreen` & `TeacherExamsScreen` for Mobile**
+- [x] **Step 3: Polish `CreateRoomScreen` & `TeacherExamsScreen` for Mobile**
   - In `lib/screens/teacher/create_room_screen.dart`:
     - Responsive card layout for exam selection (my exams vs saved exams), full-width inputs and switches.
   - In `lib/screens/teacher/teacher_exams_screen.dart`:
     - 3-tab filter selector with `Flexible` text, touch-friendly exam cards and action icons (Edit, Room, Delete, Preview).
 
-- [ ] **Step 4: Run tests and verify**
+- [x] **Step 4: Run tests and verify**
   - Run `flutter test test/screens/exam_detail_mobile_test.dart test/screens/exam_detail_preview_test.dart test/screens/create_room_with_saved_exam_test.dart`.
   - Commit Task 4 changes.
 
@@ -173,12 +173,13 @@
 - Modify: `docs/system_architecture_and_deep_evaluation.md`
 - Sync: Artifact `system_architecture_and_deep_evaluation.md`
 
-- [ ] **Step 1: Run complete test suite**
+- [x] **Step 1: Run complete test suite**
   - Run `flutter test` across all files to confirm 100% PASS with zero failures or regressions.
 
-- [ ] **Step 2: Update System Architecture Documentation**
+- [x] **Step 2: Update System Architecture Documentation**
   - Document Stage 9: Full Mobile-First UI/UX Overhaul in `docs/system_architecture_and_deep_evaluation.md` and sync with IDE artifact.
 
-- [ ] **Step 3: Auto-Commit and Auto-Push to GitHub**
+- [x] **Step 3: Auto-Commit and Auto-Push to GitHub**
   - Commit all changes in `thi_nhanh` and push to `origin/main`.
   - Update submodule in root `CODE` repo and push to `origin/main`.
+

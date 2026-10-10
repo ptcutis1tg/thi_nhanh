@@ -1,9 +1,9 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 09/10/2026 *(Cập nhật sau khi hoàn thành Tính Năng Lưu Đề Về Kho Cá Nhân, Mở Phòng Thi Từ Đề Cộng Đồng & Xem Trước Toàn Bộ Câu Hỏi Kèm Quick-Jump Navigator)*  
+> **Ngày thực hiện:** 10/10/2026 *(Cập nhật sau khi hoàn thành Tối Ưu Hóa Trải Nghiệm Mobile Toàn Diện - Mobile-First UI/UX Overhaul, Mobile Bottom Navigation Shell & Triệt Tiêu Lỗi RenderFlex Overflow)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **192 / 192 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
-> **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động.
+> **Trạng thái kiểm thử:** **210 / 210 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
+> **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động trên cả thiết bị Desktop, Tablet và Mobile.
 
 ---
 
@@ -15,6 +15,7 @@ graph TD
     Router["GoRouter (ShellRoute + Slide Transitions)"]
     Theme["AppTheme (Material 3 + Be Vietnam Pro + Fira Code)"]
     Tokens["Stitch Design Tokens (Luminescence Shadows, Capsule Tabs, Card/Pill Radii)"]
+    MobileShell["Mobile Responsive Layer (MobileBottomNavBar + Adaptive Shell)"]
     State["Provider / Service Layer / Repositories"]
     
     subgraph SecurityAndAntiCheat ["Tầng Bảo Mật & Chống Gian Lận"]
@@ -37,6 +38,7 @@ graph TD
     Storage["Supabase Storage (Avatars, Questions)"]
 
     Client --> Router
+    Client --> MobileShell
     Client --> Theme
     Theme --> Tokens
     Client --> State
@@ -50,10 +52,12 @@ graph TD
 ```
 
 ### 1.1. Công nghệ Cốt lõi
-- **Framework Client:** Flutter (SDK ^3.10.0), Dart 3.x. Hỗ trợ đa nền tảng (Web, Windows, Android, iOS).
+- **Framework Client:** Flutter (SDK ^3.10.0), Dart 3.x. Hỗ trợ đa nền tảng (Web, Windows, Android, iOS) với triết lý Mobile-First chuẩn mực.
 - **Backend & Database:** Supabase (PostgreSQL 15+), PostgREST RESTful API, Realtime Engine (WebSockets), Auth & Storage.
-- **Quản lý Trạng thái:** Kết hợp `Provider` (`AuthProvider`), Service Pattern (`ProfileService`, `DeveloperModeService`, `AiNavigationService`) và Repository Pattern (`AssessmentRepository`, `TeacherExamRepository`, `RoomRepository`).
-- **Điều hướng Tuyến đường:** `GoRouter` 17.3.0 với kiến trúc lồng ghép `ShellRoute` (chứa `TopNavBar` cố định cho các trang chính) kết hợp bộ chuyển cảnh `buildPageWithSlideTransition`.
+- **Quản lý Trạng thái:** Kết hợp `Provider` (`AuthProvider`), Service Pattern (`ProfileService`, `DeveloperModeService`, `AiNavigationService`) và Repository Pattern (`AssessmentRepository`, `TeacherExamRepository`, `RoomRepository`, `SavedExamRepository`).
+- **Điều hướng Tuyến đường & Kiến trúc Vỏ bọc Đa nền tảng:**
+  - `GoRouter` 17.3.0 với kiến trúc `ShellRoute` thông minh (`MainLayoutScreen`): Tự động hiển thị `TopNavBar` trên màn hình lớn ($\ge 768\text{px}$) và kích hoạt `MobileBottomNavBar` 5 tab trên màn hình điện thoại (< 768px).
+  - Tự động ẩn `MobileBottomNavBar` khi vào các màn hình chức năng sâu (sub-screens như `/exam/detail`, `/exam/take`, `/exam/result`, `/teacher_rooms_history`, v.v.) và cung cấp nút Back quay lại nổi bật ở góc trên bên trái.
 - **Hệ Thống Thiết Kế & Tokens Stitch Modern (`AppTheme`):**
   - **Bảng màu:** Primary Violet (`#6557E8`), Primary Dark Indigo (`#1E1B4B`), Lavender Surface Tint (`#F7F5FE`), Text Main (`#1E293B`).
   - **Typography kép:** Font hiển thị và văn bản Google Fonts `Be Vietnam Pro` kết hợp Google Fonts `Fira Code` cho đồng hồ đếm ngược, mã phòng thi PIN, điểm số thang 10 và các chỉ số kỹ thuật.
@@ -77,51 +81,46 @@ graph TD
 2. **Khôi phục mật khẩu ([`ResetPasswordScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/auth/reset_password_screen.dart)):**
    - Luồng xác minh mã OTP gửi về Email bằng `EmailVerifier` và `OtpMailer` an toàn.
 
-### 2.2. Phân Hệ Học Sinh (Student Experience) — *Được Hiện Đại Hóa Giao Diện Stitch*
-1. **Thanh Điều Hướng Cố Định ([`TopNavBar`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/shared/widgets/top_nav_bar.dart)):**
-   - Giữ nguyên tuyệt đối 100% 4 phân hệ cốt lõi: `Home` (`/home`), `Tìm kiếm` (`/search`), `Quản lí đề` (`/teacher_exams`), `Tạo phòng thi` (`/create_room`).
-   - Tab con nhộng active pill hiện đại hóa (`surfaceLavender` + viền violet nhẹ + `pillRadius`), biểu tượng squircle gradient với hiệu ứng phát sáng nhẹ, thanh nhập mã PIN phòng thi nhanh phong cách Fira Code và vòng nhẫn avatar người dùng tím thanh lịch.
+### 2.2. Phân Hệ Học Sinh & Trải Nghiệm Mobile Tối Ưu (Student & Mobile UX)
+1. **Vỏ Bọc Điều Hướng Kép ([`TopNavBar`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/shared/widgets/top_nav_bar.dart) & [`MobileBottomNavBar`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/shared/widgets/mobile_bottom_nav_bar.dart)):**
+   - **Desktop/Tablet ($\ge 768\text{px}$):** TopNavBar cố định trên đỉnh, tab capsule active (`surfaceLavender` + viền violet nhẹ + `pillRadius`), ô nhập PIN nhanh font Fira Code, avatar viền tím.
+   - **Mobile (< 768px):** MobileBottomNavBar nổi bật ở cạnh đáy màn hình với 5 tab biểu tượng thuần túy (pure-icon) chống tràn chữ: Trang chủ (`/home`), Khám phá (`/search`), Quản lý đề (`/teacher_exams`), Mở phòng (`/create_room`), và Lịch sử thi (`/student/history`). Có hiệu ứng nhộng tím phát sáng luminescence mềm mại.
+   - **Quản lý Sub-screens:** Tự động ẩn thanh đáy khi vào màn hình làm bài, chi tiết đề, kết quả; tự động hiển thị nút mũi tên quay lại (Back Button) to rõ ở góc trên bên trái `TopNavBar`.
 2. **Trang chủ ([`HomeScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/home_screen.dart)):**
    - **Hero Banner Gradient Tím Sâu (Stitch Hero Banner):** Nền gradient tím cao cấp (`#6557E8` $\rightarrow$ `#4C3BCE` $\rightarrow$ `#3828A8`), bo góc 24px với bóng luminescence 24px. Bên trái là Avatar viền sáng, lời chào cá nhân hóa và huy hiệu con nhộng "Tài khoản Toàn quyền".
-   - **Thanh Chuyển Đổi Không Gian Làm Việc Con Nhộng Kính Mờ (Embedded Workspace Capsule Switcher):** Được tích hợp tinh gọn trực tiếp bên trong Hero Banner với nền kính mờ (`rgba(255,255,255,0.15)`), tab active nền trắng chữ tím nổi bật, cho phép chuyển đổi tức thì giữa `🎓 Học tập & Thi thử` và `📝 Soạn đề & Quản lý`.
-   - **Lưới Điều Hướng Thông Minh 2 Thẻ (Stitch Smart Navigation Grid):**
-     - *Thẻ 1 — Tiến Độ Học Tập / Bài Thi Dở Dang:* Thẻ bo góc 22px, hiển thị trạng thái bài làm chưa nộp gần nhất từ `ProfileService.fetchActiveAttempt()`, nhãn cảnh báo vàng amber, hiệu ứng nhịp tim `ScaleTransition` và nút "Tiếp tục làm bài" / "Khám phá đề thi".
-     - *Thẻ 2 — Phòng Thi Trực Tiếp & Vào Nhanh:* Thẻ bo góc 22px, hiển thị phòng thi đang mở từ `ProfileService.fetchActiveLiveRoom()`, chỉ báo xanh lục nhấp nháy realtime và tích hợp trực tiếp ô nhập mã PIN phòng thi chuẩn Fira Code (`Nhập mã phòng PTxxxxxx...`) kèm nút "Vào ngay".
-   - **Hàng 8 Chips Môn Học Trực Quan (`📚 Danh Mục Môn Học`):** Tích hợp 8 môn học phổ thông (Toán, Vật lý, Hóa học, Tiếng Anh, Sinh học, Lịch sử, Địa lý, Ngữ văn) dạng thẻ pill bo tròn với icon đặc trưng, click vào chuyển hướng trực tiếp sang `/search?subject=...`.
-   - **Thanh Chỉ Số Nhanh (Quick Stats Bar):** Đồng bộ dữ liệu thực tế Supabase (`_studentStats`, `_teacherStats`).
-   - **Danh Mục Học Tập Tinh Gọn (Refined Learning Categories Grid):** Tinh giản phân hệ Học sinh bằng cách loại bỏ các thẻ trùng lặp ('Vào Phòng Thi' và 'Bài Đang Làm' đã có trên TopNavBar và Lưới điều hướng thông minh). Duy trì 4 chức năng cốt lõi: `Tìm Đề Luyện Tập`, `Lịch Sử & Kết Quả`, `Thành Tích Cá Nhân`, và `Bảng Xếp Hạng`. Bố cục lưới tự động co giãn 4 cột trên desktop rộng ($\ge 950\text{px}$), 2x2 trên tablet và 1 cột trên mobile.
-   - Danh sách đề thi nổi bật và đề thi mới nhất được nâng cấp với `cardRadius` (16px) và `cardShadow` đa tầng mềm mại.
-3. **Tìm kiếm & Bộ lọc ([`SearchScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
-   - Thẻ kết quả thi dạng Card hiện đại hóa, chip chọn môn và bộ lọc cấp độ dạng con nhộng mềm mại.
-   - **Nút Lưu Đề Nổi Bật (Prominent Save Exam Button):** Tích hợp nút có nhãn rõ ràng `'Lưu đề'` / `'Đã lưu'` kèm icon bookmark (`Icons.bookmark_rounded` vs `Icons.bookmark_border_rounded`), tooltip chỉ dẫn, màu tím Stitch thanh lịch và thiết kế responsive linh hoạt (trên cả desktop lẫn mobile) ngay trên mỗi thẻ kết quả thi. Đồng bộ tức thời với kho cá nhân và SnackBar thông báo.
-   - Định dạng thời gian tương đối động (`formatRelativeTime`).
+   - **Embedded Workspace Switcher:** Thanh chuyển đổi không gian học tập / quản lý tích hợp tinh gọn ngay trên Hero banner.
+   - **Mobile Optimization:** Thẻ tiến độ và thẻ phòng thi trực tiếp tự động điều chỉnh tỷ lệ aspect ratio 1.85, padding 16px, thu nhỏ badge trạng thái bằng `FittedBox`, tiêu đề bọc `Wrap` chống vỡ dòng trên màn hình hẹp 360px.
+   - **Hàng 8 Chips Môn Học Trực Quan (`📚 Danh Mục Môn Học`):** 8 môn học phổ thông dạng thẻ pill bo tròn cuộn ngang êm ái, click vào chuyển hướng trực tiếp sang `/search?subject=...`.
+3. **Tìm kiếm & Khám Phá Đề Thi Mobile ([`SearchScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
+   - **Horizontal GDPT Subject Chips:** Hàng chip môn học cuộn ngang ở đỉnh màn hình, cho phép chọn nhanh môn học mà không chiếm diện tích hiển thị.
+   - **Modal Filter Bottom Sheet:** Nút "Bộ lọc" trên mobile kích hoạt Bottom Sheet chuyên dụng (`_showMobileFilterBottomSheet`) chứa đầy đủ bộ lọc khối lớp, loại đề, sắp xếp kèm badge đếm số lượng bộ lọc đang áp dụng.
+   - **Thẻ Đề Thi 1 Cột Tối Ưu:** Trên mobile, thẻ kết quả thi hiển thị dạng 1 cột với các nút "Làm bài ngay" và "Lưu đề" xếp dọc linh hoạt, đảm bảo 0 tràn viền (zero RenderFlex overflow).
 4. **Chi tiết đề thi ([`ExamDetailScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/exam_detail_screen.dart)):**
-   - Thẻ tóm tắt thông tin đề bài và bảng thao tác hành động bổ sung `luminescenceShadow` phát sáng ánh tím nhẹ nhàng.
-   - **Nút Lưu Đề Vào Kho Cá Nhân:** Bổ sung tùy chọn "Lưu đề" / "Bỏ lưu đề" tiện lợi bên cạnh các nút "Bắt đầu tự luyện" và "Lưu vào yêu thích".
-   - **Chỉ Báo Cuộn Mũi Tên Nảy (Scroll Down Indicator):** Biểu tượng mũi tên nảy hoạt hình tinh tế kèm chú thích "Xem chi tiết câu hỏi & đáp án", click vào cuộn mượt xuống vùng nội dung câu hỏi.
-   - **Khu Vực Xem Trước Toàn Bộ Đề Thi (Full Question Preview):** Hiển thị danh sách đầy đủ các câu hỏi, các phương án A/B/C/D với đáp án đúng được highlight viền & nền xanh lá cây, khung lời giải chi tiết, công tắc Toggle "Hiện đáp án & giải thích".
-   - **Bảng Con Quick-Jump Navigator (Lưới Phím Tắt Câu Hỏi):** Sidebar sticky hiển thị lưới số 1..N, bấm vào số câu sẽ tự động cuộn mượt đưa câu hỏi tương ứng lên tầm mắt người dùng.
-5. **Làm bài thi ([`TakingExamScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/taking_exam_screen.dart)):**
-   - Thanh trạng thái tối giản hiện đại hóa với đồng hồ đếm ngược phong cách `AppTheme.firaCodeStyle`.
-   - **Lưới điều hướng câu hỏi Sidebar:** Trạng thái trực quan 3 màu Stitch (Lavender cho câu đang chọn, Primary tím đậm cho câu đã trả lời, Amber cho câu nghi vấn), nút nộp bài con nhộng nổi bật chống click đúp spam.
+   - Breadcrumbs bọc trong `SingleChildScrollView(scrollDirection: Axis.horizontal)` cuộn mượt không đứt gãy.
+   - Bảng thông số `_Fact` và `_InfoBox` bọc `Flexible` tự co giãn linh hoạt theo độ rộng thiết bị.
+   - **Mobile Matrix Navigator & Floating Action Button:** Trên màn hình hẹp (< 900px), bảng Quick-Jump Navigator chuyển hóa thành nút bấm nổi Floating Action Button (FAB) ở góc dưới bên phải, bấm vào sẽ mở Bottom Sheet ma trận câu hỏi 5 cột cuộn mượt đến câu hỏi tương ứng.
+5. **Làm bài thi Mobile Tối Ưu ([`TakingExamScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/taking_exam_screen.dart)):**
+   - **Mobile Quick-Strip Top Bar:** Dải phím tắt câu hỏi 1..N cuộn ngang trên đỉnh kết hợp nút lưới mở Bottom Sheet 5 cột giúp thí sinh chuyển câu hỏi trong 1 chạm mà không chiếm chỗ đọc đề bài.
+   - **Vertical Options Flow:** Các phương án A/B/C/D xếp dọc hoàn toàn trên mobile với chiều cao chạm tối thiểu $\ge 52\text{px}$, đáp ứng tiêu chuẩn Accessibility của ngón tay cái.
+   - **Sticky Bottom Action Bar:** Thanh điều hướng đáy cố định đặt trong `SafeArea`, chứa nút "Câu trước", "Câu tiếp", "Ghi nhớ" và "Nộp bài", không bao giờ bị che khuất.
    - Bảo toàn 100% cơ chế chống gian lận đa tầng: giám sát rời tab/app 4 cấp độ, xáo trộn câu hỏi tất định (`ExamShuffleHelper`), khóa sao chép bôi đen (`SelectionContainer.disabled`).
 6. **Kết quả & Bảng điểm ([`ResultScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/result_screen.dart)):**
    - Điểm số thang điểm 10 hiển thị cỡ chữ lớn ấn tượng với font `AppTheme.firaCodeStyle`, phân tích đúng/sai/bỏ qua trực quan.
 7. **Luyện tập câu sai ([`WrongQuestionsPracticeScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/wrong_questions_practice_screen.dart)):**
    - Tách riêng danh sách các câu làm sai từ bài thi trước đó để học sinh làm lại và xem lời giải chi tiết.
 8. **Lịch sử làm bài ([`StudentHistoryScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/student/student_history_screen.dart)):**
-   - Bảng điều khiển lịch sử: lọc thời gian, phân loại phòng thi / tự luyện, lọc môn, phân trang Google.
+   - 2 tab chuyên biệt: **"Đã hoàn thành"** và **"Chưa hoàn thành"** với số đếm động và huy hiệu cảnh báo màu hổ phách `badge`. Thẻ bài dở dang cho phép tiếp tục làm hoặc hủy bài thi.
 9. **Thành tích & Bảng xếp hạng ([`StudentLeaderboardScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/student/student_leaderboard_screen.dart)):**
-   - Tích hợp `TopNavBar` trên đỉnh màn hình, hiển thị bục vinh danh Top 1-2-3 (Podium) và điểm số trung bình hiển thị với font `AppTheme.firaCodeStyle`.
+   - Bục vinh danh Top 1-2-3 (Podium) và điểm số trung bình hiển thị với font `AppTheme.firaCodeStyle`.
 
 ### 2.3. Phân Hệ Giáo Viên & Quản Trị (Teacher Experience)
 1. **Soạn thảo đề thi chuyên sâu ([`CreateExamScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/create_exam_screen.dart)):**
    - Tiêu đề thanh soạn thảo co giãn linh hoạt (`Flexible`), chống tràn `RenderFlex` khi tên đề thi quá dài.
    - Khung thiết lập ban đầu và thẻ câu hỏi áp dụng `AppTheme.cardRadius`, `AppTheme.luminescenceShadow` và các nút bấm con nhộng.
-   - Giữ nguyên trình soạn thảo công thức Toán học trực quan `InlineVisualMathEditor` và live preview LaTeX.
+   - Trình soạn thảo công thức Toán học trực quan `InlineVisualMathEditor` và live preview LaTeX.
 2. **Quản lý kho đề thi ([`TeacherExamsScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/teacher/teacher_exams_screen.dart)):**
    - **4 Tab Bộ Lọc Con Nhộng:** `Tất cả`, `Đề nháp`, `Đã công khai` và tab mới **`Đề đã lưu`** từ cộng đồng.
-   - Thẻ đề thi áp dụng `AppTheme.cardRadius`, mã đề `firaCodeStyle`. Đề lưu từ cộng đồng có huy hiệu tím "Đề lưu từ cộng đồng", cho phép bấm "Tạo Phòng Thi" và "Xem chi tiết" nhanh chóng.
+   - **Responsive Exam Cards (`LayoutBuilder`):** Khi chiều rộng thẻ < 640px, giao diện tự động chuyển từ hàng ngang sang dạng cột dọc: avatar & thông tin đề ở trên, huy hiệu trạng thái và các nút hành động ("Tạo phòng", "Chi tiết", "Sửa", "Xóa") bọc trong `Wrap` bên dưới, đảm bảo 0 tràn viền trên mọi độ phân giải.
 3. **Quản lý & Lịch sử phòng thi ([`TeacherRoomsHistoryScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/teacher/teacher_rooms_history_screen.dart)):**
    - Tra cứu phòng thi theo 4 tab trạng thái (Tất cả, Đang diễn ra, Đang chờ, Đã kết thúc).
 4. **Kết quả bài nộp của học sinh ([`TeacherStudentResultsScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/teacher/teacher_student_results_screen.dart)):**
@@ -133,7 +132,7 @@ graph TD
 1. **Tạo phòng thi ([`CreateRoomScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/room/create_room_screen.dart)):**
    - Khung cấu hình phòng thi áp dụng `AppTheme.luminescenceShadow` và `AppTheme.cardRadius`.
    - **Mở Phòng Bằng Đề Thi Đã Lưu Từ Cộng Đồng (Zero Duplication Host Authorization):** Giáo viên có thể dùng trực tiếp các đề thi đã lưu từ cộng đồng để mở phòng thi trực tuyến có đầy đủ tính năng xáo trộn, chống gian lận, không cần nhân bản tạo đề trùng lặp.
-   - **Bộ Lọc Nguồn Đề Thi 3 Tab:** Cho phép chuyển đổi linh hoạt giữa `Tất cả`, `Đề của tôi` và `Đề đã lưu`. Thẻ đề lưu hiển thị huy hiệu `Đề lưu từ cộng đồng`.
+   - **Bộ Lọc Nguồn Đề Thi 3 Tab:** Chuyển đổi linh hoạt giữa `Tất cả`, `Đề của tôi` và `Đề đã lưu`.
    - Hộp thoại chia sẻ QR ([`RoomQrDialog`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/room/widgets/room_qr_dialog.dart)): Mã phòng PIN to nổi bật với `AppTheme.firaCodeStyle` viền tím lavender phát sáng và nút sao chép 1 chạm.
 2. **Bảng theo dõi trực tiếp & Giám sát Vi phạm ([`LiveDashboardScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/live_dashboard_screen.dart)):**
    - Thanh tiêu đề màu nền sẫm `AppTheme.primaryDark` (`#1E1B4B`) với mã phòng PIN monospace và chấm xanh chỉ báo trạng thái trực tiếp.
@@ -195,19 +194,8 @@ graph TD
    - `AvatarHelper` hỗ trợ đa định dạng thông minh: Network URL, Base64 URI, hoặc Memory Image với cơ chế fallback chữ cái đầu.
 2. **Tài nguyên tĩnh ứng dụng (`assets/images/`):**
    - Đồ họa UI cao cấp: `books_left.png`, `books_right.png`, `clean_login_bg.png`, `glowing_book.png`, `google_logo.png`.
-4. **Bộ Xuất Mã Nguồn HTML5/CSS Cho AI Stitch Redesign (`stitch_design_export/`):**
-   - Bộ sưu tập 11 tệp HTML5 Semantic độc lập, tự chứa (self-contained CSS), đóng vai trò đầu vào trực tiếp cho các công cụ AI UI/UX Design (như Stitch) để tái thiết kế và nâng cấp thẩm mỹ ứng dụng:
-     - `index.html`: Cổng điều hướng trung tâm, phân loại màn hình theo nhóm chức năng, chỉ dẫn phím tắt và xem trước.
-     - `01_auth_greeting.html`: Chào mừng, đăng nhập/đăng ký, đăng nhập chế độ Khách.
-     - `02_home_screen.html`: Trang chủ học tập, TopNavBar, 8 môn học, điều hướng thông minh "Bài đang làm" & "Phòng đang diễn ra", trợ lý AI.
-     - `03_search_screen.html`: Tìm kiếm đề thi, lọc môn học, độ khó, phân trang Google Pagination.
-     - `04_exam_detail.html`: Chi tiết đề thi, thông tin tác giả, tham gia phòng thi trực tuyến hoặc tự luyện tập, quy chế phòng thi.
-     - `05_taking_exam.html`: Giao diện phòng thi thời gian thực, đồng hồ đếm ngược, thanh cảnh báo vi phạm toàn màn hình, công thức toán học LaTeX trực quan, bảng điều hướng 40 câu hỏi.
-     - `06_result_screen.html`: Kết quả thi thang điểm 10, phân tích 4 chỉ số (Đúng, Sai, Bỏ qua, Độ chính xác), luyện tập câu sai, lời giải chi tiết.
-     - `07_create_exam.html`: Soạn thảo đề thi chia 3 cột (Cây câu hỏi, Visual Math Editor với thanh ký hiệu toán học nhanh, cấu hình đề thi).
-     - `08_teacher_exams.html`: Kênh quản lý đề thi của giáo viên (Thống kê 4 chỉ số, 3 tab Tất cả/Bản nháp/Đã xuất bản, mở phòng thi, chỉnh sửa).
-     - `09_live_dashboard.html`: Bảng giám sát phòng thi trực tiếp theo thời gian thực (Mã PIN phòng, tiến độ từng học sinh, cờ vi phạm rời tab 🚩, nút thu bài cưỡng chế ⛔).
-     - `10_student_leaderboard.html`: Bảng vàng vinh danh Top 1-2-3 (Bục vinh danh, huy chương Vàng/Bạc/Đồng, xếp hạng chi tiết, nhãn Khách).
+3. **Bộ Xuất Mã Nguồn HTML5/CSS Cho AI Stitch Redesign (`stitch_design_export/`):**
+   - Bộ sưu tập 11 tệp HTML5 Semantic độc lập, tự chứa (self-contained CSS), đóng vai trò đầu vào trực tiếp cho các công cụ AI UI/UX Design (như Stitch) để tái thiết kế và nâng cấp thẩm mỹ ứng dụng.
 
 ---
 
@@ -216,11 +204,11 @@ graph TD
 ### 5.1. Điểm Mạnh Nổi Bật (Strengths)
 1. **Kiến Trúc Hoàn Thiện & Tính Năng Chuyên Nghiệp:** Hệ thống sở hữu trọn vẹn luồng học tập từ A đến Z: Soạn đề thi Toán học với LaTeX trực quan $\rightarrow$ Cấu hình phòng thi bảo mật $\rightarrow$ Khởi động đếm ngược 3-2-1 $\rightarrow$ Thi trực tiếp có chống gian lận đa tầng $\rightarrow$ Chấm điểm tự động $\rightarrow$ Bảng xếp hạng Realtime $\rightarrow$ Luyện câu sai $\rightarrow$ Thống kê phân tích.
 2. **Bảo Mật Học Thuật & Chống Gian Lận Hàng Đầu (New High-Water Mark):** Học sinh không thể copy đề bài ra ngoài, đề thi được xáo trộn thứ tự tất định cho từng người, và việc rời tab/chuyển ứng dụng được giám sát chặt chẽ với cơ chế cưỡng chế nộp bài ở lần thứ 4 và phát cờ đỏ trực tiếp lên dashboard của giáo viên.
-3. **Khả Năng Chống Lỗi Tuyệt Vời (High Resilience):** Tầng `SupabaseRetryHelper` giải quyết triệt để vấn đề lệch đồng hồ và rớt mạng. Các màn hình đều có fallback bảng trực tiếp nếu RPC gặp sự cố.
-4. **Giao Diện Hiện Đại Chuẩn Stitch EdTech Modern:** Bảng màu tím violet cao cấp (`#6557E8`), typography kép `Be Vietnam Pro` & `Fira Code`, đổ bóng luminescence ánh tím dịu mắt, các tab và nút bấm con nhộng mềm mại, hỗ trợ responsive hoàn hảo từ mobile 360px đến desktop 1920px.
-5. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **192 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100% (PASS), tuân thủ nghiêm ngặt chuẩn TDD.
-6. **Sẵn Sàng Tái Thiết Kế & Nâng Cấp Giao Diện Với AI (AI-Ready Design Bridge):** Bộ 11 tệp HTML Semantic `stitch_design_export/` giúp các công cụ tạo sinh giao diện như Stitch hiểu chính xác cây phân cấp DOM, ngữ nghĩa nút bấm, công thức toán và trạng thái tương tác mà không bị cản trở bởi canvas Flutter Web.
-7. **Đột Phá Cơ Chế Lưu Đề & Mở Phòng Thi Không Nhân Bản (Host-Authorized Bookmark & Zero Duplication):** Giáo viên có thể tự do lưu các đề thi xuất sắc tìm thấy trên cộng đồng về kho cá nhân và sử dụng trực tiếp để mở phòng thi trực tuyến có giám sát chống gian lận, bảo toàn triệt để nguyên tắc không nhân bản trùng lặp đề trên cơ sở dữ liệu.
+3. **Trải Nghiệm Mobile-First Tuyệt Đối (0-Overflow Guarantee):** Toàn bộ ứng dụng đã được tối ưu hóa cho màn hình điện thoại di động (từ 360px width trở lên). Tích hợp thanh điều hướng đáy `MobileBottomNavBar` 5 tab pure-icon, Bottom Sheet ma trận câu hỏi và bộ lọc nâng cao, thanh hành động đáy cố định chống che khuất, triệt tiêu 100% lỗi `RenderFlex` overflow.
+4. **Khả Năng Chống Lỗi Tuyệt Vời (High Resilience):** Tầng `SupabaseRetryHelper` giải quyết triệt để vấn đề lệch đồng hồ và rớt mạng. Các màn hình đều có fallback bảng trực tiếp nếu RPC gặp sự cố.
+5. **Giao Diện Hiện Đại Chuẩn Stitch EdTech Modern:** Bảng màu tím violet cao cấp (`#6557E8`), typography kép `Be Vietnam Pro` & `Fira Code`, đổ bóng luminescence ánh tím dịu mắt, các tab và nút bấm con nhộng mềm mại.
+6. **Chất Lượng Kiểm Thử Tuyệt Đối:** Hệ thống hiện sở hữu **210 bài kiểm thử tự động (Unit, Widget, E2E)** đạt tỷ lệ thành công 100% (PASS), tuân thủ nghiêm ngặt chuẩn TDD.
+7. **Đột Phá Cơ Chế Lưu Đề & Mở Phòng Thi Không Nhân Bản (Host-Authorized Bookmark & Zero Duplication):** Giáo viên có thể tự do lưu các đề thi xuất sắc tìm thấy trên cộng đồng về kho cá nhân và sử dụng trực tiếp để mở phòng thi trực tuyến có giám sát chống gian lận.
 
 ### 5.2. Các Rủi Ro Tiềm Ẩn & Nút Thắt Cần Lưu Ý (Risks & Bottlenecks)
 
@@ -235,79 +223,37 @@ graph TD
 ## 6. TIẾN ĐỘ THỰC TẾ & LỘ TRÌNH ĐỀ XUẤT TIẾP THEO (PROGRESS & ROADMAP)
 
 ### 6.1. Hạng Mục Đã Hoàn Thành Toàn Diện (Completed)
-- ✅ **Giai đoạn 1: Nâng cao Trải nghiệm Phòng thi & Chống Gian Lận (Enhanced Room & Anti-Cheat):**
-  - [x] Hiệu ứng đếm ngược 3-2-1 đồng bộ (`CountdownOverlayWidget`) tại phòng chờ học sinh.
-  - [x] Thuật toán xáo trộn câu hỏi và đáp án tất định theo seed (`ExamShuffleHelper`).
-  - [x] Giám sát chuyển tab / rời màn hình 4 cấp độ cảnh báo và tự động thu bài (`TakingExamScreen`).
-  - [x] Chặn bôi đen và khóa sao chép câu hỏi (`SelectionContainer.disabled`).
-  - [x] Tùy chọn cấu hình bảo mật phòng thi tại `CreateRoomScreen`.
-  - [x] Đồng bộ cờ đỏ vi phạm thời gian thực lên `LiveDashboardScreen` của giáo viên.
-- ✅ **Giai đoạn 2: Quét Sạch Mock Data & Nâng Cao Trải Nghiệm Cốt Lõi (Mock Data Elimination & Core Polish):**
-  - [x] Dọn dẹp store mồ côi `created_exam_store.dart` và route giả lập `/exam/physics-12`.
-  - [x] Chuẩn hóa hiển thị thời gian tương đối động `formatRelativeTime` tại `SearchScreen`.
-  - [x] Thay thế số liệu tiến độ giám sát hardcoded trong `LiveDashboardScreen` bằng truy vấn thực từ `questions` và `attempt_answers`.
-  - [x] Triển khai điều hướng thông minh cho "Bài Đang Làm" và "Phòng Đang Diễn Ra" trên `HomeScreen`.
-  - [x] Chuẩn hóa dữ liệu bảng xếp hạng `StudentLeaderboardScreen` (xóa fake email, phân giải `profiles`, nhãn `(Khách)`).
-  - [x] 100% kiểm thử hồi quy đạt 173/173 tests PASS.
-- ✅ **Giai đoạn 3: Dọn Dẹp Widget Thừa & Loại Bỏ Mã Chết (Widget Cleanup & Dead Code Elimination):**
-  - [x] Xóa sạch 3 tệp widget/utility mồ côi 0 tham chiếu: `profile_dialog.dart` (337 dòng), `topic_chip.dart` (39 dòng), `otp_mailer.dart` (42 dòng).
-  - [x] Loại bỏ tệp màn hình di sản trùng lặp `screens/exam/teacher_exams_screen.dart` (85 dòng), cập nhật bài test trỏ về màn hình chuẩn `screens/teacher/teacher_exams_screen.dart`.
-  - [x] Triệt tiêu fallback UUID demo ảo `_demoExamId` và dọn dẹp bookmark RAM giả lập tại `ExamDetailScreen`.
-  - [x] Khắc phục triệt để cảnh báo `use_build_context_synchronously` trên `HomeScreen`.
-  - [x] Duy trì 100% kiểm thử hồi quy đạt 173/173 tests PASS.
-- ✅ **Giai đoạn 4: Bộ Xuất Mã Nguồn HTML5/CSS Cho AI Stitch Redesign (Stitch Design Export Suite):**
-  - [x] Tạo toàn bộ 10 màn hình độc lập cùng 1 trang mục lục trung tâm tại `stitch_design_export/`.
-  - [x] Cấu trúc chuẩn Semantic HTML5, tông màu Deep Violet (`#6557E8`) và Ink Navy (`#24233A`), typography Be Vietnam Pro & Fira Code.
-- ✅ **Giai đoạn 5: Hiện Đại Hóa Toàn Diện Giao Diện Flutter Theo Ngôn Ngữ Thiết Kế Stitch (Stitch EdTech Modern UI/UX Redesign):**
-  - [x] Mở rộng Design System Tokens trong `AppTheme` (`primaryDark`, `surfaceLavender`, `luminescenceShadow`, `cardShadow`, `cardRadius`, `pillRadius`, `inputRadius`, `firaCodeStyle`). Bổ sung `app_theme_test.dart` (4 unit tests PASS).
-  - [x] Hiện đại hóa `TopNavBar`: Tab con nhộng capsule active (`surfaceLavender` + `pillRadius`), squircle glowing logo, thanh nhập mã PIN phòng thi nhanh font Fira Code, vòng tròn viền tím avatar. Bảo toàn 100% 4 route cốt lõi (`Home`, `Tìm kiếm`, `Quản lí đề`, `Tạo phòng thi`).
-  - [x] Hiện đại hóa luồng khám phá học sinh (`HomeScreen`, `SearchScreen`, `ExamDetailScreen`, `GreetingScreen`): Thêm hàng 8 chips môn học chuyển hướng nhanh, card shadow đa tầng, nút bấm pill con nhộng.
-  - [x] Hiện đại hóa phòng thi & kết quả (`TakingExamScreen`, `ResultScreen`, `StudentLeaderboardScreen`): Sidebar câu hỏi 3 màu Stitch, timer & score typography Fira Code, tích hợp TopNavBar trên bảng xếp hạng.
-  - [x] Hiện đại hóa quản lý giáo viên & giám sát phòng thi (`TeacherExamsScreen`, `CreateExamScreen`, `CreateRoomScreen`, `RoomQrDialog`, `LiveDashboardScreen`): 3 tab con nhộng, khung cấu hình luminescence shadow, dialog QR phát sáng, dashboard sẫm màu với cờ đỏ vi phạm.
-  - [x] Tối ưu hóa trải nghiệm nhập mã phòng thi & xử lý lỗi thân thiện: Tự động chuẩn hóa mã số PIN (VD: nhập 67664 / 892341 tự động chuyển thành PT067664 / PT892341), nút mũi tên tương tác trực tiếp, hỗ trợ mã kích hoạt Developer Mode ngay tại `TopNavBar`, triệt tiêu hoàn toàn `PostgrestException` thô và hiển thị thông báo tiếng Việt thanh lịch qua `AppErrorReporter.showErrorSnackBar`.
-  - [x] Duy trì tỷ lệ kiểm thử tuyệt đối: **186 / 186 bài kiểm thử tự động đạt 100% PASS**.
-- ✅ **Giai đoạn 6: Lưu Đề Về Kho Cá Nhân & Mở Phòng Thi Từ Đề Cộng Đồng (Host-Authorized Bookmark & Full Question Preview):**
-  - [x] Cơ sở dữ liệu: Tạo bảng `saved_exams` (khóa chính ghép `user_id, exam_id`), thiết lập RLS chặt chẽ và cập nhật RPC `create_teacher_room` cho phép giáo viên host đề đã lưu từ cộng đồng mà không cần sao chép nhân bản (`Zero Duplication`).
-  - [x] Repository: Xây dựng `SavedExamRepository` với kiến trúc bền bỉ đa tầng: lưu trữ cục bộ lâu dài qua `SharedPreferences`, đồng bộ đám mây Supabase, và tự động kích hoạt cơ chế truy vấn dự phòng trực tiếp bảng `exams` theo ID đã lưu khi bảng `saved_exams` chưa khởi tạo trên Supabase hoặc ngoại tuyến. Đảm bảo đề đã lưu luôn xuất hiện 100% tại `CreateRoomScreen` và `TeacherExamsScreen`.
-  - [x] Nâng cấp `ExamDetailScreen`: Bổ sung nút Lưu đề 1 chạm, chỉ báo mũi tên nảy cuộn xuống "Xem chi tiết câu hỏi & đáp án", khu vực hiển thị danh sách câu hỏi xem trước đầy đủ (highlight đáp án đúng xanh lá, giải thích chi tiết, toggle ẩn/hiện đáp án), và bảng con Sidebar Quick-Jump Navigator cuộn mượt đến câu hỏi 1..N.
-  - [x] Nâng cấp `SearchScreen`: Thêm nút bấm nổi bật có chữ rõ ràng `'Lưu đề'` / `'Đã lưu'` kèm icon bookmark, tự co giãn thích ứng responsive (cả desktop lẫn mobile), phản hồi tức thời trạng thái lưu/bỏ lưu kèm SnackBar thông báo.
-  - [x] Nâng cấp `CreateRoomScreen` & `TeacherExamsScreen`: Hỗ trợ nạp song song đề của tôi và đề đã lưu, bổ sung bộ lọc nguồn đề 3 tab (`Tất cả`, `Đề của tôi`, `Đề đã lưu`) cùng huy hiệu "Đề lưu từ cộng đồng", kèm thông báo hướng dẫn rõ ràng nếu cần chạy SQL migration.
-  - [x] Nâng tổng số bài kiểm thử tự động lên **192 / 192 bài kiểm thử (100% PASS)**.
-- ✅ **Giai đoạn 7: Trải Nghiệm Khám Phá Nhanh & Lọc Tự Động Theo Môn Học (Seamless Quick Subject Exploration & Auto-Filtering):**
-  - [x] Tối ưu hóa khối "Danh Mục Học Tập" trên `HomeScreen`: Loại bỏ các nút dư thừa ("vào phòng thi", "bài đang làm"), tinh gọn trải nghiệm trang chủ.
-  - [x] Tích hợp bộ chuyển hướng nhanh từ hàng chip 8 môn học GDPT chuẩn (`HomeScreen`): Khi nhấn vào môn học (VD: Toán học, Vật lý, Ngữ văn...), ứng dụng tự động điều hướng sang `/search?subject=...` với mã hóa URI chuẩn (`Uri.encodeComponent`).
-  - [x] Khởi tạo bộ lọc tìm kiếm tức thì (`SearchScreen`): Nhận tham số `initialSubject` qua GoRoute, tự động tick sẵn môn học tương ứng trong `_FilterPanel`, lọc danh sách đề thi ngay lập tức.
-  - [x] Thuật toán khớp môn học linh hoạt (Bidirectional Resilient Matching): Xử lý tương thích hoàn hảo giữa nhãn UI ("Toán học") và dữ liệu máy chủ ("Toán"), đảm bảo không bỏ sót kết quả.
-  - [x] Đồng bộ trạng thái động qua `didUpdateWidget`: Hỗ trợ chuyển đổi mượt mà giữa các môn học mà không cần tải lại widget.
-  - [x] Bổ sung đầy đủ 'Ngữ văn' vào danh sách bộ lọc `_FilterPanel.availableSubjects`.
-  - [x] Nâng tổng số bài kiểm thử tự động lên **194 / 194 bài kiểm thử (100% PASS)**.
-- ✅ **Giai đoạn 8: Phân Hệ Quản Lý Bài Thi Dở Dang & Điều Hướng Lịch Sử 2 Tab (In-Progress Exam Recovery & Student History Multi-Tab Navigation):**
-  - [x] Lớp Dữ liệu & Service (`ProfileService`, `StudentTestHistoryData`, `StudentProfileData`):
-    - Mở rộng model `StudentTestHistoryData` với các trường `status`, `startedAt`, `expiresAt`, `totalQuestions`, `answeredCount`, và getter thông minh `isExpired`.
-    - Phân tách tự động `completedTests` và `inProgressTests` trong `fetchStudentData`.
-    - Nâng cấp `fetchActiveAttempt`: Tự động lọc bỏ các bài thi đã hết hạn (`isExpired`), chỉ trả về attempt còn hiệu lực thực sự, đồng thời bổ sung `inProgressCount` (số bài còn hạn) và `totalUnfinishedCount` (tổng số bài dở dang bao gồm cả hết hạn).
-    - Bổ sung phương thức an toàn `cancelOrDeleteAttempt(attemptId)` hỗ trợ học sinh tự hủy hoặc xóa bản ghi bài thi dở dang không mong muốn.
-  - [x] Giao diện Lịch sử Học sinh 2 Tab (`StudentHistoryScreen`):
-    - Tích hợp 2 tab chuyên biệt: **"Đã hoàn thành"** và **"Chưa hoàn thành"** với số đếm động và huy hiệu cảnh báo màu hổ phách `badge`.
-    - Hỗ trợ deep-link và điều hướng tab qua query parameter URL (`/student/history?tab=in_progress`) và đồng bộ qua `didUpdateWidget`.
-    - Danh sách bài dở dang: Thẻ bài thi hiển thị rõ ràng thời gian bắt đầu, tiến độ làm câu hỏi (VD: "Đã làm 3/20 câu"), thời gian còn lại hoặc nhãn "Đã hết hạn".
-    - Hành vi tương tác linh hoạt: Với bài còn hạn: "Tiếp tục làm bài" + "Hủy bài"; với bài đã hết hạn: "Nộp để chấm điểm" + "Xóa bài" kèm dialog xác nhận an toàn.
-  - [x] Tối ưu hóa Thẻ Trang Chủ (`HomeScreen` & `GoRoute`):
-    - Cập nhật route `/student/history` chuyển tiếp `initialTab` từ URL.
-    - Nâng cấp thẻ "BÀI THI CHƯA HOÀN TẤT" trên `HomeScreen`: Hiển thị số lượng bài chưa nộp `($unfinishedCount)`, đổi nhãn nút bấm thành "Xem bài dở dang", dẫn thẳng học sinh vào tab `/student/history?tab=in_progress` để xem toàn cảnh bài dở dang thay vì nhảy mù vào bài thi đã hết hạn.
-  - [x] Phòng vệ Toàn diện Màn hình Làm bài (`TakingExamScreen`):
-    - Bổ sung getter `isExpired` trên `AttemptPayload`.
-    - Chặn đứng lỗi nộp bài tự động khi attempt đã hết hạn: Nếu mở bài thi đã hết giờ, hiển thị dialog lịch sự "Bài thi đã hết thời gian", cho phép "Nộp bài chấm điểm" hoặc "Quay về Lịch sử".
-    - Xử lý mượt mà bài thi đã nộp trước đó ("Bài thi đã nộp") chuyển sang xem kết quả.
-    - Bắt lỗi RPC / RLS `Attempt is closed` và hiển thị thông báo thân thiện hướng dẫn học sinh quay về lịch sử thay vì kẹt vĩnh viễn ở thanh lỗi đỏ thô ráp.
-  - [x] 100% kiểm thử tự động đạt chuẩn: Viết mới `student_in_progress_data_test.dart`, `student_history_tabs_test.dart`, `taking_exam_expired_guard_test.dart`, cập nhật `home_smart_navigation_test.dart`.
+- ✅ **Giai đoạn 1: Nâng cao Trải nghiệm Phòng thi & Chống Gian Lận (Enhanced Room & Anti-Cheat)**
+- ✅ **Giai đoạn 2: Quét Sạch Mock Data & Nâng Cao Trải Nghiệm Cốt Lõi (Mock Data Elimination & Core Polish)**
+- ✅ **Giai đoạn 3: Dọn Dẹp Widget Thừa & Loại Bỏ Mã Chết (Widget Cleanup & Dead Code Elimination)**
+- ✅ **Giai đoạn 4: Bộ Xuất Mã Nguồn HTML5/CSS Cho AI Stitch Redesign (Stitch Design Export Suite)**
+- ✅ **Giai đoạn 5: Hiện Đại Hóa Toàn Diện Giao Diện Flutter Theo Ngôn Ngữ Thiết Kế Stitch (Stitch EdTech Modern UI/UX Redesign)**
+- ✅ **Giai đoạn 6: Lưu Đề Về Kho Cá Nhân & Mở Phòng Thi Từ Đề Cộng Đồng (Host-Authorized Bookmark & Full Question Preview)**
+- ✅ **Giai đoạn 7: Trải Nghiệm Khám Phá Nhanh & Lọc Tự Động Theo Môn Học (Seamless Quick Subject Exploration & Auto-Filtering)**
+- ✅ **Giai đoạn 8: Phân Hệ Quản Lý Bài Thi Dở Dang & Điều Hướng Lịch Sử 2 Tab (In-Progress Exam Recovery & Student History Multi-Tab Navigation)**
+- ✅ **Giai đoạn 9: Tối Ưu Hóa Trải Nghiệm Mobile Toàn Diện (Mobile-First UI/UX Overhaul & 0-Overflow Guarantee):**
+  - [x] **Vỏ bọc Điều hướng Mobile (`MobileBottomNavBar` & `MainLayoutScreen`):**
+    - Thanh điều hướng đáy 5 tab biểu tượng thuần túy (pure-icon) chống tràn chữ trên màn hình hẹp (< 768px).
+    - Xuất hiện độc quyền trên 5 tab cốt lõi: `/home`, `/search`, `/teacher_exams`, `/create_room`, `/student/history`.
+    - Tự động ẩn trên tất cả màn hình con (sub-screens) và hiển thị nút Back quay lại ở góc trên bên trái.
+  - [x] **Màn hình Làm bài Thi Mobile (`TakingExamScreen`):**
+    - Dải phím tắt câu hỏi nhanh cuộn ngang trên đỉnh (`_buildMobileQuestionQuickStrip`) kèm nút mở Modal Bottom Sheet ma trận câu hỏi 5 cột (`_showQuestionGridBottomSheet`).
+    - Các phương án A/B/C/D xếp dọc hoàn toàn với chiều cao tối thiểu $\ge 52\text{px}$ chuẩn chạm ngón tay cái.
+    - Thanh điều hướng đáy cố định (Sticky Bottom Action Bar) trong `SafeArea` chứa nút Trước/Sau, Ghi nhớ và Nộp bài.
+  - [x] **Màn hình Tìm kiếm & Trang chủ Mobile (`SearchScreen`, `HomeScreen`):**
+    - `SearchScreen`: Hàng chip môn học GDPT cuộn ngang, nút mở Modal Filter Bottom Sheet với badge số bộ lọc đang chọn, thẻ kết quả 1 cột với các nút hành động xếp dọc.
+    - `HomeScreen`: Thẻ game hóa/tiến độ co giãn tỷ lệ 1.85, padding 16px, badge bọc `FittedBox`, tiêu đề bọc `Wrap`.
+  - [x] **Màn hình Chi tiết Đề thi & Quản lý Giáo viên (`ExamDetailScreen`, `TeacherExamsScreen`):**
+    - `ExamDetailScreen`: Breadcrumbs bọc `SingleChildScrollView(scrollDirection: Axis.horizontal)`, FAB nổi bật mở Modal ma trận câu hỏi, thông số `_Fact` bọc `Flexible`.
+    - `TeacherExamsScreen`: Header bọc `Wrap` kèm nút back, thẻ đề thi `_buildExamCard` dùng `LayoutBuilder` tự động xếp dọc avatar, tên đề, huy hiệu và bọc nút hành động trong `Wrap` khi bề rộng < 640px.
+  - [x] **Nâng tổng số bài kiểm thử tự động lên 210 / 210 bài kiểm thử (100% PASS)** với các bài test mới: `mobile_bottom_nav_bar_test.dart`, `search_screen_mobile_test.dart`, `home_mobile_layout_test.dart`, `exam_detail_mobile_test.dart`.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 9: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 10: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
-2. **Giai đoạn 9: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+2. **Giai đoạn 11: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 10: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 12: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
 
