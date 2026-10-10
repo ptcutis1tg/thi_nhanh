@@ -7,6 +7,7 @@ class MilkyMintScaffold extends StatelessWidget {
   final Widget? bottomNavigationBar;
   final Widget? floatingActionButton;
   final bool showAmbientGlow;
+  final bool showCloudTexture;
 
   const MilkyMintScaffold({
     super.key,
@@ -15,6 +16,7 @@ class MilkyMintScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.showAmbientGlow = true,
+    this.showCloudTexture = true,
   });
 
   @override
@@ -25,21 +27,38 @@ class MilkyMintScaffold extends StatelessWidget {
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          if (showAmbientGlow)
+          // 1. Miku Dreamy Cloud Texture Layer
+          if (showCloudTexture)
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: Opacity(
+                  opacity: 0.25,
+                  child: Image.asset(
+                    'assets/images/miku_cloud_bg.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
+
+          // 2. Top-Right Cyber-Aqua Ambient Glow
+          if (showAmbientGlow) ...[
             Positioned(
-              top: -100,
-              right: -100,
+              top: -80,
+              right: -80,
               child: RepaintBoundary(
                 child: Container(
-                  width: 380,
-                  height: 380,
+                  width: 420,
+                  height: 420,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AppTheme.primary.withOpacity(0.12),
-                        AppTheme.primaryLight.withOpacity(0.05),
+                        AppTheme.primary.withValues(alpha: 0.22),
+                        AppTheme.primaryLight.withValues(alpha: 0.08),
                         Colors.transparent,
                       ],
                       stops: const [0.0, 0.55, 1.0],
@@ -48,6 +67,31 @@ class MilkyMintScaffold extends StatelessWidget {
                 ),
               ),
             ),
+            // 3. Bottom-Left Soft Mint Ambient Glow
+            Positioned(
+              bottom: -100,
+              left: -100,
+              child: RepaintBoundary(
+                child: Container(
+                  width: 380,
+                  height: 380,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppTheme.accentCyan.withValues(alpha: 0.15),
+                        AppTheme.primaryContainer.withValues(alpha: 0.05),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // 4. Foreground Content
           SafeArea(child: body),
         ],
       ),

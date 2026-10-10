@@ -11,6 +11,7 @@ import '../../core/services/developer_mode_service.dart';
 import '../../core/utils/app_error_reporter.dart';
 import '../../core/utils/avatar_helper.dart';
 import '../../shared/widgets/exam_card.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? initialActiveAttemptId;
@@ -283,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8FC), // Stitch clean paper background
+      backgroundColor: Colors.transparent, // Let MilkyMintScaffold cloud mesh show through
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           vertical: 32,
@@ -603,23 +604,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         : (_activeAttemptId != null && _activeAttemptId!.isNotEmpty ? 1 : 0);
     final hasActive = unfinishedCount > 0;
 
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: hasActive ? const Color(0xFFFDE68A) : AppTheme.border,
-          width: hasActive ? 1.5 : 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+    return AppInteractiveHoverCard(
+      borderRadius: 22,
+      backgroundColor: const Color(0xF2FFFFFF),
+      customBorder: Border.all(
+        color: hasActive ? const Color(0xFFFDE68A) : AppTheme.border,
+        width: hasActive ? 1.5 : 1,
       ),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -731,23 +723,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildLiveRoomCard(BuildContext context) {
     final hasActiveRoom = _activeLiveRoomCode != null && _activeLiveRoomCode!.isNotEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: hasActiveRoom ? const Color(0xFFA7F3D0) : AppTheme.border,
-          width: hasActiveRoom ? 1.5 : 1,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
+    return AppInteractiveHoverCard(
+      borderRadius: 22,
+      backgroundColor: const Color(0xF2FFFFFF),
+      customBorder: Border.all(
+        color: hasActiveRoom ? const Color(0xFFA7F3D0) : AppTheme.border,
+        width: hasActiveRoom ? 1.5 : 1,
       ),
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -757,7 +740,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: hasActiveRoom ? const Color(0xFFD1FAE5) : const Color(0xFFF3F0FF),
+                  color: hasActiveRoom ? const Color(0xFFD1FAE5) : const Color(0xFFE6FAF8),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -939,38 +922,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         children: subjects.map((sub) {
           return Padding(
             padding: const EdgeInsets.only(right: 10),
-            child: InkWell(
+            child: AppInteractiveHoverCard(
+              borderRadius: AppTheme.pillRadius,
+              backgroundColor: const Color(0xF5FFFFFF),
               onTap: () => context.go('/search?subject=${Uri.encodeComponent(sub['name']!)}'),
-              borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppTheme.pillRadius),
-                  border: Border.all(color: AppTheme.border),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x06000000),
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(sub['icon']!, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Text(
+                    sub['name']!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textMain,
                     ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(sub['icon']!, style: const TextStyle(fontSize: 16)),
-                    const SizedBox(width: 8),
-                    Text(
-                      sub['name']!,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textMain,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
@@ -1053,27 +1023,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildStatCard(String icon, String title, String value, String sub) {
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 20,
+      backgroundColor: const Color(0xF2FFFFFF),
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF0ECFF)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFFF0ECFF),
+              color: AppTheme.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
             alignment: Alignment.center,
@@ -1293,105 +1253,89 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     required bool isLive,
     bool isMobile = false,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _onCardTap(title, route),
-        borderRadius: BorderRadius.circular(20),
-        hoverColor: Colors.white.withValues(alpha: 0.1),
-        child: Ink(
-          padding: EdgeInsets.all(isMobile ? 16 : 22),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: gradient,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: gradient.first.withValues(alpha: 0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppInteractiveHoverCard(
+      borderRadius: 20,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: gradient,
+      ),
+      onTap: () => _onCardTap(title, route),
+      padding: EdgeInsets.all(isMobile ? 16 : 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: isMobile ? 40 : 48,
-                    height: isMobile ? 40 : 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: Colors.white, size: isMobile ? 22 : 26),
-                  ),
-                  if (isLive)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Row(
-                        children: [
-                          ScaleTransition(
-                            scale: Tween(begin: 0.7, end: 1.2).animate(_pulseController),
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF34D399),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'ĐANG MỞ',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
+              Container(
+                width: isMobile ? 40 : 48,
+                height: isMobile ? 40 : 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: isMobile ? 22 : 26),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: isMobile ? 16 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+              if (isLive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(100),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    desc,
-                    style: TextStyle(
-                      fontSize: isMobile ? 11.5 : 12,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    children: [
+                      ScaleTransition(
+                        scale: Tween(begin: 0.7, end: 1.2).animate(_pulseController),
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF34D399),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'ĐANG MỞ',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: isMobile ? 16 : 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                style: TextStyle(
+                  fontSize: isMobile ? 11.5 : 12,
+                  color: Colors.white.withValues(alpha: 0.85),
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../shared/widgets/top_nav_bar.dart';
 import '../shared/widgets/mobile_bottom_nav_bar.dart';
 import '../shared/widgets/ai_navigation_button.dart';
+import '../shared/widgets/milky_mint_scaffold.dart';
 
 class MainLayoutScreen extends StatelessWidget {
   final Widget child;
@@ -28,7 +29,7 @@ class MainLayoutScreen extends StatelessWidget {
     final isCoreTab = _coreTabRoutes.contains(currentLocation) || currentLocation.isEmpty;
     final isMobile = MediaQuery.of(context).size.width < 600;
 
-    return Scaffold(
+    return MilkyMintScaffold(
       appBar: const TopNavBar(),
       body: child,
       bottomNavigationBar: (isMobile && isCoreTab) ? const MobileBottomNavBar() : null,
@@ -36,4 +37,3 @@ class MainLayoutScreen extends StatelessWidget {
     );
   }
 }
-
