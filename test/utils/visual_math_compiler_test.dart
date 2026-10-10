@@ -15,7 +15,7 @@ void main() {
         block,
         TextContentSegment('. Tìm tập xác định.'),
       ]);
-      expect(latex, r'Cho hàm số \frac{2x + 1}{x - 3}. Tìm tập xác định.');
+      expect(latex, r'Cho hàm số $\frac{2x + 1}{x - 3}$. Tìm tập xác định.');
     });
 
     test('compiles square root and power segments', () {
@@ -29,8 +29,12 @@ void main() {
         type: MathBlockType.power,
         slots: {'base': 'x', 'exp': '3'},
       );
-      final latex = VisualMathCompiler.compile([sqrtBlock, TextContentSegment(' + '), powerBlock]);
-      expect(latex, r'\sqrt{x^2 + 1} + {x}^{3}');
+      final latex = VisualMathCompiler.compile([
+        sqrtBlock,
+        TextContentSegment(' + '),
+        powerBlock,
+      ]);
+      expect(latex, r'$\sqrt{x^2 + 1}$ + ${x}^{3}$');
     });
 
     test('compiles integral and limit segments', () {
@@ -50,7 +54,10 @@ void main() {
     });
 
     test('compiles empty slots with placeholders without crashing', () {
-      final emptyFraction = MathBlockSegment(id: '6', type: MathBlockType.fraction);
+      final emptyFraction = MathBlockSegment(
+        id: '6',
+        type: MathBlockType.fraction,
+      );
       expect(emptyFraction.toLatex(), r'\frac{\square}{\square}');
     });
 
@@ -70,6 +77,14 @@ void main() {
       final sqrt = segments[3] as MathBlockSegment;
       expect(sqrt.type, MathBlockType.sqrt);
       expect(sqrt.slots['radicand'], '4');
+    });
+
+    test('parses delimited visual blocks back into editable segments', () {
+      const input = r'Tính $\frac{1}{2}$ mol';
+      final segments = VisualMathCompiler.parse(input);
+
+      expect(segments.whereType<MathBlockSegment>(), hasLength(1));
+      expect(VisualMathCompiler.compile(segments), input);
     });
   });
 }
