@@ -217,20 +217,10 @@ class _GreetingScreenState extends State<GreetingScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 38),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6557E8).withValues(alpha: 0.08),
-                          blurRadius: 36,
-                          offset: const Offset(0, 14),
-                        ),
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 16,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(AppTheme.shellRadius),
+                      border: Border.all(color: AppTheme.border),
+                      boxShadow: AppTheme.luminescenceShadow,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,

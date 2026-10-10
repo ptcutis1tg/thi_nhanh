@@ -226,7 +226,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+      backgroundColor: AppTheme.background,
       body: SingleChildScrollView(
         padding: EdgeInsets.all(
           MediaQuery.of(context).size.width < 600 ? 14 : 32,

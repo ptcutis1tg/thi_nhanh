@@ -130,10 +130,10 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
               constraints: const BoxConstraints(maxWidth: 480),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  color: AppTheme.surface,
+                  borderRadius: BorderRadius.circular(AppTheme.shellRadius),
                   boxShadow: AppTheme.luminescenceShadow,
-                  border: Border.all(color: AppTheme.primaryLight.withValues(alpha: 0.5)),
+                  border: Border.all(color: AppTheme.border),
                 ),
                 padding: const EdgeInsets.all(28),
                 child: Form(

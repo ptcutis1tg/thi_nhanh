@@ -301,6 +301,18 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                                 return ChoiceChip(
                                   label: Text('$cap thí sinh'),
                                   selected: isSelected,
+                                  selectedColor: AppTheme.primary,
+                                  backgroundColor: Colors.white,
+                                  labelStyle: TextStyle(
+                                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                                    side: BorderSide(
+                                      color: isSelected ? AppTheme.primary : AppTheme.border,
+                                    ),
+                                  ),
                                   onSelected: (val) {
                                     if (val) {
                                       setState(() {

@@ -1,8 +1,8 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 10/10/2026 *(Cập nhật sau khi hoàn thành Sửa Lỗi Quét QR Phòng Thi, Tích Hợp Dynamic Origin Link Sharing & Màn Hình Tham Gia Phòng Thi `/join` Chuyên Dụng)*  
+> **Ngày thực hiện:** 11/10/2026 *(Cập nhật sau khi hoàn thành Hatsune Miku Cyber-Aqua Palette, 3D Enamel Container System, PC Micro-Hover Interactions & Milky Mint Ambient Canvas)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **219 / 219 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
+> **Trạng thái kiểm thử:** **231 / 231 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động trên cả thiết bị Desktop, Tablet và Mobile.
 
 ---
@@ -58,11 +58,13 @@ graph TD
 - **Điều hướng Tuyến đường & Kiến trúc Vỏ bọc Đa nền tảng:**
   - `GoRouter` 17.3.0 với kiến trúc `ShellRoute` thông minh (`MainLayoutScreen`): Tự động hiển thị `TopNavBar` trên màn hình lớn ($\ge 768\text{px}$) và kích hoạt `MobileBottomNavBar` 5 tab trên màn hình điện thoại (< 768px).
   - Tự động ẩn `MobileBottomNavBar` khi vào các màn hình chức năng sâu (sub-screens như `/exam/detail`, `/exam/take`, `/exam/result`, `/teacher_rooms_history`, v.v.) và cung cấp nút Back quay lại nổi bật ở góc trên bên trái.
-- **Hệ Thống Thiết Kế & Tokens Stitch Modern (`AppTheme`):**
-  - **Bảng màu:** Primary Violet (`#6557E8`), Primary Dark Indigo (`#1E1B4B`), Lavender Surface Tint (`#F7F5FE`), Text Main (`#1E293B`).
+- **Hệ Thống Thiết Kế & Tokens Hatsune Miku & 3D Enamel (`AppTheme`):**
+  - **Bảng màu Miku:** Primary Vivid Aqua (`#39C5BB`), Deep Cyber Teal (`#00A896`), Solid Teal (`#008080`), Cyan Glow (`#7FE3DB`), Pale Mint Pill (`#E6FAF8`), Magenta Pink Accent (`#E84188`), Milky Mint Canvas (`#F4FAF9`), Enamel Pure White (`#FFFFFF`), Deep Slate Text (`#1E293B`).
   - **Typography kép:** Font hiển thị và văn bản Google Fonts `Be Vietnam Pro` kết hợp Google Fonts `Fira Code` cho đồng hồ đếm ngược, mã phòng thi PIN, điểm số thang 10 và các chỉ số kỹ thuật.
-  - **Đổ bóng quang học (Luminescence Shadows):** `luminescenceShadow` với ánh tím đa tầng mềm mại kết hợp `cardShadow` tiêu chuẩn cho các thẻ nổi.
-  - **Hệ thống Bo góc chuẩn hóa:** `cardRadius` (16px), `pillRadius` (100px capsule), `inputRadius` (12px).
+  - **Đổ bóng quang học (Luminescence & Hover Shadows):** `luminescenceShadow` với ánh ngọc bích phát quang dịu mắt, `hoverGlowShadow` cho tương tác PC micro-hover, kết hợp `cardShadow` cho các thẻ nổi tự nhiên.
+  - **Hệ thống Bo góc 4 cấp độ (4-Tier Radii):** `shellRadius` (32px), `heroRadius` (24px), `cardRadius` (16px), `inputRadius` (12px), `pillRadius` (100px capsule).
+  - **Tương tác PC Micro-Hover (`AppInteractiveHoverCard`):** Trên PC/Desktop, chuột rê vào nút/thẻ sẽ nhấc nhẹ 2.5px và mở rộng độ phát quang `hoverGlowShadow`; trên Mobile cảm ứng giữ tĩnh không kích hoạt để triệt tiêu độ trễ và tránh dính hover.
+  - **Nền đa tầng không lag (`MilkyMintScaffold`):** Lớp đốm sáng ngọc bích cố định trong `RepaintBoundary`, 0% phụ thuộc `BackdropFilter` thời gian thực (Zero GPU Blur Lag).
 - **Công thức Toán & Đồ họa:** `flutter_math_fork` cho LaTeX, bộ biên dịch trực quan độc quyền `VisualMathCompiler` + `VisualMathBlock`, mã QR động `qr_flutter`.
 - **Cơ chế Chống Gian Lận Đa Tầng (Anti-Cheat Engine):**
   - Giám sát trạng thái ứng dụng vòng đời thực (`WidgetsBindingObserver`), phát hiện rời app, chuyển tab hoặc thu nhỏ cửa sổ.
@@ -248,12 +250,26 @@ graph TD
     - `TeacherExamsScreen`: Header bọc `Wrap` kèm nút back, thẻ đề thi `_buildExamCard` dùng `LayoutBuilder` tự động xếp dọc avatar, tên đề, huy hiệu và bọc nút hành động trong `Wrap` khi bề rộng < 640px.
   - [x] **Nâng tổng số bài kiểm thử tự động lên 210 / 210 bài kiểm thử (100% PASS)** với các bài test mới: `mobile_bottom_nav_bar_test.dart`, `search_screen_mobile_test.dart`, `home_mobile_layout_test.dart`, `exam_detail_mobile_test.dart`.
 
+- ✅ **Giai đoạn 10: Sửa Lỗi Quét QR Phòng Thi & Màn Hình Tham Gia `/join` Chuyên Dụng (Dynamic QR Code & Join Screen Fix):**
+  - [x] Thay thế liên kết cứng `thinhành.vn` bằng `RoomUrlHelper` lấy dynamic origin trực tiếp từ trình duyệt (`Uri.base`) kèm fallback GitHub Pages `https://ptcutis1tg.github.io/thi_nhanh/#/join?code=PT...`.
+  - [x] Xây dựng màn hình [`JoinRoomScreen`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/room/join_room_screen.dart) xử lý trực tiếp đường dẫn QR và tự động điền mã phòng thi từ query parameter `code`.
+  - [x] Đăng ký tuyến đường `/join` và `/room/join` trong `GoRouter`.
+  - [x] Nâng tổng số bài kiểm thử tự động lên **219 / 219 bài kiểm thử (100% PASS)**.
+
+- ✅ **Giai đoạn 11: Ngôn Ngữ Thiết Kế Hatsune Miku & Hệ Thống Container Sứ 3D (Miku Cyber-Aqua Palette & 3D Enamel Containers):**
+  - [x] **Hệ Màu Hatsune Miku & Pale Mint:** Triển khai bảng màu Cyber-Aqua (`#39C5BB`), Deep Teal (`#00A896`), Cyan Glow (`#7FE3DB`), Pale Mint Pill (`#E6FAF8`), điểm xuyết Magenta Pink (`#E84188`) và nền Milky Mint Canvas (`#F4FAF9`).
+  - [x] **Hệ Thống Container Sứ 3D Đa Tầng:** 4 cấp độ bo góc (32px shell, 24px hero banner, 16px standard card, 100px capsule pills) kết hợp viền 1px hairline và đổ bóng ngọc bích phát quang dịu mắt (`luminescenceShadow` & `hoverGlowShadow`).
+  - [x] **Tương Tác PC Micro-Hover (`AppInteractiveHoverCard`):** Trên PC/Desktop, nút và thẻ khi có con trỏ chuột rê vào sẽ nhấc nhẹ 2.5px, tăng độ sáng và mở rộng bóng đổ phát quang; trên Mobile cảm ứng giữ tĩnh không kích hoạt để loại bỏ hoàn toàn độ trễ và tránh dính hover.
+  - [x] **Nền Đa Tầng Không Lag (`MilkyMintScaffold`):** Đốm sáng ngọc bích cố định trong `RepaintBoundary`, 0% phụ thuộc `BackdropFilter` thời gian thực (Zero GPU Blur Lag).
+  - [x] **Áp dụng toàn bộ App:** Cập nhật đồng bộ `AppTheme`, `HomeScreen`, `TopNavBar`, `MobileBottomNavBar`, `GreetingScreen`, `TeacherExamsScreen`, `CreateRoomScreen`, `JoinRoomScreen`, `ExamDetailScreen`, `ProfileScreen`.
+  - [x] **Nâng tổng số bài kiểm thử tự động lên 231 / 231 bài kiểm thử (100% PASS)** với các bài test mới: `app_theme_test.dart`, `app_interactive_hover_card_test.dart`, `milky_mint_scaffold_test.dart`.
+
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 10: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 12: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
-2. **Giai đoạn 11: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+2. **Giai đoạn 13: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 12: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 14: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
 

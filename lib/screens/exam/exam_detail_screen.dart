@@ -501,10 +501,10 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFFE4DFFF)),
+                                border: Border.all(color: AppTheme.primaryContainer),
                                 boxShadow: const [
                                   BoxShadow(
-                                    color: Color(0x126557E8),
+                                    color: Color(0x1839C5BB),
                                     blurRadius: 10,
                                     offset: Offset(0, 4),
                                   ),

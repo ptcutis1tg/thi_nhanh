@@ -2130,7 +2130,7 @@ class _LineChartPainter extends CustomPainter {
     if (values.isEmpty) return;
 
     const lineColor = AppTheme.primary;
-    const fillColor = Color(0x206557E8);
+    const fillColor = Color(0x2039C5BB);
 
     final paintLine = Paint()
       ..color = lineColor

@@ -383,19 +383,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF6557E8), // Stitch Primary Violet
-            Color(0xFF4C3BCE), // Deep Violet
-            Color(0xFF3828A8), // Rich Indigo Violet
+            AppTheme.primary,
+            AppTheme.primaryDark,
+            AppTheme.primaryDarker,
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x336557E8),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppTheme.heroRadius),
+        boxShadow: AppTheme.luminescenceShadow,
       ),
       child: isMobile
           ? Column(
