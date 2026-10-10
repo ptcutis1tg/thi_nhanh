@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/assessment.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
+import 'widgets/report_question_dialog.dart';
 import '../../shared/widgets/top_nav_bar.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -124,8 +125,9 @@ class _ResultScreenState extends State<ResultScreen> {
         ),
       );
     }
-    if (!_usesLegacyData && _review != null && !_review!.resultReleased)
+    if (!_usesLegacyData && _review != null && !_review!.resultReleased) {
       return _buildWaitingResult();
+    }
 
     return Scaffold(
       appBar: const TopNavBar(),
@@ -421,7 +423,7 @@ class _ResultScreenState extends State<ResultScreen> {
         : (question.isSkipped ? 'Bỏ qua' : 'Sai');
     return ExpansionTile(
       leading: CircleAvatar(
-        backgroundColor: color.withOpacity(.12),
+        backgroundColor: color.withValues(alpha: .12),
         child: Text('${question.position}', style: TextStyle(color: color)),
       ),
       title: Text('Câu ${question.position} • $status'),
@@ -457,11 +459,45 @@ class _ResultScreenState extends State<ResultScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
-            color: AppTheme.primary.withOpacity(.06),
+            color: AppTheme.primary.withValues(alpha: .06),
             child: Text('Giải thích: ${question.explanation}'),
           ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            key: Key('report-question-${question.id}'),
+            onPressed: () => _reportQuestion(question),
+            icon: const Icon(Icons.flag_outlined, size: 18),
+            label: const Text('Báo câu này có lỗi'),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _reportQuestion(ReviewQuestion question) async {
+    final review = _review;
+    if (review == null) return;
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => ReportQuestionDialog(
+        attemptId: review.attemptId,
+        examId: review.examId,
+        examTitle: review.title,
+        questionId: question.id,
+        questionPosition: question.position,
+        questionBody: question.body,
+      ),
+    );
+    if (submitted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã gửi báo cáo cho giáo viên.'),
+          backgroundColor: AppTheme.success,
+        ),
+      );
+    }
   }
 
   Widget _buildActions() => Wrap(

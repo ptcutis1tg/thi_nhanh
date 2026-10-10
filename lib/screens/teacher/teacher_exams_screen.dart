@@ -60,8 +60,12 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
         savedRepo = null;
       }
 
-      final list = repo != null ? await repo.summaries() : <TeacherExamSummary>[];
-      final savedList = savedRepo != null ? await savedRepo.getSavedExams() : <TeacherExamSummary>[];
+      final list = repo != null
+          ? await repo.summaries()
+          : <TeacherExamSummary>[];
+      final savedList = savedRepo != null
+          ? await savedRepo.getSavedExams()
+          : <TeacherExamSummary>[];
 
       if (mounted) {
         setState(() {
@@ -74,7 +78,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       debugPrint('Lỗi tải danh sách đề thi của giáo viên: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorSnackBar('Không thể tải danh sách đề thi: ${e.toString().replaceAll('PostgrestException: ', '')}');
+        _showErrorSnackBar(
+          'Không thể tải danh sách đề thi: ${e.toString().replaceAll('PostgrestException: ', '')}',
+        );
       }
     }
   }
@@ -98,7 +104,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
             textColor: Colors.white,
             onPressed: _loadExams,
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     });
@@ -128,14 +136,22 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
               const SizedBox(width: 10),
-              Expanded(child: Text('Đề "${exam.title}" đã được công khai thành công!')),
+              Expanded(
+                child: Text('Đề "${exam.title}" đã được công khai thành công!'),
+              ),
             ],
           ),
           backgroundColor: AppTheme.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           action: SnackBarAction(
             label: 'Tạo phòng ngay',
             textColor: Colors.white,
@@ -167,7 +183,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
           content: Text('Đã xóa bản nháp "${exam.title}".'),
           backgroundColor: AppTheme.textMain,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     }
@@ -190,7 +208,8 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       if (_activeTab == 'published' && !e.isPublished) return false;
 
       // Filter by subject
-      if (_selectedSubject != 'Tất cả môn' && e.subject.toLowerCase() != _selectedSubject.toLowerCase()) {
+      if (_selectedSubject != 'Tất cả môn' &&
+          e.subject.toLowerCase() != _selectedSubject.toLowerCase()) {
         return false;
       }
 
@@ -209,7 +228,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F5FE),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 14 : 32),
+        padding: EdgeInsets.all(
+          MediaQuery.of(context).size.width < 600 ? 14 : 32,
+        ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
@@ -228,17 +249,29 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                       children: [
                         IconButton(
                           onPressed: () => context.go('/home'),
-                          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textMain),
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: AppTheme.textMain,
+                          ),
                         ),
                         const SizedBox(width: 8),
                         const Flexible(
                           child: Text(
                             '📁 Quản Lý Kho Đề Thi Trắc Nghiệm',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textMain,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => context.go('/teacher/question_reports'),
+                      icon: const Icon(Icons.flag_outlined),
+                      label: const Text('Báo lỗi câu hỏi'),
                     ),
                     ElevatedButton.icon(
                       onPressed: () => context.go('/create_exam'),
@@ -247,8 +280,15 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.pillRadius,
+                          ),
+                        ),
                         elevation: 2,
                       ),
                     ),
@@ -264,11 +304,17 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.lock_outline_rounded, color: Colors.amber, size: 28),
+                        const Icon(
+                          Icons.lock_outline_rounded,
+                          color: Colors.amber,
+                          size: 28,
+                        ),
                         const SizedBox(width: 16),
                         const Expanded(
                           child: Column(
@@ -276,12 +322,19 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                             children: [
                               Text(
                                 'Bạn chưa đăng nhập tài khoản',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF78350F)),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Color(0xFF78350F),
+                                ),
                               ),
                               SizedBox(height: 4),
                               Text(
                                 'Đăng nhập để xem danh sách đề thi đã tạo, soạn bản nháp và công khai đề thi cho học sinh.',
-                                style: TextStyle(fontSize: 13, color: Color(0xFF92400E)),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF92400E),
+                                ),
                               ),
                             ],
                           ),
@@ -291,7 +344,11 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD97706),
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.pillRadius,
+                              ),
+                            ),
                           ),
                           child: const Text('Đăng nhập ngay'),
                         ),
@@ -315,13 +372,32 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildTabButton('all', 'Tất cả ($allCount)', Icons.dashboard_outlined),
+                        _buildTabButton(
+                          'all',
+                          'Tất cả ($allCount)',
+                          Icons.dashboard_outlined,
+                        ),
                         const SizedBox(width: 6),
-                        _buildTabButton('draft', 'Đề nháp ($draftCount)', Icons.edit_note_rounded, badgeColor: const Color(0xFFF59E0B)),
+                        _buildTabButton(
+                          'draft',
+                          'Đề nháp ($draftCount)',
+                          Icons.edit_note_rounded,
+                          badgeColor: const Color(0xFFF59E0B),
+                        ),
                         const SizedBox(width: 6),
-                        _buildTabButton('published', 'Đã công khai ($publishedCount)', Icons.public_rounded, badgeColor: AppTheme.success),
+                        _buildTabButton(
+                          'published',
+                          'Đã công khai ($publishedCount)',
+                          Icons.public_rounded,
+                          badgeColor: AppTheme.success,
+                        ),
                         const SizedBox(width: 6),
-                        _buildTabButton('saved', 'Đề đã lưu ($savedCount)', Icons.bookmark_added_rounded, badgeColor: AppTheme.primary),
+                        _buildTabButton(
+                          'saved',
+                          'Đề đã lưu ($savedCount)',
+                          Icons.bookmark_added_rounded,
+                          badgeColor: AppTheme.primary,
+                        ),
                       ],
                     ),
                   ),
@@ -335,17 +411,29 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                       child: TextField(
                         onChanged: (val) => setState(() => _searchQuery = val),
                         decoration: InputDecoration(
-                          hintText: 'Tìm kiếm bộ đề theo tên, môn học hoặc mã đề (DT...)...',
-                          prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primary),
+                          hintText:
+                              'Tìm kiếm bộ đề theo tên, môn học hoặc mã đề (DT...)...',
+                          prefixIcon: const Icon(
+                            Icons.search_rounded,
+                            color: AppTheme.primary,
+                          ),
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.inputRadius),
-                            borderSide: const BorderSide(color: AppTheme.border),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.inputRadius,
+                            ),
+                            borderSide: const BorderSide(
+                              color: AppTheme.border,
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.inputRadius),
-                            borderSide: const BorderSide(color: AppTheme.border),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.inputRadius,
+                            ),
+                            borderSide: const BorderSide(
+                              color: AppTheme.border,
+                            ),
                           ),
                         ),
                       ),
@@ -372,14 +460,22 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                           },
                           selectedColor: AppTheme.primary,
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppTheme.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : AppTheme.textSecondary,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
                           ),
                           backgroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.pillRadius,
+                            ),
                             side: BorderSide(
-                              color: isSelected ? AppTheme.primary : AppTheme.border,
+                              color: isSelected
+                                  ? AppTheme.primary
+                                  : AppTheme.border,
                             ),
                           ),
                         ),
@@ -391,7 +487,12 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
 
                 // Body content
                 if (_isLoading)
-                  const Center(child: Padding(padding: EdgeInsets.all(48), child: CircularProgressIndicator()))
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(48),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
                 else if (filtered.isEmpty)
                   _buildEmptyState()
                 else
@@ -411,7 +512,12 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     );
   }
 
-  Widget _buildTabButton(String tabKey, String label, IconData icon, {Color? badgeColor}) {
+  Widget _buildTabButton(
+    String tabKey,
+    String label,
+    IconData icon, {
+    Color? badgeColor,
+  }) {
     final isActive = _activeTab == tabKey;
     return InkWell(
       onTap: () => setState(() => _activeTab = tabKey),
@@ -429,7 +535,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
             Icon(
               icon,
               size: 18,
-              color: isActive ? Colors.white : (badgeColor ?? AppTheme.textSecondary),
+              color: isActive
+                  ? Colors.white
+                  : (badgeColor ?? AppTheme.textSecondary),
             ),
             const SizedBox(width: 8),
             Text(
@@ -451,9 +559,11 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     if (_activeTab == 'draft') {
       message = 'Bạn không có bản nháp nào đang soạn.';
     } else if (_activeTab == 'published') {
-      message = 'Chưa có đề nào được công khai. Hãy chọn đề nháp và bấm "Public đề".';
+      message =
+          'Chưa có đề nào được công khai. Hãy chọn đề nháp và bấm "Public đề".';
     } else if (_activeTab == 'saved') {
-      message = 'Bạn chưa lưu đề thi nào từ cộng đồng. Hãy khám phá và lưu đề từ trang Tìm kiếm.';
+      message =
+          'Bạn chưa lưu đề thi nào từ cộng đồng. Hãy khám phá và lưu đề từ trang Tìm kiếm.';
     } else if (_searchQuery.isNotEmpty) {
       message = 'Không tìm thấy đề thi phù hợp với từ khóa "$_searchQuery".';
     }
@@ -471,12 +581,18 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
       child: Column(
         children: [
           Icon(
-            _activeTab == 'draft' ? Icons.edit_note_rounded : Icons.folder_open_rounded,
+            _activeTab == 'draft'
+                ? Icons.edit_note_rounded
+                : Icons.folder_open_rounded,
             size: 56,
             color: AppTheme.textSecondary,
           ),
           const SizedBox(height: 14),
-          Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16)),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 16),
+          ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
             onPressed: () => context.go('/create_exam'),
@@ -486,7 +602,9 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+              ),
             ),
           ),
         ],
@@ -507,11 +625,19 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
           width: 52,
           height: 52,
           decoration: BoxDecoration(
-            color: isDraft ? const Color(0xFFFFFBEB) : (isSaved ? const Color(0xFFF0ECFF) : AppTheme.surfaceLavender),
+            color: isDraft
+                ? const Color(0xFFFFFBEB)
+                : (isSaved
+                      ? const Color(0xFFF0ECFF)
+                      : AppTheme.surfaceLavender),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(
-            isSaved ? Icons.bookmark_added_rounded : (isDraft ? Icons.edit_note_rounded : Icons.assignment_outlined),
+            isSaved
+                ? Icons.bookmark_added_rounded
+                : (isDraft
+                      ? Icons.edit_note_rounded
+                      : Icons.assignment_outlined),
             color: isDraft ? const Color(0xFFD97706) : AppTheme.primary,
             size: 26,
           ),
@@ -527,14 +653,23 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
               children: [
                 Text(
                   exam.title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textMain),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textMain,
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isSaved
                         ? const Color(0xFFEDE9FE)
-                        : (isDraft ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5)),
+                        : (isDraft
+                              ? const Color(0xFFFEF3C7)
+                              : const Color(0xFFD1FAE5)),
                     borderRadius: BorderRadius.circular(AppTheme.pillRadius),
                   ),
                   child: Row(
@@ -543,21 +678,29 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                       Icon(
                         isSaved
                             ? Icons.bookmark_added_rounded
-                            : (isDraft ? Icons.edit_note_rounded : Icons.check_circle_rounded),
+                            : (isDraft
+                                  ? Icons.edit_note_rounded
+                                  : Icons.check_circle_rounded),
                         size: 14,
                         color: isSaved
                             ? AppTheme.primary
-                            : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
+                            : (isDraft
+                                  ? const Color(0xFFB45309)
+                                  : const Color(0xFF065F46)),
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isSaved ? 'Đề lưu từ cộng đồng' : (isDraft ? 'Bản nháp' : 'Đã công khai'),
+                        isSaved
+                            ? 'Đề lưu từ cộng đồng'
+                            : (isDraft ? 'Bản nháp' : 'Đã công khai'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
                           color: isSaved
                               ? AppTheme.primary
-                              : (isDraft ? const Color(0xFFB45309) : const Color(0xFF065F46)),
+                              : (isDraft
+                                    ? const Color(0xFFB45309)
+                                    : const Color(0xFF065F46)),
                         ),
                       ),
                     ],
@@ -568,7 +711,10 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
             const SizedBox(height: 6),
             Text(
               'Môn: ${exam.subject} • ${exam.questionCount} câu hỏi • ${exam.durationMinutes} phút • Mã: $codeDisplay',
-              style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+              ),
             ),
           ],
         );
@@ -588,8 +734,13 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
                 ),
               ),
               // View Detail Button
@@ -598,8 +749,13 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
                 label: const Text('Xem chi tiết'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
                 ),
               ),
             ] else if (isDraft) ...[
@@ -611,8 +767,13 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
                 ),
               ),
               // Edit Button
@@ -621,15 +782,23 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 icon: const Icon(Icons.edit_outlined, size: 16),
                 label: const Text('Sửa'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
                 ),
               ),
               // Delete Button
               IconButton(
                 tooltip: 'Xóa bản nháp',
                 onPressed: () => _handleDeleteDraft(exam),
-                icon: const Icon(Icons.delete_outline_rounded, color: AppTheme.error),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: AppTheme.error,
+                ),
               ),
             ] else ...[
               // Create Room Button
@@ -640,8 +809,13 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
                 ),
               ),
               // View Detail Button
@@ -650,8 +824,13 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                 icon: const Icon(Icons.remove_red_eye_outlined, size: 16),
                 label: const Text('Xem chi tiết'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                  ),
                 ),
               ),
               // Edit Button
@@ -670,7 +849,11 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppTheme.cardRadius),
             border: Border.all(
-              color: isDraft ? const Color(0xFFFDE68A) : (isSaved ? AppTheme.primary.withValues(alpha: 0.3) : AppTheme.border),
+              color: isDraft
+                  ? const Color(0xFFFDE68A)
+                  : (isSaved
+                        ? AppTheme.primary.withValues(alpha: 0.3)
+                        : AppTheme.border),
               width: isDraft ? 1.5 : 1.0,
             ),
             boxShadow: AppTheme.cardShadow,

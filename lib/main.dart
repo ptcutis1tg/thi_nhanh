@@ -12,6 +12,7 @@ import 'core/repositories/assessment_repository.dart';
 import 'core/repositories/teacher_exam_repository.dart';
 import 'core/repositories/room_repository.dart';
 import 'core/repositories/saved_exam_repository.dart';
+import 'core/repositories/question_report_repository.dart';
 import 'core/services/developer_mode_service.dart';
 import 'shared/widgets/developer_log_overlay.dart';
 import 'screens/auth/greeting_screen.dart';
@@ -35,6 +36,7 @@ import 'screens/teacher/teacher_exams_screen.dart';
 import 'screens/teacher/teacher_rooms_history_screen.dart';
 import 'screens/teacher/teacher_student_results_screen.dart';
 import 'screens/teacher/teacher_analytics_screen.dart';
+import 'screens/teacher/question_reports_screen.dart';
 import 'screens/main_layout_screen.dart';
 import 'screens/room/room_password_screen.dart';
 import 'screens/room/join_room_screen.dart';
@@ -71,7 +73,7 @@ void main() async {
     }
     originalDebugPrint(message, wrapWidth: wrapWidth);
   };
-  
+
   // Tải biến môi trường từ file .env nếu có (dành cho môi trường phát triển cục bộ)
   try {
     await dotenv.load(fileName: ".env");
@@ -82,45 +84,56 @@ void main() async {
   // Ưu tiên lấy từ .env, nếu không có thì lấy từ tham số build --dart-define, cuối cùng là giá trị mặc định của dự án
   final isEnvInitialized = dotenv.isInitialized;
   final envUrl = isEnvInitialized ? dotenv.env['SUPABASE_URL'] : null;
-  final envKey = isEnvInitialized ? dotenv.env['SUPABASE_PUBLISHABLE_KEY'] : null;
-  
+  final envKey = isEnvInitialized
+      ? dotenv.env['SUPABASE_PUBLISHABLE_KEY']
+      : null;
+
   final defineUrl = const String.fromEnvironment('SUPABASE_URL');
   final defineKey = const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 
   final supabaseUrl = (envUrl != null && envUrl.isNotEmpty)
       ? envUrl
-      : (defineUrl.isNotEmpty ? defineUrl : 'https://egsmzfrhekpacpjoxijs.supabase.co');
+      : (defineUrl.isNotEmpty
+            ? defineUrl
+            : 'https://egsmzfrhekpacpjoxijs.supabase.co');
 
   final supabaseKey = (envKey != null && envKey.isNotEmpty)
       ? envKey
-      : (defineKey.isNotEmpty ? defineKey : 'sb_publishable_pdO9X15rs1aobOdydiksWw_URfC684D');
+      : (defineKey.isNotEmpty
+            ? defineKey
+            : 'sb_publishable_pdO9X15rs1aobOdydiksWw_URfC684D');
 
   if (envUrl != null && envUrl.isNotEmpty) {
     debugPrint('Cấu hình: Sử dụng biến môi trường từ file .env');
   } else if (defineUrl.isNotEmpty) {
-    debugPrint('Cấu hình: Sử dụng biến môi trường từ tham số build (--dart-define)');
+    debugPrint(
+      'Cấu hình: Sử dụng biến môi trường từ tham số build (--dart-define)',
+    );
   } else {
     debugPrint('Cấu hình: Sử dụng thông tin kết nối mặc định của dự án');
   }
 
   bool isSupabaseInitialized = false;
-  final isPlaceholderKey = supabaseUrl.contains('your_supabase_url') || supabaseKey.contains('your_supabase_anon_key');
+  final isPlaceholderKey =
+      supabaseUrl.contains('your_supabase_url') ||
+      supabaseKey.contains('your_supabase_anon_key');
 
   if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty && !isPlaceholderKey) {
     try {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        publishableKey: supabaseKey,
-      );
+      await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
       isSupabaseInitialized = true;
     } catch (e) {
       debugPrint('Lỗi khởi tạo Supabase: $e');
     }
   } else {
-    debugPrint('CẢNH BÁO: Chưa cấu hình SUPABASE_URL hoặc SUPABASE_PUBLISHABLE_KEY hợp lệ.');
+    debugPrint(
+      'CẢNH BÁO: Chưa cấu hình SUPABASE_URL hoặc SUPABASE_PUBLISHABLE_KEY hợp lệ.',
+    );
   }
 
-  final authProvider = AuthProvider(isSupabaseInitialized: isSupabaseInitialized);
+  final authProvider = AuthProvider(
+    isSupabaseInitialized: isSupabaseInitialized,
+  );
   await authProvider.init();
 
   runApp(
@@ -146,6 +159,11 @@ void main() async {
           Provider<SavedExamRepository>(
             create: (_) => SavedExamRepository(Supabase.instance.client),
           ),
+          Provider<QuestionReportRepository>(
+            create: (_) => QuestionReportRepository(
+              isSupabaseInitialized ? Supabase.instance.client : null,
+            ),
+          ),
       ],
       child: const ThiNhanhApp(),
     ),
@@ -165,13 +183,13 @@ final Map<String, int> _routeIndices = {
 int _lastIndex = 0;
 
 CustomTransitionPage<T> buildPageWithSlideTransition<T>({
-  required BuildContext context, 
-  required GoRouterState state, 
+  required BuildContext context,
+  required GoRouterState state,
   required Widget child,
 }) {
   final currentIndex = _routeIndices[state.matchedLocation] ?? _lastIndex;
   final isMovingRight = currentIndex >= _lastIndex;
-  
+
   // Chỉ cập nhật _lastIndex nếu route nằm trong menu chính
   if (_routeIndices.containsKey(state.matchedLocation)) {
     _lastIndex = currentIndex;
@@ -188,10 +206,7 @@ CustomTransitionPage<T> buildPageWithSlideTransition<T>({
 
       var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
-      return SlideTransition(
-        position: animation.drive(tween),
-        child: child,
-      );
+      return SlideTransition(position: animation.drive(tween), child: child);
     },
   );
 }
@@ -236,7 +251,9 @@ final GoRouter _router = GoRouter(
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
             state: state,
-            child: CreateExamScreen(examId: state.uri.queryParameters['examId']),
+            child: CreateExamScreen(
+              examId: state.uri.queryParameters['examId'],
+            ),
           ),
         ),
         GoRoute(
@@ -260,7 +277,9 @@ final GoRouter _router = GoRouter(
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
             state: state,
-            child: ExamDetailScreen(examId: state.uri.queryParameters['examId']),
+            child: ExamDetailScreen(
+              examId: state.uri.queryParameters['examId'],
+            ),
           ),
         ),
         GoRoute(
@@ -339,14 +358,21 @@ final GoRouter _router = GoRouter(
             child: const TeacherAnalyticsScreen(),
           ),
         ),
+        GoRoute(
+          path: '/teacher/question_reports',
+          pageBuilder: (context, state) => buildPageWithSlideTransition(
+            context: context,
+            state: state,
+            child: const QuestionReportsScreen(),
+          ),
+        ),
       ],
     ),
     // Các màn hình không có TopNavBar
     GoRoute(
       path: '/teacher_waiting_room',
-      builder: (context, state) => TeacherWaitingRoomScreen(
-        roomId: state.uri.queryParameters['roomId'],
-      ),
+      builder: (context, state) =>
+          TeacherWaitingRoomScreen(roomId: state.uri.queryParameters['roomId']),
     ),
     GoRoute(
       path: '/student_waiting_room',
@@ -358,21 +384,18 @@ final GoRouter _router = GoRouter(
     ),
     GoRoute(
       path: '/join',
-      builder: (context, state) => JoinRoomScreen(
-        initialRoomCode: state.uri.queryParameters['code'],
-      ),
+      builder: (context, state) =>
+          JoinRoomScreen(initialRoomCode: state.uri.queryParameters['code']),
     ),
     GoRoute(
       path: '/room/join',
-      builder: (context, state) => JoinRoomScreen(
-        initialRoomCode: state.uri.queryParameters['code'],
-      ),
+      builder: (context, state) =>
+          JoinRoomScreen(initialRoomCode: state.uri.queryParameters['code']),
     ),
     GoRoute(
       path: '/room/password',
-      builder: (context, state) => RoomPasswordScreen(
-        roomCode: state.uri.queryParameters['code'],
-      ),
+      builder: (context, state) =>
+          RoomPasswordScreen(roomCode: state.uri.queryParameters['code']),
     ),
     GoRoute(
       path: '/taking_exam',
@@ -412,7 +435,10 @@ final GoRouter _router = GoRouter(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Không tìm thấy trang!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          const Text(
+            'Không tìm thấy trang!',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => context.go('/home'),
@@ -435,12 +461,7 @@ class ThiNhanhApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       builder: (context, child) {
-        return Stack(
-          children: [
-            ?child,
-            const DeveloperLogOverlay(),
-          ],
-        );
+        return Stack(children: [?child, const DeveloperLogOverlay()]);
       },
     );
   }
