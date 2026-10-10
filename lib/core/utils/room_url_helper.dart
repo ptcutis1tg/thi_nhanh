@@ -11,11 +11,14 @@ class RoomUrlHelper {
       final base = Uri.base;
       final origin = base.origin;
       var path = base.path;
+      if (path.contains('/index.html')) {
+        path = path.replaceAll('/index.html', '');
+      }
       if (path.endsWith('/')) {
         path = path.substring(0, path.length - 1);
       }
       return '$origin$path/#/join?code=$cleanCode';
     }
-    return 'https://thinhành.vn/#/join?code=$cleanCode';
+    return 'https://ptcutis1tg.github.io/thi_nhanh/#/join?code=$cleanCode';
   }
 }
