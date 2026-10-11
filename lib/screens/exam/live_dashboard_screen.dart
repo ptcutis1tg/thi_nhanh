@@ -20,6 +20,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   String _roomCodeStr = 'PT200001';
   String _roomTitle = 'Phòng thi trực tuyến';
   String _subjectName = 'Toán Học';
+  String? _roomId;
 
   List<Map<String, dynamic>> _students = [];
 
@@ -64,6 +65,7 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
         }
 
         final roomId = rRes['id'].toString();
+        _roomId = roomId;
 
         // Query attempts in this room
         final aRes = await client
@@ -191,9 +193,20 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
                         child: const Text('Hủy'),
                       ),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           context.pop();
-                          context.go('/home');
+                          try {
+                            if (_roomId != null) {
+                              final client = Supabase.instance.client;
+                              await client
+                                  .from('rooms')
+                                  .update({'status': 'closed'})
+                                  .eq('id', _roomId!);
+                            }
+                          } catch (_) {}
+                          if (context.mounted) {
+                            context.go('/home');
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.error,
