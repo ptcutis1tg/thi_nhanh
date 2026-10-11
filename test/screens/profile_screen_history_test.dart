@@ -12,28 +12,20 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    String? navigatedRoute;
-
     final router = GoRouter(
       initialLocation: '/profile',
       routes: [
         GoRoute(
           path: '/profile',
-          builder: (_, __) => const ProfileScreen(),
+          builder: (_, _) => const ProfileScreen(),
         ),
         GoRoute(
           path: '/student/history',
-          builder: (_, __) {
-            navigatedRoute = '/student/history';
-            return const Scaffold(body: Text('History Screen'));
-          },
+          builder: (_, _) => const Scaffold(body: Text('History Screen')),
         ),
         GoRoute(
           path: '/result',
-          builder: (_, state) {
-            navigatedRoute = state.uri.toString();
-            return const Scaffold(body: Text('Result Screen'));
-          },
+          builder: (_, _) => const Scaffold(body: Text('Result Screen')),
         ),
       ],
     );

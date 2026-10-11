@@ -269,7 +269,9 @@ final GoRouter _router = GoRouter(
           pageBuilder: (context, state) => buildPageWithSlideTransition(
             context: context,
             state: state,
-            child: const CreateRoomScreen(),
+            child: CreateRoomScreen(
+              initialExamId: state.uri.queryParameters['examId'],
+            ),
           ),
         ),
         GoRoute(

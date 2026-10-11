@@ -25,7 +25,7 @@ void main() {
             onAdd: () => addTriggered = true,
             onDuplicate: (_) {},
             onDelete: (_) {},
-            onReorder: (_, __) {},
+            onReorder: (_, _) {},
             onOpenBulkImport: () {},
           ),
         ),
@@ -39,10 +39,12 @@ void main() {
     await tester.tap(find.text('Thêm câu hỏi'));
     await tester.pump();
     expect(addTriggered, isTrue);
+    expect(selected, 0);
   });
 
-  testWidgets('ExamRightSidebar renders exam stats and allows setting per-question timer toggle', (tester) async {
+  testWidgets('ExamRightSidebar renders exam stats, points, and allows setting per-question timer toggle', (tester) async {
     bool perQuestion = false;
+    bool distributed = false;
 
     await tester.pumpWidget(
       MaterialApp(
@@ -52,6 +54,8 @@ void main() {
             subject: 'Toán',
             durationMinutes: 45,
             questionCount: 10,
+            totalPoints: 10.0,
+            onDistributePointsEvenly: () => distributed = true,
             perQuestionTimerEnabled: false,
             onTogglePerQuestionTimer: (val) => perQuestion = val,
           ),
@@ -63,6 +67,14 @@ void main() {
     expect(find.text('Đề kiểm tra Toán 12'), findsOneWidget);
     expect(find.text('45 phút'), findsOneWidget);
     expect(find.text('10 câu'), findsOneWidget);
+    expect(find.text('THANG ĐIỂM ĐỀ THI'), findsOneWidget);
+    expect(find.text('10.00 đ'), findsOneWidget);
+
+    final distributeBtn = find.text('Chia đều 10 điểm');
+    expect(distributeBtn, findsOneWidget);
+    await tester.tap(distributeBtn);
+    await tester.pump();
+    expect(distributed, isTrue);
 
     final switchFinder = find.byType(Switch);
     expect(switchFinder, findsOneWidget);

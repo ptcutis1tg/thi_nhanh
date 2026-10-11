@@ -503,7 +503,7 @@ class _AnimatedLeaderboardRowState extends State<_AnimatedLeaderboardRow> {
               tween: Tween(end: entry.correctCount.toDouble()),
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeOutCubic,
-              builder: (_, value, __) => Text(
+              builder: (_, value, _) => Text(
                 '${value.round()}/${entry.totalQuestions}',
                 style: const TextStyle(fontSize: 13),
               ),
@@ -525,7 +525,7 @@ class _AnimatedLeaderboardRowState extends State<_AnimatedLeaderboardRow> {
               tween: Tween(end: entry.score),
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeOutCubic,
-              builder: (_, value, __) => Text(
+              builder: (_, value, _) => Text(
                 value.toStringAsFixed(1),
                 textAlign: TextAlign.right,
                 style: const TextStyle(

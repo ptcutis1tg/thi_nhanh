@@ -205,7 +205,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
         }
       } catch (_) {}
       if (mounted) {
-        context.go('/room/password');
+        context.go('/room/password?code=${Uri.encodeComponent(code)}');
       }
       return;
     }

@@ -86,14 +86,14 @@ void main() {
             routes: [
               GoRoute(
                 path: '/practice/wrong_questions',
-                builder: (_, __) => WrongQuestionsPracticeScreen(
+                builder: (_, _) => WrongQuestionsPracticeScreen(
                   attemptId: 'test-attempt-1',
                   testReviewPayload: sampleReview,
                 ),
               ),
               GoRoute(
                 path: '/student/history',
-                builder: (_, __) => const Scaffold(body: Text('History Screen')),
+                builder: (_, _) => const Scaffold(body: Text('History Screen')),
               ),
             ],
           ),
@@ -131,7 +131,7 @@ void main() {
             routes: [
               GoRoute(
                 path: '/practice/wrong_questions',
-                builder: (_, __) => WrongQuestionsPracticeScreen(
+                builder: (_, _) => WrongQuestionsPracticeScreen(
                   attemptId: 'test-attempt-1',
                   testReviewPayload: sampleReview,
                 ),

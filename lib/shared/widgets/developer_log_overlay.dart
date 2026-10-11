@@ -61,7 +61,7 @@ class DeveloperLogOverlay extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -109,7 +109,7 @@ class DeveloperLogOverlay extends StatelessWidget {
         border: Border.all(color: const Color(0xFF334155), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.45),
+            color: Colors.black.withValues(alpha: 0.45),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -153,7 +153,7 @@ class DeveloperLogOverlay extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                         decoration: BoxDecoration(
-                          color: (isVerbose ? const Color(0xFF06B6D4) : const Color(0xFFEF4444)).withOpacity(0.2),
+                          color: (isVerbose ? const Color(0xFF06B6D4) : const Color(0xFFEF4444)).withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
@@ -223,7 +223,7 @@ class DeveloperLogOverlay extends StatelessWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.all(10),
                     itemCount: service.logs.length,
-                    separatorBuilder: (_, __) => const Divider(color: Color(0xFF1E293B), height: 16),
+                    separatorBuilder: (_, _) => const Divider(color: Color(0xFF1E293B), height: 16),
                     itemBuilder: (context, index) {
                       final log = service.logs[index];
                       return _buildLogItem(context, log);
@@ -282,8 +282,8 @@ class DeveloperLogOverlay extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                       decoration: BoxDecoration(
                         color: isError
-                            ? const Color(0xFFEF4444).withOpacity(0.2)
-                            : const Color(0xFF06B6D4).withOpacity(0.2),
+                            ? const Color(0xFFEF4444).withValues(alpha: 0.2)
+                            : const Color(0xFF06B6D4).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(

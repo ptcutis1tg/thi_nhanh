@@ -9,7 +9,9 @@ import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class CreateRoomScreen extends StatefulWidget {
-  const CreateRoomScreen({super.key});
+  final String? initialExamId;
+
+  const CreateRoomScreen({super.key, this.initialExamId});
 
   @override
   State<CreateRoomScreen> createState() => _CreateRoomScreenState();
@@ -63,6 +65,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         setState(() {
           _myExams = mySummaries.where((exam) => exam.status == 'published').toList();
           _savedExams = savedSummaries.where((exam) => exam.status == 'published').toList();
+          if (_selectedExam == null && widget.initialExamId != null) {
+            try {
+              _selectedExam = _allAvailableExams.firstWhere((e) => e.id == widget.initialExamId);
+            } catch (_) {}
+          }
           _isLoadingExams = false;
         });
       }

@@ -1036,7 +1036,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: _questions.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
               itemBuilder: (context, index) {
                 final isCurrent = index == _currentQuestionIndex;
                 final isAnswered = _selectedAnswers.containsKey(index);

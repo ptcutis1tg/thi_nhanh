@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,7 @@ import '../utils/supabase_retry_helper.dart';
 
 class AuthProvider extends ChangeNotifier {
   SupabaseClient? _supabaseClient;
+  StreamSubscription<AuthState>? _authSubscription;
   User? _user;
   String? _userName;
   String? _userEmail;
@@ -46,7 +48,7 @@ class AuthProvider extends ChangeNotifier {
     if (isSupabaseInitialized) {
       _supabaseClient = Supabase.instance.client;
       _user = _supabaseClient?.auth.currentUser;
-      _supabaseClient?.auth.onAuthStateChange.listen((data) {
+      _authSubscription = _supabaseClient?.auth.onAuthStateChange.listen((data) {
         _user = data.session?.user;
         if (data.event == AuthChangeEvent.passwordRecovery) {
           _isPasswordRecoveryMode = true;
@@ -67,6 +69,12 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> init() async {
@@ -257,6 +265,21 @@ class AuthProvider extends ChangeNotifier {
       _userEmail = cleanEmail;
       notifyListeners();
       return null;
+    }
+  }
+
+  Future<void> resendSignUpOTP(String email) async {
+    final cleanEmail = email.trim();
+    if (_supabaseClient != null) {
+      try {
+        await _supabaseClient!.auth.resend(
+          type: OtpType.signup,
+          email: cleanEmail,
+        );
+      } catch (e) {
+        debugPrint('Lỗi gửi lại mã OTP đăng ký: $e');
+        rethrow;
+      }
     }
   }
 

@@ -263,7 +263,7 @@ class _TeacherStudentResultsScreenState extends State<TeacherStudentResultsScree
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const Divider(height: 1, color: Color(0xFFF0ECFF)),
                               itemBuilder: (context, index) {
                                 final sub = filtered[index];

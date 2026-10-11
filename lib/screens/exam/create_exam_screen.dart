@@ -471,6 +471,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   subject: _selectedSubject ?? '',
                   durationMinutes: int.tryParse(_durationController.text) ?? 45,
                   questionCount: _questions.length,
+                  totalPoints: _totalPoints,
+                  onDistributePointsEvenly: _distributePointsEvenly,
                   perQuestionTimerEnabled: _perQuestionTimerEnabled,
                   onTogglePerQuestionTimer: (enabled) {
                     setState(() {
@@ -964,7 +966,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 const SizedBox(height: 18),
                 DropdownButtonFormField<String>(
                   key: const Key('setup-subject'),
-                  value: _selectedSubject,
+                  initialValue: _selectedSubject,
                   decoration: InputDecoration(
                     labelText: 'Môn học *',
                     border: OutlineInputBorder(

@@ -18,8 +18,9 @@ class AssessmentRepository {
           _client.rpc('begin_practice_attempt', params: {'p_exam_id': examId}),
     );
     final started = StartedAttempt.fromJson(_map(response));
-    if (started.guestToken != null)
+    if (started.guestToken != null) {
       await _saveGuestToken(started.attemptId, started.guestToken!);
+    }
     return started;
   }
 
@@ -91,8 +92,9 @@ class AssessmentRepository {
   Map<String, dynamic> _map(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
-    if (value is String)
+    if (value is String) {
       return Map<String, dynamic>.from(jsonDecode(value) as Map);
+    }
     throw const FormatException('Invalid response from assessment service.');
   }
 }

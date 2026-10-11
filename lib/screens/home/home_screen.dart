@@ -45,9 +45,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   TeacherProfileData _teacherStats = TeacherProfileData.empty();
 
   String? _activeAttemptId;
-  String? _activeExamId;
-  String? _activeRoomId;
-  int _inProgressCount = 0;
   int _totalUnfinishedCount = 0;
   String? _activeLiveRoomCode;
   String? _activeLiveRoomId;
@@ -57,8 +54,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _activeAttemptId = widget.initialActiveAttemptId;
-    _activeExamId = widget.initialActiveExamId;
-    _activeRoomId = widget.initialActiveRoomId;
     _activeLiveRoomCode = widget.initialActiveLiveRoomCode;
     _activeLiveRoomId = widget.initialActiveLiveRoomId;
     _activeLiveRoomStatus = widget.initialActiveLiveRoomStatus;
@@ -131,14 +126,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _teacherStats = results[1] as TeacherProfileData;
         if (widget.initialActiveAttemptId == null && activeAttempt != null) {
           _activeAttemptId = activeAttempt['attemptId']?.toString();
-          _activeExamId = activeAttempt['examId']?.toString();
-          _activeRoomId = activeAttempt['roomId']?.toString();
-          _inProgressCount = (activeAttempt['inProgressCount'] as num?)?.toInt() ?? 0;
           _totalUnfinishedCount = (activeAttempt['totalUnfinishedCount'] as num?)?.toInt() ?? 0;
         }
         if (_totalUnfinishedCount == 0 && _studentStats.inProgressTests.isNotEmpty) {
           _totalUnfinishedCount = _studentStats.inProgressTests.length;
-          _inProgressCount = _studentStats.inProgressTests.where((t) => !t.isExpired).length;
         }
         if (widget.initialActiveLiveRoomCode == null && activeLiveRoom != null) {
           _activeLiveRoomCode = activeLiveRoom['code'];
@@ -648,14 +639,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               if (hasActive)
-                ScaleTransition(
-                  scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF59E0B),
-                      shape: BoxShape.circle,
+                RepaintBoundary(
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF59E0B),
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
@@ -765,14 +758,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               if (hasActiveRoom)
-                ScaleTransition(
-                  scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
+                RepaintBoundary(
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),

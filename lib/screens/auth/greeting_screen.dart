@@ -791,7 +791,7 @@ class _SignUpOtpDialogState extends State<_SignUpOtpDialog> {
     if (_countdown > 0) return;
     setState(() => _errorMessage = null);
     try {
-      await context.read<AuthProvider>().sendPasswordResetOTP(widget.email);
+      await context.read<AuthProvider>().resendSignUpOTP(widget.email);
       _startTimer();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -570,6 +570,8 @@ class _TopNavBarState extends State<TopNavBar> {
       } catch (_) {}
     }
 
+    if (!context.mounted) return;
+
     final code = AppErrorReporter.normalizeRoomCode(rawCode);
     if (code.isEmpty) return;
 

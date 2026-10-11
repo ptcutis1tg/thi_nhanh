@@ -43,27 +43,28 @@ class QuestionAnswersEditor extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
         const SizedBox(height: 12),
-        ...List.generate(question.answers.length, (index) {
-          final isSelected = question.correctAnswers.contains(index);
-          final letter = String.fromCharCode(65 + index);
+        RadioGroup<int>(
+          groupValue: question.correctAnswers.isNotEmpty
+              ? question.correctAnswers.first
+              : -1,
+          onChanged: (val) {
+            if (val != null) {
+              question.correctAnswers = [val];
+              onChanged();
+            }
+          },
+          child: Column(
+            children: List.generate(question.answers.length, (index) {
+              final isSelected = question.correctAnswers.contains(index);
+              final letter = String.fromCharCode(65 + index);
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: [
-                Radio<int>(
-                  value: index,
-                  groupValue: question.correctAnswers.isNotEmpty
-                      ? question.correctAnswers.first
-                      : -1,
-                  activeColor: AppTheme.primary,
-                  onChanged: (val) {
-                    if (val != null) {
-                      question.correctAnswers = [val];
-                      onChanged();
-                    }
-                  },
-                ),
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  children: [
+                    Radio<int>(
+                      value: index,
+                    ),
                 Expanded(
                   child: ScientificTextField(
                     key: ValueKey('answer-${question.id}-$index'),
@@ -129,17 +130,19 @@ class QuestionAnswersEditor extends StatelessWidget {
             ),
           );
         }),
-        if (question.answers.length < 8)
-          TextButton.icon(
-            onPressed: () {
-              question.answers.add('');
-              onChanged();
-            },
-            icon: const Icon(Icons.add_circle_outline, size: 18),
-            label: const Text('Thêm phương án lựa chọn'),
-          ),
-      ],
-    );
+      ),
+    ),
+    if (question.answers.length < 8)
+      TextButton.icon(
+        onPressed: () {
+          question.answers.add('');
+          onChanged();
+        },
+        icon: const Icon(Icons.add_circle_outline, size: 18),
+        label: const Text('Thêm phương án lựa chọn'),
+      ),
+  ],
+);
   }
 
   Widget _buildMultipleChoice(BuildContext context) {

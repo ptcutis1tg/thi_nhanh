@@ -81,7 +81,6 @@ class AppTheme {
         primary: primary,
         secondary: primaryLight,
         surface: surface,
-        background: background,
         error: error,
       ),
       scaffoldBackgroundColor: background,
@@ -116,7 +115,7 @@ class AppTheme {
               return const Color(0xFF45D0C6);
             }
             if (states.contains(WidgetState.disabled)) {
-              return primary.withOpacity(0.4);
+              return primary.withValues(alpha: 0.4);
             }
             return primary;
           }),

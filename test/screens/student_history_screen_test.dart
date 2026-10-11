@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:onthi_community/core/providers/auth_provider.dart';
 import 'package:onthi_community/core/services/profile_service.dart';
 import 'package:onthi_community/screens/student/student_history_screen.dart';
-import 'package:onthi_community/shared/widgets/google_pagination_bar.dart';
 
 void main() {
   testWidgets('StudentHistoryScreen renders header, search box and filter panel', (tester) async {
@@ -23,9 +22,9 @@ void main() {
           routerConfig: GoRouter(
             initialLocation: '/student/history',
             routes: [
-              GoRoute(path: '/student/history', builder: (_, __) => const StudentHistoryScreen()),
-              GoRoute(path: '/profile', builder: (_, __) => const Scaffold(body: Text('Profile Screen'))),
-              GoRoute(path: '/result', builder: (_, __) => const Scaffold(body: Text('Result Screen'))),
+              GoRoute(path: '/student/history', builder: (_, _) => const StudentHistoryScreen()),
+              GoRoute(path: '/profile', builder: (_, _) => const Scaffold(body: Text('Profile Screen'))),
+              GoRoute(path: '/result', builder: (_, _) => const Scaffold(body: Text('Result Screen'))),
             ],
           ),
         ),
@@ -60,7 +59,7 @@ void main() {
           routerConfig: GoRouter(
             initialLocation: '/student/history',
             routes: [
-              GoRoute(path: '/student/history', builder: (_, __) => const StudentHistoryScreen()),
+              GoRoute(path: '/student/history', builder: (_, _) => const StudentHistoryScreen()),
             ],
           ),
         ),
@@ -104,11 +103,11 @@ void main() {
         ),
         GoRoute(
           path: '/student/history',
-          builder: (_, __) => const StudentHistoryScreen(),
+          builder: (_, _) => const StudentHistoryScreen(),
         ),
         GoRoute(
           path: '/profile',
-          builder: (_, __) => const Scaffold(body: Text('Profile Screen')),
+          builder: (_, _) => const Scaffold(body: Text('Profile Screen')),
         ),
       ],
     );
@@ -155,7 +154,7 @@ void main() {
           routerConfig: GoRouter(
             initialLocation: '/student/history',
             routes: [
-              GoRoute(path: '/student/history', builder: (_, __) => const StudentHistoryScreen()),
+              GoRoute(path: '/student/history', builder: (_, _) => const StudentHistoryScreen()),
             ],
           ),
         ),
@@ -234,7 +233,7 @@ void main() {
             routes: [
               GoRoute(
                 path: '/student/history',
-                builder: (_, __) => StudentHistoryScreen(testData: sampleData),
+                builder: (_, _) => StudentHistoryScreen(testData: sampleData),
               ),
             ],
           ),
@@ -309,7 +308,7 @@ void main() {
             routes: [
               GoRoute(
                 path: '/student/history',
-                builder: (_, __) => StudentHistoryScreen(testData: sampleData),
+                builder: (_, _) => StudentHistoryScreen(testData: sampleData),
               ),
             ],
           ),
