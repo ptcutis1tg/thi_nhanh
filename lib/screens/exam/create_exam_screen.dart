@@ -471,6 +471,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   subject: _selectedSubject ?? '',
                   durationMinutes: int.tryParse(_durationController.text) ?? 45,
                   questionCount: _questions.length,
+                  totalPoints: _totalPoints,
+                  onDistributePointsEvenly: _distributePointsEvenly,
                   perQuestionTimerEnabled: _perQuestionTimerEnabled,
                   onTogglePerQuestionTimer: (enabled) {
                     setState(() {

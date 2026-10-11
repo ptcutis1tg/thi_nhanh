@@ -8,6 +8,8 @@ class ExamRightSidebar extends StatelessWidget {
     required this.subject,
     required this.durationMinutes,
     required this.questionCount,
+    this.totalPoints = 10.0,
+    this.onDistributePointsEvenly,
     required this.perQuestionTimerEnabled,
     required this.onTogglePerQuestionTimer,
   });
@@ -16,6 +18,8 @@ class ExamRightSidebar extends StatelessWidget {
   final String subject;
   final int durationMinutes;
   final int questionCount;
+  final double totalPoints;
+  final VoidCallback? onDistributePointsEvenly;
   final bool perQuestionTimerEnabled;
   final ValueChanged<bool> onTogglePerQuestionTimer;
 
@@ -90,6 +94,64 @@ class ExamRightSidebar extends StatelessWidget {
                     ),
                   ],
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'THANG ĐIỂM ĐỀ THI',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textSecondary,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Points overview card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Tổng điểm:',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Text(
+                      '${totalPoints.toStringAsFixed(2)} đ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: (totalPoints - 10.0).abs() < 0.01 ? AppTheme.success : AppTheme.warning,
+                      ),
+                    ),
+                  ],
+                ),
+                if (onDistributePointsEvenly != null && questionCount > 0) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onDistributePointsEvenly,
+                      icon: const Icon(Icons.auto_fix_high, size: 16),
+                      label: const Text('Chia đều 10 điểm', style: TextStyle(fontSize: 12)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
