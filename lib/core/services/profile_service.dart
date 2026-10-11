@@ -1198,25 +1198,43 @@ class ProfileService {
     if (client == null || attemptId.isEmpty) return false;
 
     try {
+      // 1. Thử gọi RPC cancel_or_delete_student_attempt
+      final rpcRes = await SupabaseRetryHelper.run(() async {
+        return await client.rpc(
+          'cancel_or_delete_student_attempt',
+          params: {'p_attempt_id': attemptId},
+        );
+      });
+      if (rpcRes == true) return true;
+    } catch (e) {
+      debugPrint('RPC cancel_or_delete_student_attempt không thành công, thử fallback trực tiếp: $e');
+    }
+
+    try {
+      // 2. Thử xóa trực tiếp bản ghi attempt (policy DELETE cho in_progress)
+      await SupabaseRetryHelper.run(() async {
+        await client.from('attempts').delete().eq('id', attemptId);
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Lỗi khi xóa trực tiếp bản ghi attempt $attemptId: $e');
+    }
+
+    try {
+      // 3. Fallback: Cập nhật status thành 'expired' (enum PostgreSQL: in_progress, submitted, expired)
       return await SupabaseRetryHelper.run(() async {
         await client
             .from('attempts')
             .update({
-              'status': 'cancelled',
+              'status': 'expired',
               'submitted_at': DateTime.now().toIso8601String(),
             })
             .eq('id', attemptId);
         return true;
       });
     } catch (e) {
-      debugPrint('Lỗi khi hủy bài thi $attemptId: $e');
-      try {
-        await client.from('attempts').delete().eq('id', attemptId);
-        return true;
-      } catch (errDelete) {
-        debugPrint('Lỗi khi xóa bài thi: $errDelete');
-        return false;
-      }
+      debugPrint('Lỗi khi fallback cập nhật status expired cho $attemptId: $e');
+      return false;
     }
   }
 

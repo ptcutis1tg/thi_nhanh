@@ -1,12 +1,14 @@
-SDD Progress Ledger: Enhanced Room Experience & Anti-Cheat
+# Progress Ledger: Exam Editor Refinements and Room Lifecycle
 
-Feature Plan: `docs/superpowers/plans/2026-10-04-enhanced-room-experience.md`
-Started: 2026-10-04
+- Base Commit: `de8d53e`
+- Plan: `docs/superpowers/plans/2026-10-11-exam-editor-refinements-and-room-lifecycle.md`
 
-- [X] Task 1: Tiện Ích Xáo Trộn Tất Định (ExamShuffleHelper) & Unit Tests
-- [X] Task 2: Widget Đếm Ngược Khởi Động Đồng Bộ (CountdownOverlayWidget) & Tests
-- [X] Task 3: Bổ Sung Tùy Chọn Anti-Cheat & Shuffle trong CreateRoomScreen
-- [X] Task 4: Tích Hợp Đếm Ngược 3-2-1 vào StudentWaitingRoomScreen
-- [X] Task 5: Chống Gian Lận Đa Tầng trong TakingExamScreen (Focus Monitor, Cảnh Báo, Thu Bài & Chặn Copy)
-- [X] Task 6: Hiển Thị Giám Sát Vi Phạm trên Live Dashboard Giáo Viên
-- [X] Task 7: Kiểm Thử Toàn Diện Bộ Hồi Quy (Full Regression Suite) & Tổng Kết
+## Tasks
+- [x] Task 1: Nâng cấp hình nền hệ thống bằng `cloudv2_tall.jpg` (commit 3d570f6)
+- [x] Task 2: Đa dạng môn học, cho phép để trống & gắn thẻ `none` (commit 03aa363)
+- [x] Task 3: Chỉnh sửa thông tin đề (Tên, Môn, Thời lượng) ngay trong Editor (commit b7e761e)
+- [x] Task 4: Token Thẩm Mỹ `AppTheme.softGlowShadow` cho các khối tiếp xúc nền (commit 2ce0be5)
+- [x] Task 5: Popup kiểm tra tổng điểm 10 khi Xuất bản đề thi (commit 7f9fcce)
+- [x] Task 6: Tự động nộp bài và điều hướng khi Host đóng phòng thi (commit 486c52a)
+- [x] Task 7: Sửa triệt để lỗi xóa bài thi dở dang trong Lịch sử (commit đang thực hiện)
+- [ ] Task 8: Rà soát phân tích tĩnh, chạy toàn bộ test suite, cập nhật tài liệu tổng quan & Git Push
