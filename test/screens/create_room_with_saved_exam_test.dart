@@ -96,7 +96,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify "Khởi tạo phòng thi" button is enabled
-    final createBtnFinder = find.widgetWithText(ElevatedButton, 'Khởi tạo phòng thi');
+    final createBtnFinder = find.ancestor(
+      of: find.text('Khởi tạo phòng thi'),
+      matching: find.bySubtype<ElevatedButton>(),
+    );
     expect(createBtnFinder, findsOneWidget);
     final buttonWidget = tester.widget<ElevatedButton>(createBtnFinder);
     expect(buttonWidget.onPressed, isNotNull);
