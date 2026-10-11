@@ -101,7 +101,7 @@ void main() {
     expect(find.text('Tạo phòng thi'), findsNothing);
 
     // Verify compact logo exists
-    expect(find.text('Thi Nhanh'), findsOneWidget);
+    expect(find.text('PAROVA'), findsOneWidget);
 
     // Verify quick PIN icon button exists
     expect(find.byIcon(Icons.pin_outlined), findsOneWidget);

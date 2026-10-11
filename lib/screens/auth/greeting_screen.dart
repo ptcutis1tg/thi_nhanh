@@ -243,10 +243,10 @@ class _GreetingScreenState extends State<GreetingScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'THI NHANH',
+                  'PAROVA',
                   style: TextStyle(
                     color: AppTheme.primaryDarker,
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                     letterSpacing: 1.5,
                   ),
@@ -326,7 +326,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
           const SizedBox(height: 6),
           Text(
             _isRegisterMode
-                ? 'Bắt đầu hành trình học tập cùng Thi Nhanh'
+                ? 'Bắt đầu hành trình học tập cùng PAROVA'
                 : 'Truy cập không gian học tập của bạn',
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
@@ -578,7 +578,16 @@ class _GreetingScreenState extends State<GreetingScreen> {
               ]
             : AppTheme.cardShadow,
       ),
-      child: Icon(Icons.bolt_rounded, color: AppTheme.primaryDark, size: size * .58),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * .27),
+        child: Padding(
+          padding: EdgeInsets.all(size * 0.12),
+          child: Image.asset(
+            'assets/images/parova_symbol.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
     );
   }
 
@@ -601,7 +610,7 @@ class _GreetingScreenState extends State<GreetingScreen> {
         children: [
           const Expanded(
             child: Text(
-              '© 2026 Thi Nhanh. Nền tảng học tập và thi trực tuyến.',
+              '© 2026 PAROVA. Nền tảng học tập và thi trực tuyến.',
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 10),
             ),

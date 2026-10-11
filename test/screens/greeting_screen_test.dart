@@ -21,7 +21,7 @@ void main() {
     await tester.pumpWidget(_buildScreen());
     await tester.pumpAndSettle();
 
-    expect(find.text('THI NHANH'), findsOneWidget);
+    expect(find.text('PAROVA'), findsOneWidget);
     expect(find.text('Đăng nhập'), findsOneWidget);
     expect(find.byKey(const Key('google-login-button')), findsOneWidget);
     expect(find.byKey(const Key('login-email-field')), findsOneWidget);

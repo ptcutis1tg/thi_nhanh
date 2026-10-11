@@ -93,14 +93,26 @@ class _TopNavBarState extends State<TopNavBar> {
                     const SizedBox(width: 4),
                     InkWell(
                       onTap: () => context.go('/home'),
-                      child: const Text(
-                        'Thi Nhanh',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.textMain,
-                          letterSpacing: -0.3,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/images/parova_symbol.png',
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'PAROVA',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.textMain,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -117,34 +129,34 @@ class _TopNavBarState extends State<TopNavBar> {
                         width: isMobile ? 32 : 36,
                         height: isMobile ? 32 : 36,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppTheme.primary, AppTheme.primaryDark],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x3339C5BB),
+                              color: Color(0x2639C5BB),
                               blurRadius: 8,
                               offset: Offset(0, 3),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: isMobile ? 18 : 22,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
+                          child: Image.asset(
+                            'assets/images/parova_symbol.png',
+                            width: isMobile ? 32 : 36,
+                            height: isMobile ? 32 : 36,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      const Text(
-                        'Thi Nhanh',
+                      Text(
+                        'PAROVA',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontSize: isMobile ? 17 : 19,
+                          fontWeight: FontWeight.w900,
                           color: AppTheme.textMain,
-                          letterSpacing: -0.5,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],

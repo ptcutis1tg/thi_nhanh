@@ -458,7 +458,7 @@ class ThiNhanhApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Thi Nhanh',
+      title: 'PAROVA',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       routerConfig: _router,

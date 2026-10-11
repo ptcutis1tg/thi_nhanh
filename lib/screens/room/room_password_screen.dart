@@ -78,8 +78,12 @@ class _RoomPasswordScreenState extends State<RoomPasswordScreen> {
   Widget build(BuildContext context) => MilkyMintScaffold(
     appBar: AppBar(
       title: Text(
-        'Thi Nhanh',
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppTheme.primary),
+        'PAROVA',
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          color: AppTheme.primary,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+        ),
       ),
       actions: [
         IconButton(
