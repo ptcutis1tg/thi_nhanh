@@ -10,5 +10,5 @@
 - [x] Task 4: Token Thẩm Mỹ `AppTheme.softGlowShadow` cho các khối tiếp xúc nền (commit 2ce0be5)
 - [x] Task 5: Popup kiểm tra tổng điểm 10 khi Xuất bản đề thi (commit 7f9fcce)
 - [x] Task 6: Tự động nộp bài và điều hướng khi Host đóng phòng thi (commit 486c52a)
-- [x] Task 7: Sửa triệt để lỗi xóa bài thi dở dang trong Lịch sử (commit đang thực hiện)
-- [ ] Task 8: Rà soát phân tích tĩnh, chạy toàn bộ test suite, cập nhật tài liệu tổng quan & Git Push
+- [x] Task 7: Sửa triệt để lỗi xóa bài thi dở dang trong Lịch sử (commit 82e8d20)
+- [x] Task 8: Rà soát phân tích tĩnh, chạy toàn bộ test suite, cập nhật tài liệu tổng quan & Git Push

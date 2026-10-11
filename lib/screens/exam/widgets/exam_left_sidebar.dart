@@ -81,6 +81,7 @@ class ExamLeftSidebar extends StatelessWidget {
             child: ReorderableListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: questions.length,
+              // ignore: deprecated_member_use
               onReorder: onReorder,
               itemBuilder: (context, index) {
                 final q = questions[index];
