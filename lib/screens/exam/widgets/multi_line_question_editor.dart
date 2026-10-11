@@ -176,6 +176,8 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
               key: ValueKey('line-editor-${line.id}'),
               initialLatex: line.value,
               controller: line.controller,
+              compact: true,
+              showEditorFrame: false,
               shortcutCategory: widget.shortcutCategory,
               shortcuts: widget.shortcuts,
               onFocusTarget: (target) {

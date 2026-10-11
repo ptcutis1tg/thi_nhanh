@@ -23,6 +23,8 @@ void main() {
     await tester.pump();
     expect(find.text('Thêm dòng'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
+    expect(find.text('Khối trực quan [ ]'), findsNothing);
+    expect(find.text('Mã nguồn LaTeX'), findsNothing);
 
     await tester.enterText(find.byType(TextField).last, 'Biểu thức thứ nhất');
     await tester.pump();

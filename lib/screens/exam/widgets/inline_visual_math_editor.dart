@@ -25,6 +25,7 @@ class InlineVisualMathEditor extends StatefulWidget {
     this.shortcuts = const [],
     this.onFocusTarget,
     this.compact = false,
+    this.showEditorFrame = true,
     this.segmentKeyPrefix = 'inline-math',
   });
 
@@ -35,6 +36,7 @@ class InlineVisualMathEditor extends StatefulWidget {
   final List<ScientificShortcut> shortcuts;
   final ValueChanged<ScientificInputTarget>? onFocusTarget;
   final bool compact;
+  final bool showEditorFrame;
   final String segmentKeyPrefix;
 
   @override
@@ -304,46 +306,50 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
             },
           )
         else
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(widget.compact ? 8 : 12),
-            decoration: BoxDecoration(
-              color: AppTheme.background,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.border),
-            ),
-            child: Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (int i = 0; i < _segments.length; i++)
-                  if (_segments[i] is TextContentSegment)
-                    _buildTextSegmentWidget(
-                      i,
-                      _segments[i] as TextContentSegment,
-                    )
-                  else if (_segments[i] is MathBlockSegment)
-                    VisualMathBlockWidget(
-                      key: ValueKey((_segments[i] as MathBlockSegment).id),
-                      block: _segments[i] as MathBlockSegment,
-                      onSlotChanged: (k, v) {
-                        (_segments[i] as MathBlockSegment).slots[k] = v;
-                        _notifyChange();
-                      },
-                      onDelete: () {
-                        setState(() {
-                          _segments.removeAt(i);
-                          _mergeAdjacentTextSegments();
-                          _rawLatexController.text = VisualMathCompiler.compile(
-                            _segments,
-                          );
-                        });
-                        _notifyChange();
-                      },
-                    ),
-              ],
-            ),
-          ),
+          _buildVisualEditorBody(),
       ],
+    );
+  }
+
+  Widget _buildVisualEditorBody() {
+    final content = Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (int i = 0; i < _segments.length; i++)
+          if (_segments[i] is TextContentSegment)
+            _buildTextSegmentWidget(i, _segments[i] as TextContentSegment)
+          else if (_segments[i] is MathBlockSegment)
+            VisualMathBlockWidget(
+              key: ValueKey((_segments[i] as MathBlockSegment).id),
+              block: _segments[i] as MathBlockSegment,
+              onSlotChanged: (k, v) {
+                (_segments[i] as MathBlockSegment).slots[k] = v;
+                _notifyChange();
+              },
+              onDelete: () {
+                setState(() {
+                  _segments.removeAt(i);
+                  _mergeAdjacentTextSegments();
+                  _rawLatexController.text = VisualMathCompiler.compile(
+                    _segments,
+                  );
+                });
+                _notifyChange();
+              },
+            ),
+      ],
+    );
+
+    if (!widget.showEditorFrame) return content;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(widget.compact ? 8 : 12),
+      decoration: BoxDecoration(
+        color: AppTheme.background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: content,
     );
   }
 
