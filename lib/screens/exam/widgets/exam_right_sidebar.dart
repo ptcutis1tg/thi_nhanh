@@ -10,6 +10,7 @@ class ExamRightSidebar extends StatelessWidget {
     required this.questionCount,
     this.totalPoints = 10.0,
     this.onDistributePointsEvenly,
+    this.onEditInfo,
     required this.perQuestionTimerEnabled,
     required this.onTogglePerQuestionTimer,
   });
@@ -20,6 +21,7 @@ class ExamRightSidebar extends StatelessWidget {
   final int questionCount;
   final double totalPoints;
   final VoidCallback? onDistributePointsEvenly;
+  final VoidCallback? onEditInfo;
   final bool perQuestionTimerEnabled;
   final ValueChanged<bool> onTogglePerQuestionTimer;
 
@@ -45,29 +47,45 @@ class ExamRightSidebar extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           // Exam summary card
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
+          Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  examTitle.isEmpty ? 'Chưa đặt tên đề' : examTitle,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              onTap: onEditInfo,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.border),
                 ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            examTitle.isEmpty ? 'Chưa đặt tên đề' : examTitle,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (onEditInfo != null)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Icon(Icons.edit_outlined, size: 16, color: AppTheme.primary),
+                          ),
+                      ],
+                    ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.school_outlined, size: 16, color: AppTheme.primary),
                     const SizedBox(width: 6),
                     Text(
-                      subject.isEmpty ? 'Chưa chọn môn' : subject,
+                      subject.isEmpty || subject == 'none' ? 'none' : subject,
                       style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                     ),
                   ],
@@ -97,6 +115,8 @@ class ExamRightSidebar extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
           const SizedBox(height: 20),
           const Text(
             'THANG ĐIỂM ĐỀ THI',

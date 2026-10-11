@@ -16,6 +16,7 @@ import 'widgets/scientific_bottom_toolbar.dart';
 import 'widgets/scientific_text_field.dart';
 import 'widgets/student_exam_preview_dialog.dart';
 import 'widgets/inline_visual_math_editor.dart';
+import 'widgets/edit_exam_info_dialog.dart';
 import '../../core/models/scientific_shortcut.dart';
 
 class CreateExamScreen extends StatefulWidget {
@@ -133,8 +134,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   void _configureExam() {
     final title = _examNameController.text.trim();
-    if (title.isEmpty || _selectedSubject == null) {
-      _showMessage('Hãy nhập tên đề và chọn môn học.', isError: true);
+    if (title.isEmpty) {
+      _showMessage('Hãy nhập tên đề thi.', isError: true);
       return;
     }
     if (title.length < 3) {
@@ -146,6 +147,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       _showMessage('Thời lượng thi phải từ 1 đến 360 phút.', isError: true);
       return;
     }
+    if (_selectedSubject == null || _selectedSubject!.trim().isEmpty) {
+      _selectedSubject = 'none';
+    }
     setState(() {
       _isConfigured = true;
       _scientificCategory = _categoryForSubject(_selectedSubject);
@@ -153,6 +157,26 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         _addQuestion();
       }
     });
+  }
+
+  void _openEditExamInfoDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => EditExamInfoDialog(
+        initialTitle: _examNameController.text,
+        initialSubject: _selectedSubject ?? 'none',
+        initialDurationMinutes: int.tryParse(_durationController.text) ?? 45,
+        onSave: (newTitle, newSubject, newDuration) {
+          setState(() {
+            _examNameController.text = newTitle;
+            _selectedSubject = newSubject;
+            _durationController.text = newDuration.toString();
+            _scientificCategory = _categoryForSubject(_selectedSubject);
+          });
+          _saveDraft();
+        },
+      ),
+    );
   }
 
   void _addQuestion() {
@@ -328,6 +352,47 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       }
     }
 
+    if ((_totalPoints - 10.0).abs() > 0.01) {
+      final shouldDistribute = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 26),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Tổng điểm bài thi chưa đạt 10 điểm'),
+              ),
+            ],
+          ),
+          content: Text(
+            'Hiện tại đề thi có tổng điểm là ${_totalPoints.toStringAsFixed(1)}/10 điểm. Đề thi bắt buộc phải có tổng điểm tròn 10 điểm mới có thể xuất bản.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Sửa tiếp'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Tự động chia đều điểm thành 10'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldDistribute == true) {
+        _distributePointsEvenly();
+        _showMessage('Đã chia đều 10 điểm cho ${_questions.length} câu hỏi thành công.');
+      }
+      return;
+    }
+
     final success = await _saveDraft();
     if (!success || !mounted) return;
 
@@ -482,6 +547,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   questionCount: _questions.length,
                   totalPoints: _totalPoints,
                   onDistributePointsEvenly: _distributePointsEvenly,
+                  onEditInfo: _openEditExamInfoDialog,
                   perQuestionTimerEnabled: _perQuestionTimerEnabled,
                   onTogglePerQuestionTimer: (enabled) {
                     setState(() {
@@ -535,6 +601,12 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
+                ),
+                IconButton(
+                  key: const Key('header-edit-info'),
+                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textSecondary),
+                  tooltip: 'Chỉnh sửa thông tin đề',
+                  onPressed: _openEditExamInfoDialog,
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -596,7 +668,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(AppTheme.cardRadius),
               border: Border.all(color: AppTheme.border),
-              boxShadow: AppTheme.cardShadow,
+              boxShadow: AppTheme.softGlowShadow,
             ),
             child: Padding(
               padding: const EdgeInsets.all(28),
@@ -919,6 +991,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
+            key: const Key('publish-exam-btn'),
             onPressed: _isLoading ? null : _publishExam,
             icon: const Icon(Icons.rocket_launch_rounded, size: 18),
             label: const Text('Lưu & Xuất bản ngay'),
@@ -995,20 +1068,30 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 DropdownButtonFormField<String>(
                   key: const Key('setup-subject'),
                   initialValue: _selectedSubject,
+                  isExpanded: true,
                   decoration: InputDecoration(
-                    labelText: 'Môn học *',
+                    labelText: 'Môn học (tùy chọn)',
+                    hintText: 'Chọn môn học hoặc để trống (none)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.inputRadius),
                     ),
                   ),
                   items: const [
+                    DropdownMenuItem(value: 'none', child: Text('Không phân loại (none)')),
                     DropdownMenuItem(value: 'Toán', child: Text('Toán')),
+                    DropdownMenuItem(value: 'Ngữ văn', child: Text('Ngữ văn')),
+                    DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
                     DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
                     DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
-                    DropdownMenuItem(
-                      value: 'Tiếng Anh',
-                      child: Text('Tiếng Anh'),
-                    ),
+                    DropdownMenuItem(value: 'Sinh học', child: Text('Sinh học')),
+                    DropdownMenuItem(value: 'Lịch sử', child: Text('Lịch sử')),
+                    DropdownMenuItem(value: 'Địa lý', child: Text('Địa lý')),
+                    DropdownMenuItem(value: 'Giáo dục công dân', child: Text('Giáo dục công dân')),
+                    DropdownMenuItem(value: 'Tin học', child: Text('Tin học')),
+                    DropdownMenuItem(value: 'Công nghệ', child: Text('Công nghệ')),
+                    DropdownMenuItem(value: 'Khoa học tự nhiên', child: Text('Khoa học tự nhiên')),
+                    DropdownMenuItem(value: 'Lịch sử & Địa lý', child: Text('Lịch sử & Địa lý')),
+                    DropdownMenuItem(value: 'Ngoại ngữ khác', child: Text('Ngoại ngữ khác')),
                   ],
                   onChanged: (value) =>
                       setState(() => _selectedSubject = value),

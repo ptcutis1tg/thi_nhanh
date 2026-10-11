@@ -1563,6 +1563,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
 
     return AppInteractiveHoverCard(
       borderRadius: 16,
+      customBoxShadow: AppTheme.softGlowShadow,
       customBorder: Border.all(
         color: isExpired ? const Color(0xFFFCA5A5) : const Color(0xFFFDE68A),
         width: 1.5,

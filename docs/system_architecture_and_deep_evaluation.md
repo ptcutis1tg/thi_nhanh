@@ -1,8 +1,8 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 11/10/2026 *(Cập nhật sau khi hoàn thành Rà soát Toàn diện & Tối ưu Hiệu năng: Zero-Leak Lifecycle, Smart Polling, RepaintBoundary, Auth/Route Fixes & 0 Linter Issues)*  
+> **Ngày thực hiện:** 11/10/2026 *(Cập nhật sau khi hoàn thành Giai đoạn 13: Tối ưu Trình Soạn Thảo Đề Thi, Nền Mây CloudV2 Dọc, Glow Khối, Vòng Đời Phòng Thi & Xóa Bài Thi Dở Dang)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **234 / 234 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS** & **0 cảnh báo `flutter analyze`**  
+> **Trạng thái kiểm thử:** **242 / 242 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS** & **0 cảnh báo `flutter analyze`**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động trên cả thiết bị Desktop, Tablet và Mobile.
 
 ---
@@ -281,8 +281,19 @@ graph TD
   - [x] **Dọn sạch 100% cảnh báo phân tích tĩnh (`flutter analyze`):** Xử lý sạch sẽ toàn bộ 57 cảnh báo linter, nâng cấp `ColorScheme.light` (bỏ deprecated `background`), `withOpacity` $\rightarrow$ `.withValues(alpha: ...)`, `Switch.activeColor` $\rightarrow$ `activeThumbColor`, `RadioGroup`, `DropdownButtonFormField.initialValue`, sửa cú pháp flow control với dấu ngoặc `{}` đầy đủ, kiểm tra `context.mounted` sau async gap, và loại bỏ tất cả biến/import thừa.
   - [x] **Nâng tổng số bài kiểm thử tự động lên 234 / 234 bài kiểm thử (100% PASS)** với các bài test mới: `greeting_otp_resend_test.dart`, `room_route_params_and_closing_test.dart`, `lifecycle_and_dispose_test.dart`.
 
+- ✅ **Giai đoạn 13: Tối Ưu Trình Soạn Thảo Đề Thi, Nền Mây CloudV2 Dọc, Glow Khối, Vòng Đời Phòng Thi & Xóa Bài Thi Dở Dang (Exam Editor Refinements, CloudV2 Tall Texture, Soft Glow Shadow, Room Host Lifecycle & Attempt Cancellation Fix):**
+  - [x] **Nâng Cấp Hình Nền CloudV2 Dọc (`assets/images/cloudv2_tall.jpg`):** Tạo hình nền tỉ lệ 9:16 kéo dài theo chiều dọc, tối ưu hóa hiển thị trên màn hình điện thoại và web cuộn dài; tích hợp vào `MilkyMintScaffold` với `RepaintBoundary` và opacity 0.35 dịu mắt.
+  - [x] **Đa Dạng Hóa Môn Học & Gắn Thẻ `none` Khi Để Trống:** Mở rộng danh mục môn học lên 15 môn theo chương trình Giáo dục Phổ thông (GDPT), cho phép để trống trường môn học khi tạo đề thi, tự động gán thẻ `none` (Không phân loại) và hiển thị chip nhận diện trực quan trong `ExamRightSidebar` và `ExamDetailScreen`.
+  - [x] **Chỉnh Sửa Thông Tin Đề Thi Trực Tiếp Trong Editor:** Xây dựng hộp thoại `EditExamInfoDialog` cho phép cập nhật tức thời Tên đề thi, Môn học và Thời lượng làm bài ngay trong màn hình soạn thảo đề thi mà không cần quay lại các bước trước.
+  - [x] **Hiệu Ứng Glow Xám Nhẹ Dưới Mỗi Khối (`AppTheme.softGlowShadow`):** Bổ sung token đổ bóng phát quang màu xám mềm mại (`Colors.blueGrey.withValues(alpha: 0.12)`, blur 16px, spread 1px) tạo chiều sâu nổi khối tinh tế khi tiếp xúc với hình nền, áp dụng vào thẻ câu hỏi trung tâm trong `CreateExamScreen` và các thẻ `AppInteractiveHoverCard` trong `StudentHistoryScreen`.
+  - [x] **Hộp Thoại Cảnh Báo Kiểm Tra Tổng Điểm 10 Khi Xuất Bản:** Bổ sung cơ chế xác thực tổng điểm đề thi `(_totalPoints - 10.0).abs() <= 0.01` khi nhấn Xuất bản đề. Nếu chưa đủ 10 điểm, hiển thị Popup cảnh báo với 2 lựa chọn: "Sửa tiếp" hoặc "Tự động chia đều điểm các câu hỏi để tổng thành 10". Sau khi chia đều tự động đóng popup để giáo viên xem lại trước khi tự xuất bản.
+  - [x] **Học Sinh Tự Động Nộp Bài & Điều Hướng Khi Host Đóng Phòng Thi:** Tích hợp Supabase Realtime channel lắng nghe sự kiện đóng phòng (`status == 'closed'`) kết hợp cơ chế Polling dự phòng 4s trong `TakingExamScreen`. Khi Host kết thúc phòng thi, màn hình làm bài hiển thị thông báo, tự động nộp bài và điều hướng ngay sang màn hình kết quả `/result`.
+  - [x] **Khắc Phục Triệt Để Lỗi Không Xóa Được Đề Đang Làm Trong Lịch Sử:** Bổ sung Migration SQL `202610110001_fix_cancel_or_delete_student_attempt.sql` (bổ sung policy DELETE cho bản ghi `attempts` dở dang và RPC `cancel_or_delete_student_attempt`), cập nhật hàm `ProfileService.cancelOrDeleteAttempt` với quy trình an toàn 3 tầng (RPC $\rightarrow$ Xóa trực tiếp $\rightarrow$ Fallback cập nhật status hợp lệ `'expired'` thay cho `'cancelled'` bị lỗi enum PostgreSQL).
+  - [x] **Tối Ưu Thẩm Mỹ Danh Mục Học Tập & Quản Lý (Clean Enamel White 3D Cards):** Loại bỏ hoàn toàn 10 khối gradient màu đặc chói chang lạc tông, chuyển đổi 100% sang hệ thẻ Clean Enamel White 3D (`Color(0xF8FFFFFF)`), viền mỏng hairline `AppTheme.border`, bóng mềm `AppTheme.softGlowShadow`, tiêu đề màu Deep Slate `AppTheme.textMain`, nút điều hướng tròn thanh lịch và các hộp icon bo góc chuẩn màu pastel Miku & Stitch (Ngọc bích Miku, Cam hổ phách, Tím hoa cà, Hồng magenta) — ăn khớp hoàn mỹ 100% với nền mây và khối "Bài Thi Gần Đây" bên dưới.
+  - [x] **Nâng tổng số bài kiểm thử tự động lên 242 / 242 bài kiểm thử (100% PASS)** và duy trì **0 cảnh báo `flutter analyze`** với loạt bài test mới: `milky_mint_scaffold_test.dart`, `subject_none_and_diverse_test.dart`, `edit_exam_info_dialog_test.dart`, `exam_sidebars_test.dart`, `soft_glow_shadow_test.dart`, `publish_ten_points_dialog_test.dart`, `host_closed_room_auto_submit_test.dart`, `profile_service_cancel_attempt_test.dart`, `home_feature_cards_enamel_test.dart`.
+
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 13: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 14: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
 2. **Giai đoạn 14: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
