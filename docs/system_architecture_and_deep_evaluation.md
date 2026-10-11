@@ -2,7 +2,7 @@
 
 > **Ngày thực hiện:** 11/10/2026 *(Cập nhật sau khi hoàn thành Giai đoạn 13: Tối ưu Trình Soạn Thảo Đề Thi, Nền Mây CloudV2 Dọc, Glow Khối, Vòng Đời Phòng Thi & Xóa Bài Thi Dở Dang)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **242 / 242 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS** & **0 cảnh báo `flutter analyze`**  
+> **Trạng thái kiểm thử:** **243 / 243 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS** & **0 cảnh báo `flutter analyze`**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động trên cả thiết bị Desktop, Tablet và Mobile.
 
 ---
@@ -290,7 +290,8 @@ graph TD
   - [x] **Học Sinh Tự Động Nộp Bài & Điều Hướng Khi Host Đóng Phòng Thi:** Tích hợp Supabase Realtime channel lắng nghe sự kiện đóng phòng (`status == 'closed'`) kết hợp cơ chế Polling dự phòng 4s trong `TakingExamScreen`. Khi Host kết thúc phòng thi, màn hình làm bài hiển thị thông báo, tự động nộp bài và điều hướng ngay sang màn hình kết quả `/result`.
   - [x] **Khắc Phục Triệt Để Lỗi Không Xóa Được Đề Đang Làm Trong Lịch Sử:** Bổ sung Migration SQL `202610110001_fix_cancel_or_delete_student_attempt.sql` (bổ sung policy DELETE cho bản ghi `attempts` dở dang và RPC `cancel_or_delete_student_attempt`), cập nhật hàm `ProfileService.cancelOrDeleteAttempt` với quy trình an toàn 3 tầng (RPC $\rightarrow$ Xóa trực tiếp $\rightarrow$ Fallback cập nhật status hợp lệ `'expired'` thay cho `'cancelled'` bị lỗi enum PostgreSQL).
   - [x] **Tối Ưu Thẩm Mỹ Danh Mục Học Tập & Quản Lý (Clean Enamel White 3D Cards):** Loại bỏ hoàn toàn 10 khối gradient màu đặc chói chang lạc tông, chuyển đổi 100% sang hệ thẻ Clean Enamel White 3D (`Color(0xF8FFFFFF)`), viền mỏng hairline `AppTheme.border`, bóng mềm `AppTheme.softGlowShadow`, tiêu đề màu Deep Slate `AppTheme.textMain`, nút điều hướng tròn thanh lịch và các hộp icon bo góc chuẩn màu pastel Miku & Stitch (Ngọc bích Miku, Cam hổ phách, Tím hoa cà, Hồng magenta) — ăn khớp hoàn mỹ 100% với nền mây và khối "Bài Thi Gần Đây" bên dưới.
-  - [x] **Nâng tổng số bài kiểm thử tự động lên 242 / 242 bài kiểm thử (100% PASS)** và duy trì **0 cảnh báo `flutter analyze`** với loạt bài test mới: `milky_mint_scaffold_test.dart`, `subject_none_and_diverse_test.dart`, `edit_exam_info_dialog_test.dart`, `exam_sidebars_test.dart`, `soft_glow_shadow_test.dart`, `publish_ten_points_dialog_test.dart`, `host_closed_room_auto_submit_test.dart`, `profile_service_cancel_attempt_test.dart`, `home_feature_cards_enamel_test.dart`.
+  - [x] **Loại Bỏ Nút Trợ Lý AI Nổi (`AiNavigationButton`):** Loại bỏ hoàn toàn nút bấm AI nổi (`floatingActionButton`) khỏi vỏ bọc hệ thống [MainLayoutScreen](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/main_layout_screen.dart), giúp giao diện thông thoáng, tối giản và tập trung trọn vẹn vào trải nghiệm làm bài và quản lý thi cử.
+  - [x] **Nâng tổng số bài kiểm thử tự động lên 243 / 243 bài kiểm thử (100% PASS)** và duy trì **0 cảnh báo `flutter analyze`** với loạt bài test mới: `milky_mint_scaffold_test.dart`, `subject_none_and_diverse_test.dart`, `edit_exam_info_dialog_test.dart`, `exam_sidebars_test.dart`, `soft_glow_shadow_test.dart`, `publish_ten_points_dialog_test.dart`, `host_closed_room_auto_submit_test.dart`, `profile_service_cancel_attempt_test.dart`, `home_feature_cards_enamel_test.dart`, `main_layout_no_ai_button_test.dart`.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
 1. **Giai đoạn 14: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**

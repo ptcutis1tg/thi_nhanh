@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../shared/widgets/top_nav_bar.dart';
 import '../shared/widgets/mobile_bottom_nav_bar.dart';
-import '../shared/widgets/ai_navigation_button.dart';
 import '../shared/widgets/milky_mint_scaffold.dart';
 
 class MainLayoutScreen extends StatelessWidget {
@@ -33,7 +32,6 @@ class MainLayoutScreen extends StatelessWidget {
       appBar: const TopNavBar(),
       body: child,
       bottomNavigationBar: (isMobile && isCoreTab) ? const MobileBottomNavBar() : null,
-      floatingActionButton: const AiNavigationButton(),
     );
   }
 }
