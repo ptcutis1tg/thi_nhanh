@@ -29,14 +29,14 @@ class MilkyMintScaffold extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Miku Dreamy Cloud Texture Layer
+          // 1. Dreamy CloudV2 Mint Texture Layer
           if (showCloudTexture)
             Positioned.fill(
               child: RepaintBoundary(
                 child: Opacity(
-                  opacity: 0.25,
+                  opacity: 0.35,
                   child: Image.asset(
-                    'assets/images/miku_cloud_bg.png',
+                    'assets/images/cloudv2_tall.jpg',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                   ),
