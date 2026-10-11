@@ -80,4 +80,26 @@ x-y=1
     expect(find.byType(Math), findsOneWidget);
     expect(find.textContaining(r'\begin{pmatrix}'), findsNothing);
   });
+
+  testWidgets('keeps an inline formula on the same logical content line', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: LatexMathView(
+            text: 'Dòng một\n\n\nDòng bốn \$\\lim_{x \\to a} f(x)\$',
+          ),
+        ),
+      ),
+    );
+
+    final fourthLine = find.text('Dòng bốn ');
+    expect(fourthLine, findsOneWidget);
+
+    final fourthLinePosition = tester.getTopLeft(fourthLine);
+    final formula = tester.getTopLeft(find.byType(Math));
+
+    expect((formula.dy - fourthLinePosition.dy).abs(), lessThan(3));
+  });
 }

@@ -43,11 +43,27 @@ class LatexMathView extends StatelessWidget {
       );
     }
 
-    final spans = _parseMixedContent(text, context);
-
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: spans,
+    // A Wrap centers a formula against a multi-line Text child.  That makes a
+    // formula from a later logical line appear beside an earlier line. Split
+    // the question into rows first, then compose text and math inside each
+    // individual row.
+    final lines = _splitTopLevelLines(text);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final line in lines)
+          if (line.isEmpty)
+            SizedBox(
+              height: (defaultStyle.fontSize ?? 16) *
+                  (defaultStyle.height ?? 1.2),
+            )
+          else
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: _parseMixedContent(line),
+            ),
+      ],
     );
   }
 
@@ -56,13 +72,43 @@ class LatexMathView extends StatelessWidget {
         .hasMatch(value);
   }
 
-  List<Widget> _parseMixedContent(String raw, BuildContext context) {
+  List<String> _splitTopLevelLines(String source) {
+    final lines = <String>[];
+    final buffer = StringBuffer();
+    var isInsideMath = false;
+
+    for (var index = 0; index < source.length; index++) {
+      final character = source[index];
+      final isEscaped = index > 0 && source.codeUnitAt(index - 1) == 0x5C;
+
+      if (character == r'$' && !isEscaped) {
+        final isDoubleDelimiter =
+            index + 1 < source.length && source[index + 1] == r'$';
+        buffer.write(character);
+        if (isDoubleDelimiter) {
+          buffer.write(r'$');
+          index++;
+        }
+        isInsideMath = !isInsideMath;
+      } else if (character == '\n' && !isInsideMath) {
+        lines.add(buffer.toString());
+        buffer.clear();
+      } else {
+        buffer.write(character);
+      }
+    }
+
+    lines.add(buffer.toString());
+    return lines;
+  }
+
+  List<Widget> _parseMixedContent(String raw) {
     final widgets = <Widget>[];
     final defaultStyle =
         textStyle ?? TextStyle(fontSize: 16, color: color ?? Colors.black87);
 
     // Regex to capture $$...$$ (block) or $...$ (inline)
-    final pattern = RegExp(r'(\$\$(.*?)\$\$|\$(.*?)\$)');
+    final pattern = RegExp(r'(\$\$([\s\S]*?)\$\$|\$([\s\S]*?)\$)');
     int lastIndex = 0;
 
     for (final match in pattern.allMatches(raw)) {
