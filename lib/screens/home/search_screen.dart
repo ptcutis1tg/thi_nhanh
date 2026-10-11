@@ -241,27 +241,30 @@ class _SearchScreenState extends State<SearchScreen> {
   void _showNetworkErrorDialog() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text('Lỗi kết nối mạng: Không thể đồng bộ đề thi mới từ máy chủ.'),
-              ),
-            ],
+      try {
+        final messenger = ScaffoldMessenger.maybeOf(context);
+        messenger?.showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text('Lỗi kết nối mạng: Không thể đồng bộ đề thi mới từ máy chủ.'),
+                ),
+              ],
+            ),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Thử lại',
+              textColor: Colors.white,
+              onPressed: _fetchRealSearchData,
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
-          backgroundColor: AppTheme.error,
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: 'Thử lại',
-            textColor: Colors.white,
-            onPressed: _fetchRealSearchData,
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+        );
+      } catch (_) {}
     });
   }
 
@@ -310,8 +313,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final startIndex = (_currentPage - 1) * _pageSize;
     final pageItems = results.skip(startIndex).take(_pageSize).toList();
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
+    return Material(
+      type: MaterialType.transparency,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 768;
 
         return SingleChildScrollView(
@@ -374,8 +379,9 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
   void _handleSubjectChanged(String subject, bool selected) {
     setState(() {
