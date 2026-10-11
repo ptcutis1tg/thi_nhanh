@@ -125,15 +125,6 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
     _notifyChanged();
   }
 
-  void _moveLine(int index, int delta) {
-    final target = index + delta;
-    if (target < 0 || target >= _lines.length) return;
-    setState(() {
-      final line = _lines.removeAt(index);
-      _lines.insert(target, line);
-    });
-    _notifyChanged();
-  }
 
   void _insertMathBlock(MathBlockType type) {
     final active = _lines.where((line) => line.id == _activeLineId).firstOrNull;
