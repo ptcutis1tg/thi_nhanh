@@ -966,7 +966,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 const SizedBox(height: 18),
                 DropdownButtonFormField<String>(
                   key: const Key('setup-subject'),
-                  value: _selectedSubject,
+                  initialValue: _selectedSubject,
                   decoration: InputDecoration(
                     labelText: 'Môn học *',
                     border: OutlineInputBorder(

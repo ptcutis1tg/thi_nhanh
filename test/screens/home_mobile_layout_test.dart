@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:onthi_community/core/providers/auth_provider.dart';
-import 'package:onthi_community/core/repositories/room_repository.dart';
 import 'package:onthi_community/screens/home/home_screen.dart';
 
 void main() {

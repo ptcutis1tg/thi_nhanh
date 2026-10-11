@@ -247,7 +247,7 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: _leaderboard.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF0ECFF)),
+                      separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFFF0ECFF)),
                       itemBuilder: (context, index) {
                         final user = _leaderboard[index];
                         final isMe = !user.isGuest &&

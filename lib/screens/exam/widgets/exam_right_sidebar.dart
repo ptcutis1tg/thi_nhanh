@@ -188,7 +188,7 @@ class ExamRightSidebar extends StatelessWidget {
                     ),
                     Switch(
                       value: perQuestionTimerEnabled,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       onChanged: onTogglePerQuestionTimer,
                     ),
                   ],

@@ -54,7 +54,7 @@ void main() {
           body: Center(
             child: VisualMathBlockWidget(
               block: block,
-              onSlotChanged: (_, __) {},
+              onSlotChanged: (_, _) {},
               onDelete: () {},
             ),
           ),

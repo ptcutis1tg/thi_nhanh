@@ -21,7 +21,7 @@ void main() {
         ),
         GoRoute(
           path: '/teacher/rooms',
-          builder: (_, __) => const TeacherRoomsHistoryScreen(),
+          builder: (_, _) => const TeacherRoomsHistoryScreen(),
         ),
       ],
     );

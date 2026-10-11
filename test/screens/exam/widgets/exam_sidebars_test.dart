@@ -25,7 +25,7 @@ void main() {
             onAdd: () => addTriggered = true,
             onDuplicate: (_) {},
             onDelete: (_) {},
-            onReorder: (_, __) {},
+            onReorder: (_, _) {},
             onOpenBulkImport: () {},
           ),
         ),
@@ -39,6 +39,7 @@ void main() {
     await tester.tap(find.text('Thêm câu hỏi'));
     await tester.pump();
     expect(addTriggered, isTrue);
+    expect(selected, 0);
   });
 
   testWidgets('ExamRightSidebar renders exam stats, points, and allows setting per-question timer toggle', (tester) async {

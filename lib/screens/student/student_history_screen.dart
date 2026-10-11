@@ -925,7 +925,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                     ],
                   ),
                   // Duration
-                  if (item.durationFormatted != null)
+                  if (item.durationFormatted != '--:--')
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -933,7 +933,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            item.durationFormatted!,
+                            item.durationFormatted,
                             style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1135,7 +1135,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: _availableSubjects.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final sub = _availableSubjects[index];
               final isSelected = _selectedSubject == sub;
@@ -1291,7 +1291,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: pageItems.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               return _buildHistoryCard(pageItems[index]);
             },
@@ -1551,7 +1551,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: list.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          separatorBuilder: (_, _) => const SizedBox(height: 14),
           itemBuilder: (context, index) => _buildInProgressCard(list[index]),
         ),
       ],

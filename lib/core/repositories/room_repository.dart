@@ -363,8 +363,9 @@ class RoomRepository {
   Map<String, dynamic> _map(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
-    if (value is String)
+    if (value is String) {
       return Map<String, dynamic>.from(jsonDecode(value) as Map);
+    }
     throw const FormatException('Invalid room response.');
   }
 }

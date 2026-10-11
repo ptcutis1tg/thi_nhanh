@@ -11,7 +11,7 @@ void main() {
       routes: [
         GoRoute(
           path: '/search',
-          builder: (_, __) => Scaffold(
+          builder: (_, _) => Scaffold(
             body: const Text('Search'),
             floatingActionButton: AiNavigationButton(
               interpretCommand: (_) async => AiNavigationAction.goHome,
@@ -20,7 +20,7 @@ void main() {
         ),
         GoRoute(
           path: '/home',
-          builder: (_, __) => const Scaffold(body: Text('Home page')),
+          builder: (_, _) => const Scaffold(body: Text('Home page')),
         ),
       ],
     );

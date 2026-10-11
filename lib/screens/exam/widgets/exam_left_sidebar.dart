@@ -81,10 +81,7 @@ class ExamLeftSidebar extends StatelessWidget {
             child: ReorderableListView.builder(
               padding: const EdgeInsets.all(12),
               itemCount: questions.length,
-              onReorder: (oldIdx, newIdx) {
-                if (newIdx > oldIdx) newIdx -= 1;
-                onReorder(oldIdx, newIdx);
-              },
+              onReorderItem: onReorder,
               itemBuilder: (context, index) {
                 final q = questions[index];
                 final active = index == activeIndex;
