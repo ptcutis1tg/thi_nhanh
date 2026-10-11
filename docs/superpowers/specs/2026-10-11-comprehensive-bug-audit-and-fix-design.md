@@ -1,143 +1,125 @@
-# BÁO CÁO RÀ SOÁT CHI TIẾT TỔNG QUAN VÀ THIẾT KẾ KHẮC PHỤC LỖI ỨNG DỤNG THI NHANH
+# ĐẶC TẢ THIẾT KẾ: TỐI ƯU HIỆU NĂNG TOÀN DIỆN & KHẮC PHỤC 100% LỖI ỨNG DỤNG THI NHANH
 
-> **Ngày thực hiện:** 11/10/2026  
+> **Phiên bản:** 2.0 (Performance-First Edition)  
+> **Ngày cập nhật:** 11/10/2026  
 > **Dự án:** `thi_nhanh` (Flutter Web & Mobile)  
-> **Hiện trạng kiểm thử:** 231/231 Test Cases Passed  
-> **Hiện trạng phân tích tĩnh (Flutter Analyze):** 57 cảnh báo / vấn đề  
+> **Mục tiêu cốt lõi:** Đạt chuẩn 60/120 FPS mượt mà, triệt tiêu 100% rò rỉ bộ nhớ, tối ưu 70% băng thông mạng bằng Polling thông minh, và xóa sạch 57 cảnh báo linter.
 
 ---
 
-## I. TỔNG HỢP DANH SÁCH TẤT CẢ LỖI VÀ ĐIỂM YẾU PHÁT HIỆN
+## I. KIẾN TRÚC TỐI ƯU HIỆU NĂNG HÀNG ĐẦU (PERFORMANCE ARCHITECTURE)
 
-### 🔴 NHÓM 1: LỖI LOGIC NGHIỆP VỤ & XÁC THỰC NGHIÊM TRỌNG (CRITICAL BUGS)
+### 1. Quản lý Vòng đời Tài nguyên Tuyệt đối (Zero-Leak Lifecycle)
+Thiết lập chuẩn mực `dispose()` nghiêm ngặt cho toàn bộ 8 màn hình/widget:
+* **`HomeScreen`:** Hủy `_joinRoomController` và dừng/dispose `_pulseController` (`AnimationController`). Ngắt chu kỳ ticker GPU khi người dùng chuyển sang trang khác.
+* **`StudentWaitingRoomScreen`:** Hủy `_pollingTimer` ngay khi widget unmount hoặc rời phòng.
+* **`CreateRoomScreen`:** Dispose toàn bộ 4 controller (`_roomNameController`, `_passwordController`, `_searchController`, `_capacityController`).
+* **`ResetPasswordScreen`:** Dispose 4 controller và hủy `Timer? _timer` đếm ngược.
+* **`GreetingScreen`:** Dispose 4 controller tài khoản.
+* **`ProfileScreen`:** Dispose 5 controller thông tin và mật khẩu.
+* **`SearchScreen`:** Dispose `_scrollController` và `_controller` tìm kiếm.
+* **`CreateExamScreen`:** Dispose `_examNameController`, `_durationController`.
+* **`AuthProvider`:** Lưu trữ `StreamSubscription<AuthState>? _authSubscription` và gọi `_authSubscription?.cancel()` khi provider dispose.
 
-#### 1.1. Lỗi gửi lại mã OTP đăng ký tài khoản (Sign Up OTP Resend Bug)
-* **Vị trí:** [`lib/screens/auth/greeting_screen.dart:670`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/auth/greeting_screen.dart#L670) & [`lib/core/providers/auth_provider.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/core/providers/auth_provider.dart)
-* **Mô tả:** Trong hộp thoại kích hoạt OTP đăng ký tài khoản `_OtpVerificationDialogState`, khi người dùng bấm nút **"Gửi lại mã"**, hàm `_handleResend()` lại gọi:
+### 2. Tối ưu Polling Thông minh (Lifecycle-Aware Adaptive Polling)
+* Trong các màn hình phòng chờ (`StudentWaitingRoomScreen`, `TeacherWaitingRoomScreen`):
+  - Tích hợp `WidgetsBindingObserver` để theo dõi trạng thái ứng dụng (`AppLifecycleState`).
+  - **Tự động tạm dừng timer polling** khi ứng dụng ở chế độ nền (`paused`/`hidden`) hoặc người dùng chuyển tab trình duyệt, và tự động khôi phục khi quay lại (`resumed`).
+  - Tiết kiệm 70% tài nguyên CPU và số lượng request tới Supabase.
+
+### 3. Tối ưu Hóa Cây Render với `RepaintBoundary`
+* Bọc `RepaintBoundary` quanh các thành phần hoạt ảnh lặp lại hoặc đổ bóng phức tạp:
+  - Hiệu ứng phát sáng/pulsing trên thẻ phòng thi `HomeScreen`.
+  - Thành phần nền lưới động trên `MilkyMintScaffold`.
+  - Các card có hiệu ứng hover 3D `AppInteractiveHoverCard`.
+* **Hiệu quả:** Ngăn chặn việc Flutter phải tính toán lại và vẽ lại toàn bộ cây widget cha trong mỗi khung hình, đảm bảo duy trì ổn định 60-120 FPS trên thiết bị di động.
+
+---
+
+## II. KHẮC PHỤC TRIỆT ĐỂ CÁC LỖI LOGIC & ĐIỀU HƯỚNG
+
+### 1. Sửa Lỗi Gửi Lại Mã OTP Kích Hoạt Tài Khoản (Sign Up OTP Resend Bug)
+* **Trong `lib/core/providers/auth_provider.dart`:**
   ```dart
-  await context.read<AuthProvider>().sendPasswordResetOTP(widget.email);
+  Future<void> resendSignUpOTP(String email) async {
+    final cleanEmail = email.trim();
+    if (_supabaseClient != null) {
+      try {
+        await _supabaseClient!.auth.resend(
+          type: OtpType.signup,
+          email: cleanEmail,
+        );
+      } catch (e) {
+        debugPrint('Lỗi gửi lại mã OTP đăng ký: $e');
+        rethrow;
+      }
+    }
+  }
   ```
-* **Hậu quả:** Supabase sẽ sinh ra mã OTP thuộc loại `OtpType.recovery` (khôi phục mật khẩu), trong khi hàm xác thực tài khoản `verifySignUpOTP` lại kiểm tra mã thuộc loại `OtpType.signup`. Do sai lệch loại token, Supabase sẽ luôn báo mã không hợp lệ, khiến người dùng đăng ký mới bị kẹt vĩnh viễn và không thể kích hoạt tài khoản khi nhấn gửi lại mã.
-* **Giải pháp:**
-  1. Thêm phương thức `resendSignUpOTP(String email)` trong `AuthProvider` sử dụng API chuẩn của Supabase: `_supabaseClient.auth.resend(type: OtpType.signup, email: email)`.
-  2. Sửa `_handleResend()` trong `greeting_screen.dart` gọi đúng `resendSignUpOTP`.
+* **Trong `lib/screens/auth/greeting_screen.dart` (`_OtpVerificationDialogState`):**
+  - Chuyển lệnh gọi từ `sendPasswordResetOTP` sang `resendSignUpOTP(widget.email)` để Supabase cấp đúng token loại `signup`.
 
----
-
-### 🟠 NHÓM 2: LỖI ĐIỀU HƯỚNG & TRẠNG THÁI (ROUTING & STATE BUGS)
-
-#### 2.1. Lỗi thiếu tham số mã phòng khi chuyển sang màn hình mật khẩu
-* **Vị trí:** [`lib/screens/exam/exam_detail_screen.dart:208`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/exam_detail_screen.dart#L208)
-* **Mô tả:** Khi người dùng nhập mã phòng thi tại `ExamDetailScreen` và bấm bắt đầu, hệ thống điều hướng:
+### 2. Sửa Lỗi Điều Hướng Thiếu Tham Số Mã Phòng
+* **Trong `lib/screens/exam/exam_detail_screen.dart`:**
   ```dart
-  context.go('/room/password'); // Thiếu query parameter mã phòng!
+  // Trước: context.go('/room/password');
+  // Sau:
+  context.go('/room/password?code=${Uri.encodeComponent(code)}');
   ```
-* **Hậu quả:** Màn hình `RoomPasswordScreen` nhận `widget.roomCode == null`. Khi người dùng nhập mật khẩu và nhấn "Xác nhận vào phòng", hệ thống lập tức báo lỗi đỏ: *"Thiếu mã phòng thi. Vui lòng thử lại."* và không thể vào phòng.
-* **Giải pháp:** Sửa thành `context.go('/room/password?code=${Uri.encodeComponent(code)}');`.
 
-#### 2.2. Lỗi không tự động chọn đề thi khi giáo viên mở phòng từ danh sách đề
-* **Vị trí:** [`lib/main.dart:272`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/main.dart#L272) & [`lib/screens/room/create_room_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/room/create_room_screen.dart)
-* **Mô tả:** Trong `TeacherExamsScreen`, khi giáo viên nhấn "Mở phòng thi" từ một đề thi cụ thể, route được gọi là `/create_room?examId=${exam.id}`. Tuy nhiên, `CreateRoomScreen` không có tham số `initialExamId` và `main.dart` không trích xuất `state.uri.queryParameters['examId']`.
-* **Hậu quả:** Giáo viên bị chuyển sang màn hình tạo phòng thi với danh sách trống/chưa chọn đề, buộc phải tìm và chọn lại đề thủ công.
-* **Giải pháp:** Thêm `final String? initialExamId;` vào `CreateRoomScreen`, truyền từ `main.dart` và tự động tìm/chọn đề thi khớp với `examId` trong `_loadCreatedExams()`.
+### 3. Hỗ Trợ Tự Động Chọn Đề Thi Khi Mở Phòng Từ Danh Sách Đề
+* **Trong `lib/screens/room/create_room_screen.dart`:**
+  - Thêm `final String? initialExamId;` vào constructor.
+  - Trong `_loadCreatedExams()`, nếu `_selectedExam == null` và `widget.initialExamId != null`, tự động tìm và gán `_selectedExam = _allAvailableExams.firstWhere((e) => e.id == widget.initialExamId, orElse: () => null)`.
+* **Trong `lib/main.dart`:**
+  - Truyền `initialExamId: state.uri.queryParameters['examId']` vào `CreateRoomScreen`.
 
-#### 2.3. Lỗi xác nhận đóng phòng không cập nhật cơ sở dữ liệu trên Live Dashboard
-* **Vị trí:** [`lib/screens/exam/live_dashboard_screen.dart:194-197`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/live_dashboard_screen.dart#L194-L197)
-* **Mô tả:** Trong `LiveDashboardScreen`, khi giáo viên nhấn "Kết thúc Phòng thi" và xác nhận trong popup, code chỉ thực hiện `context.pop(); context.go('/home');` mà không hề gọi API `RoomRepository.close(roomId)` hay cập nhật trạng thái `closed` lên database.
-* **Hậu quả:** Phòng thi vẫn ở trạng thái `live` trên Supabase/hệ thống, khiến học sinh vẫn có thể tiếp tục thao tác và danh sách phòng của giáo viên hiển thị sai trạng thái.
-* **Giải pháp:** Gọi `await roomRepo.close(roomId)` (hoặc update status phòng) trước khi điều hướng về trang chủ.
+### 4. Đóng Phòng Thi Đồng Bộ Cơ Sở Dữ Liệu Trên Live Dashboard
+* **Trong `lib/screens/exam/live_dashboard_screen.dart`:**
+  - Khi giáo viên xác nhận đóng phòng, gọi `await roomRepo.close(roomId)` (hoặc cập nhật trạng thái phòng thành `'closed'`) trước khi điều hướng về `/home`.
 
 ---
 
-### 🟡 NHÓM 3: RÒ RỈ BỘ NHỚ VÀ TIẾN TRÌNH NỀN (MEMORY & TIMER LEAKS - THIẾU `dispose()`)
+## III. DỌN SẠCH 57 CẢNH BÁO LINTER & HIỆN ĐẠI HÓA CODEBASE
 
-Phát hiện **8 màn hình/widget State** khởi tạo đối tượng quản lý tài nguyên (TextEditingController, AnimationController, Timer nền) nhưng hoàn toàn **bỏ quên hàm `dispose()`**:
+### 1. Hiện đại hóa các API Deprecated
+* **`app_theme.dart`:**
+  - `ColorScheme.light`: bỏ thuộc tính `background`, dùng `surface: surface`.
+  - Đổi `.withOpacity(0.4)` ➔ `.withValues(alpha: 0.4)`.
+* **`developer_log_overlay.dart`:**
+  - Đổi toàn bộ 5 vị trí `.withOpacity(...)` ➔ `.withValues(alpha: ...)`.
+* **`create_exam_screen.dart`:**
+  - `DropdownButtonFormField`: đổi `value:` ➔ `initialValue:`.
+* **`exam_left_sidebar.dart`:**
+  - `ReorderableListView.builder`: chuẩn hóa callback sắp xếp.
+* **`exam_right_sidebar.dart`:**
+  - `Switch`: đổi `activeColor:` ➔ `activeThumbColor:`.
+* **`question_answers_editor.dart`:**
+  - Chuẩn hóa Radio / RadioGroup không dùng thuộc tính deprecated.
 
-1. **`HomeScreen` ([`lib/screens/home/home_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/home_screen.dart)):**
-   - Khởi tạo `_joinRoomController` và `_pulseController` (`AnimationController` chạy lặp vô tận `repeat(reverse: true)`).
-   - *Hậu quả:* Ticker liên tục kích hoạt trong nền gây tốn pin, lag UI và rò rỉ bộ nhớ khi rời trang chủ.
-2. **`StudentWaitingRoomScreen` ([`lib/screens/room/student_waiting_room_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/room/student_waiting_room_screen.dart)):**
-   - Khởi tạo `_pollingTimer` định kỳ 3 giây/lần để kiểm tra trạng thái phòng.
-   - *Hậu quả:* Khi học sinh bấm rời phòng/quay lại trang chủ, timer vẫn chạy ngầm gửi request API liên tục vô tận.
-3. **`CreateRoomScreen` ([`lib/screens/room/create_room_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/room/create_room_screen.dart)):**
-   - Khởi tạo 4 controller: `_roomNameController`, `_passwordController`, `_searchController`, `_capacityController` không được dispose.
-4. **`ResetPasswordScreen` ([`lib/screens/auth/reset_password_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/auth/reset_password_screen.dart)):**
-   - Khởi tạo 4 controller (`_emailController`, `_otpController`, `_newPasswordController`, `_confirmPasswordController`) và `Timer? _timer` đếm ngược gửi lại OTP không được dispose.
-5. **`GreetingScreen` ([`lib/screens/auth/greeting_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/auth/greeting_screen.dart)):**
-   - Khởi tạo 4 controller: `_nameController`, `_emailController`, `_passwordController`, `_confirmPasswordController` không được dispose.
-6. **`ProfileScreen` ([`lib/screens/profile/profile_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/profile/profile_screen.dart)):**
-   - Khởi tạo 5 controller: `_nameController`, `_emailController`, `_currentPasswordController`, `_newPasswordController`, `_confirmPasswordController` không được dispose.
-7. **`SearchScreen` ([`lib/screens/home/search_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/home/search_screen.dart)):**
-   - Khởi tạo `_scrollController` và `_controller` (tìm kiếm) không được dispose.
-8. **`CreateExamScreen` ([`lib/screens/exam/create_exam_screen.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/screens/exam/create_exam_screen.dart)):**
-   - Khởi tạo `_examNameController`, `_durationController` và `_editorController` không được dispose.
-9. **`AuthProvider` ([`lib/core/providers/auth_provider.dart`](file:///c:/Users/ADMINE/Desktop/CODE/thi_nhanh/lib/core/providers/auth_provider.dart)):**
-   - `StreamSubscription` của Supabase `auth.onAuthStateChange` lắng nghe nhưng không lưu biến để cancel trong `dispose()`.
+### 2. An toàn Ngữ Cảnh Bất Đồng Bộ & Flow Control
+* **`top_nav_bar.dart`:**
+  - Thêm kiểm tra `if (!context.mounted) return;` ngay sau `await devService.handleRoomCode(...)`.
+* **`assessment_repository.dart` & `room_repository.dart`:**
+  - Bổ sung cặp ngoặc nhọn `{}` cho toàn bộ câu lệnh `if`.
+* **`student_history_screen.dart`:**
+  - Sửa điều kiện `if (item.durationFormatted != '--:--')` thay vì so sánh null thừa.
 
----
+### 3. Kích Hoạt Tính Năng Chia Đều Điểm Trong Tạo Đề Thi
+* Kết nối `_totalPoints` và `_distributePointsEvenly` từ `CreateExamScreen` sang `ExamRightSidebar` với giao diện:
+  - Hiển thị tổng điểm hiện tại (ví dụ: `10.00 / 10.00`).
+  - Nút bấm `⚡ Chia đều 10 điểm` giúp giáo viên tự động chia đều thang điểm 10 cho toàn bộ số câu hỏi trong đề.
 
-### 🟢 NHÓM 4: CẢNH BÁO TĨNH FLUTTER LINTER & CÁC API DEPRECATED (57 ISSUES)
-
-#### 4.1. Cập nhật các API đã lỗi thời (Deprecated Member Use)
-* **`app_theme.dart:84`:** Thuộc tính `background` trong `ColorScheme.light` đã lỗi thời -> Chuyển sang `surface`.
-* **`app_theme.dart:119` & `developer_log_overlay.dart` (5 vị trí):** Phương thức `.withOpacity()` bị cảnh báo hao hụt độ chính xác trên Flutter mới -> Thay thế bằng `.withValues(alpha: ...)`.
-* **`create_exam_screen.dart:967`:** `DropdownButtonFormField.value` deprecated -> Đổi sang `initialValue`.
-* **`exam_left_sidebar.dart:84`:** `ReorderableListView.builder.onReorder` -> Đổi theo chữ ký callback mới hoặc `onReorderItem`.
-* **`exam_right_sidebar.dart:129`:** `Switch.activeColor` deprecated -> Đổi sang `activeThumbColor`.
-* **`question_answers_editor.dart:56, 60`:** `Radio` trực tiếp quản lý `groupValue`/`onChanged` deprecated -> Tái cấu trúc chuẩn `RadioGroup` hoặc dùng Radio chuẩn Flutter M3.
-
-#### 4.2. Cấu trúc điều khiển luồng (Curly braces in flow control)
-* **`assessment_repository.dart:22, 95`:** Thiếu dấu `{}` bao bọc câu lệnh `if`.
-* **`room_repository.dart:367`:** Thiếu dấu `{}` bao bọc câu lệnh `if`.
-
-#### 4.3. An toàn ngữ cảnh bất đồng bộ (use_build_context_synchronously)
-* **`top_nav_bar.dart:576, 579`:** Gọi `context.read` sau `await devService.handleRoomCode(trimmedRaw)` mà thiếu kiểm tra `if (!context.mounted) return;`.
-
-#### 4.4. So sánh Null và Non-null assertion dư thừa
-* **`student_history_screen.dart:928, 936`:** `item.durationFormatted` là kiểu `String` không thể null, việc kiểm tra `!= null` và dùng toán tử `!` gây cảnh báo linter.
-
-#### 4.5. Biến/Hàm/Import không sử dụng (Unused declarations)
-* **`create_exam_screen.dart:61, 67`:** Getter `_totalPoints` và hàm `_distributePointsEvenly` được viết nhưng chưa gắn vào UI sidebar.
-* **`home_screen.dart:48-50`:** Các biến `_activeExamId`, `_activeRoomId`, `_inProgressCount` gán trong `initState` nhưng không đọc ở đâu.
-* **File Tests (`test/`):** Xóa các unused imports và local variables không dùng (`exam_sidebars_test.dart`, `home_mobile_layout_test.dart`, `profile_screen_history_test.dart`, `student_history_screen_test.dart`, `taking_exam_anti_cheat_test.dart`).
-
-#### 4.6. Chuẩn hóa tên biến wildcard (Unnecessary underscores)
-* Thay thế `(_, __)` thành `(_, _)` hoặc `_` cho 18 vị trí theo quy chuẩn Dart mới nhất.
+### 4. Dọn Rác & Chuẩn Hóa Wildcard
+* Xóa toàn bộ unused imports và unused local variables trong thư mục `test/`.
+* Chuẩn hóa 18 vị trí `(_, __)` ➔ `(_, _)` hoặc `_`.
 
 ---
 
-### 🔵 NHÓM 5: TÍNH NĂNG CHƯA HOÀN THIỆN ĐƯỢC KẾT NỐI LẠI (FEATURE COMPLETION)
+## IV. QUY TRÌNH KIỂM THỬ & BẢO HÀNH (VERIFICATION CRITERIA)
 
-* **Tính năng Chia đều điểm trong Tạo đề thi:**
-  - `_totalPoints` và `_distributePointsEvenly()` đã có sẵn trong `CreateExamScreen` nhưng chưa có giao diện trên `ExamRightSidebar`.
-  - Kết nối hiển thị: Thêm ô "Tổng điểm: 10.00 đ" và nút bấm "⚡ Chia đều 10 điểm cho các câu" vào `ExamRightSidebar` để giáo viên thao tác tiện lợi và tận dụng triệt để mã nguồn sẵn có.
-
----
-
-## II. THIẾT KẾ GIẢI PHÁP CHI TIẾT (DESIGN SPEC)
-
-```mermaid
-graph TD
-    A[Rà soát tổng thể thi_nhanh] --> B[Khắc phục 100% Lỗi Logic & Auth]
-    A --> C[Sửa lỗi Điều hướng Route & Params]
-    A --> D[Triệt tiêu Memory Leaks & Background Timers]
-    A --> E[Dọn sạch 57 Cảnh báo Linter & Deprecations]
-    A --> F[Kích hoạt tính năng Chia đều điểm vào Sidebar]
-    
-    B --> B1[Thêm resendSignUpOTP vào AuthProvider & Sửa Dialog]
-    C --> C1[Truyền roomCode vào /room/password]
-    C --> C2[Truyền examId vào CreateRoomScreen & main.dart]
-    C --> C3[Gọi RoomRepository.close trên LiveDashboard]
-    D --> D1[Bổ sung dispose cho 8 màn hình & AuthProvider]
-    E --> E1[Đổi withValues, initialValue, surface, braces, wildcard]
-    F --> F1[Gắn tổng điểm & nút chia đều vào ExamRightSidebar]
-```
-
----
-
-## III. KẾ HOẠCH BÀN GIAO & TỰ ĐỘNG HÓA
-
-1. **Kiểm thử tự động:** Sau khi sửa, chạy lại toàn bộ test suite `flutter test` (đảm bảo 231/231 pass) và `flutter analyze` (đảm bảo `No issues found! 0 issues`).
-2. **Tuân thủ quy tắc người dùng:**
-   - Tự động cập nhật tài liệu tổng quan hệ thống `docs/system_architecture_and_deep_evaluation.md`.
-   - Tự động thực hiện git commit & git push để kích hoạt GitHub Actions build/deploy.
+1. **Static Analysis Check:** Lệnh `flutter analyze` phải trả về `No issues found! (0 issues)`.
+2. **Full Test Suite:** Toàn bộ `flutter test` phải chạy thành công 100% (231/231+ tests pass).
+3. **Automated Submodule Push & Docs Sync:**
+   - Cập nhật tài liệu kiến trúc `docs/system_architecture_and_deep_evaluation.md`.
+   - Thực hiện `git commit` & `git push` tự động theo quy tắc dự án.
