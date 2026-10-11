@@ -67,7 +67,7 @@ class ExamRightSidebar extends StatelessWidget {
                     const Icon(Icons.school_outlined, size: 16, color: AppTheme.primary),
                     const SizedBox(width: 6),
                     Text(
-                      subject.isEmpty ? 'Chưa chọn môn' : subject,
+                      subject.isEmpty || subject == 'none' ? 'none' : subject,
                       style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                     ),
                   ],

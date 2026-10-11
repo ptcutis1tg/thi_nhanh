@@ -673,7 +673,7 @@ class _ExamSummaryCard extends StatelessWidget {
         final details = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Wrap(spacing: 8, runSpacing: 6, children: [Chip(label: Text(subject)), Chip(label: Text('Mã: $code'))]),
+            Wrap(spacing: 8, runSpacing: 6, children: [Chip(label: Text(subject.isEmpty || subject == 'none' ? 'none' : subject)), Chip(label: Text('Mã: $code'))]),
             const SizedBox(height: 12),
             Text(title, style: Theme.of(context).textTheme.headlineSmall),
             const Divider(height: 36),

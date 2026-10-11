@@ -133,8 +133,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
   void _configureExam() {
     final title = _examNameController.text.trim();
-    if (title.isEmpty || _selectedSubject == null) {
-      _showMessage('Hãy nhập tên đề và chọn môn học.', isError: true);
+    if (title.isEmpty) {
+      _showMessage('Hãy nhập tên đề thi.', isError: true);
       return;
     }
     if (title.length < 3) {
@@ -145,6 +145,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     if (duration == null || duration < 1 || duration > 360) {
       _showMessage('Thời lượng thi phải từ 1 đến 360 phút.', isError: true);
       return;
+    }
+    if (_selectedSubject == null || _selectedSubject!.trim().isEmpty) {
+      _selectedSubject = 'none';
     }
     setState(() {
       _isConfigured = true;
@@ -995,20 +998,30 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 DropdownButtonFormField<String>(
                   key: const Key('setup-subject'),
                   initialValue: _selectedSubject,
+                  isExpanded: true,
                   decoration: InputDecoration(
-                    labelText: 'Môn học *',
+                    labelText: 'Môn học (tùy chọn)',
+                    hintText: 'Chọn môn học hoặc để trống (none)',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppTheme.inputRadius),
                     ),
                   ),
                   items: const [
+                    DropdownMenuItem(value: 'none', child: Text('Không phân loại (none)')),
                     DropdownMenuItem(value: 'Toán', child: Text('Toán')),
+                    DropdownMenuItem(value: 'Ngữ văn', child: Text('Ngữ văn')),
+                    DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
                     DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
                     DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
-                    DropdownMenuItem(
-                      value: 'Tiếng Anh',
-                      child: Text('Tiếng Anh'),
-                    ),
+                    DropdownMenuItem(value: 'Sinh học', child: Text('Sinh học')),
+                    DropdownMenuItem(value: 'Lịch sử', child: Text('Lịch sử')),
+                    DropdownMenuItem(value: 'Địa lý', child: Text('Địa lý')),
+                    DropdownMenuItem(value: 'Giáo dục công dân', child: Text('Giáo dục công dân')),
+                    DropdownMenuItem(value: 'Tin học', child: Text('Tin học')),
+                    DropdownMenuItem(value: 'Công nghệ', child: Text('Công nghệ')),
+                    DropdownMenuItem(value: 'Khoa học tự nhiên', child: Text('Khoa học tự nhiên')),
+                    DropdownMenuItem(value: 'Lịch sử & Địa lý', child: Text('Lịch sử & Địa lý')),
+                    DropdownMenuItem(value: 'Ngoại ngữ khác', child: Text('Ngoại ngữ khác')),
                   ],
                   onChanged: (value) =>
                       setState(() => _selectedSubject = value),
