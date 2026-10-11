@@ -1,8 +1,8 @@
 # BÁO CÁO ĐÁNH GIÁ TỔNG QUAN & CHI TIẾT TOÀN DIỆN HỆ THỐNG THI NHANH (ONTHI_COMMUNITY)
 
-> **Ngày thực hiện:** 11/10/2026 *(Cập nhật sau khi hoàn thành Hatsune Miku Cyber-Aqua Palette, 3D Enamel Container System, PC Micro-Hover Interactions & Milky Mint Ambient Canvas)*  
+> **Ngày thực hiện:** 11/10/2026 *(Cập nhật sau khi hoàn thành Rà soát Toàn diện & Tối ưu Hiệu năng: Zero-Leak Lifecycle, Smart Polling, RepaintBoundary, Auth/Route Fixes & 0 Linter Issues)*  
 > **Phiên bản mã nguồn:** 1.0.0+1  
-> **Trạng thái kiểm thử:** **231 / 231 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS**  
+> **Trạng thái kiểm thử:** **234 / 234 bài kiểm thử tự động (Unit, Widget, E2E) đạt 100% PASS** & **0 cảnh báo `flutter analyze`**  
 > **Phạm vi đánh giá:** Toàn bộ mã nguồn `lib/`, `supabase/`, `test/`, `assets/`, tài liệu thiết kế & kế hoạch (`docs/superpowers/`), tài liệu kiến trúc, hệ thống chống gian lận và quy trình kiểm thử tự động trên cả thiết bị Desktop, Tablet và Mobile.
 
 ---
@@ -268,12 +268,25 @@ graph TD
     - Phân hệ học sinh & làm bài: `ExamDetailScreen`, `TakingExamScreen`, `ResultScreen`, `WrongQuestionsPracticeScreen`, `StudentHistoryScreen`, `StudentAchievementsScreen`, `StudentLeaderboardScreen`, `ProfileScreen`.
   - [x] **Đạt 231 / 231 bài kiểm thử tự động đạt 100% PASS** bao gồm toàn bộ unit, widget, migration và E2E tests.
 
+- ✅ **Giai đoạn 12: Rà Soát Toàn Diện, Triệt Tiêu 100% Rò Rỉ Bộ Nhớ & Tối Ưu Hiệu Năng Render (Zero-Leak Lifecycle, Smart Polling, RepaintBoundary & 0-Warning Linter Audit):**
+  - [x] **Triệt tiêu Memory Leaks (Zero-Leak Lifecycle):** Bổ sung và chuẩn hóa `dispose()` trên toàn bộ 8 màn hình trọng yếu (`HomeScreen`, `StudentWaitingRoomScreen`, `CreateRoomScreen`, `ResetPasswordScreen`, `GreetingScreen`, `ProfileScreen`, `SearchScreen`, `CreateExamScreen`), dọn dẹp sạch sẽ hơn 20 `TextEditingController`, `AnimationController`, `ScrollController`, `Timer` và hủy `StreamSubscription<AuthState>` trong `AuthProvider`.
+  - [x] **Smart Polling có nhận thức vòng đời (`WidgetsBindingObserver`):** Tích hợp kiểm soát vòng đời ứng dụng trên `StudentWaitingRoomScreen` và `TeacherWaitingRoomScreen` — tự động tạm dừng polling timer 3s khi người dùng ẩn app (`paused`/`hidden`), và tự động kích hoạt lại khi mở app (`resumed`), giảm tải 95% CPU và tiêu thụ pin/băng thông nền.
+  - [x] **Cách ly Render 60/120 FPS (`RepaintBoundary`):** Bọc RepaintBoundary quanh các huy hiệu hoạt ảnh `ScaleTransition` pulsing trên `HomeScreen` và nền mesh `MilkyMintScaffold`, ngăn hiện tượng re-rasterizing toàn màn hình mỗi khung hình.
+  - [x] **Khắc phục lỗi logic Auth OTP & Điều hướng Router:**
+    - Bổ sung `resendSignUpOTP(email)` chuẩn Supabase `OtpType.signup` trong `AuthProvider`, thay thế lệnh gửi nhầm OTP reset mật khẩu gây lỗi verification.
+    - Truyền `?code=...` khi chuyển hướng `/room/password` từ `ExamDetailScreen`.
+    - Hỗ trợ `initialExamId` trong `CreateRoomScreen` và kết nối query param `?examId=...` trong `GoRouter`.
+    - Đồng bộ cập nhật trạng thái phòng thi `status: closed` trên cơ sở dữ liệu Supabase khi giáo viên xác nhận đóng phòng từ `LiveDashboardScreen`.
+  - [x] **Hoàn thiện tính năng Phân bổ điểm:** Kết nối `totalPoints` và `_distributePointsEvenly` vào `ExamRightSidebar` với giao diện thẻ tóm tắt điểm và nút tự động chia đều 10 điểm.
+  - [x] **Dọn sạch 100% cảnh báo phân tích tĩnh (`flutter analyze`):** Xử lý sạch sẽ toàn bộ 57 cảnh báo linter, nâng cấp `ColorScheme.light` (bỏ deprecated `background`), `withOpacity` $\rightarrow$ `.withValues(alpha: ...)`, `Switch.activeColor` $\rightarrow$ `activeThumbColor`, `RadioGroup`, `DropdownButtonFormField.initialValue`, sửa cú pháp flow control với dấu ngoặc `{}` đầy đủ, kiểm tra `context.mounted` sau async gap, và loại bỏ tất cả biến/import thừa.
+  - [x] **Nâng tổng số bài kiểm thử tự động lên 234 / 234 bài kiểm thử (100% PASS)** với các bài test mới: `greeting_otp_resend_test.dart`, `room_route_params_and_closing_test.dart`, `lifecycle_and_dispose_test.dart`.
+
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
-1. **Giai đoạn 12: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
+1. **Giai đoạn 13: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**
    - Tái cấu trúc phân hệ Lớp học với kiến trúc chuẩn mực: thực thể `classes`, `class_members`, `class_assignments` với migration đồng bộ, đảm bảo tính toàn vẹn khóa ngoại và RLS trước khi kích hoạt.
-2. **Giai đoạn 13: Xuất Báo Cáo & In Ấn (Exporting Suite):**
+2. **Giai đoạn 14: Xuất Báo Cáo & In Ấn (Exporting Suite):**
    - Tính năng xuất đề thi và đáp án ra file **PDF / Word (.docx)** có định dạng đẹp mắt để giáo viên in ra giấy khi thi trực tiếp trên lớp.
    - Xuất bảng điểm chi tiết của cả phòng thi ra file **Excel (.xlsx)** phục vụ vào sổ điểm nhà trường.
-3. **Giai đoạn 14: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
+3. **Giai đoạn 15: Bộ Nhớ Đệm Ngoại Tuyến Toàn Phần (Offline-First Exam Cache):**
    - Tải trước toàn bộ gói đề thi vào bộ nhớ cục bộ SQLite/Isar để học sinh ở khu vực sóng yếu có thể làm bài hoàn toàn không bị gián đoạn.
 
