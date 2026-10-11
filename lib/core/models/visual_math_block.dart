@@ -97,6 +97,33 @@ enum MathBlockType {
     }
   }
 
+  Map<String, String> get defaultSlots {
+    switch (this) {
+      case MathBlockType.fraction:
+        return const {'num': 'a', 'den': 'b'};
+      case MathBlockType.sqrt:
+        return const {'radicand': 'x'};
+      case MathBlockType.nroot:
+        return const {'index': 'n', 'radicand': 'x'};
+      case MathBlockType.power:
+        return const {'base': 'x', 'exp': '2'};
+      case MathBlockType.subscript:
+        return const {'base': 'x', 'sub': 'i'};
+      case MathBlockType.integral:
+        return const {'lower': 'a', 'upper': 'b', 'expr': 'f(x)'};
+      case MathBlockType.limit:
+        return const {'to': 'a', 'expr': 'f(x)'};
+      case MathBlockType.logarithm:
+        return const {'base': 'a', 'arg': 'x'};
+      case MathBlockType.summation:
+        return const {'from': 'i=1', 'to': 'n', 'expr': 'a_i'};
+      case MathBlockType.vector:
+        return const {'name': 'v'};
+      case MathBlockType.angle:
+        return const {'name': 'ABC'};
+    }
+  }
+
   String compileToLatex(Map<String, String> slots) {
     String slot(String k) {
       final v = slots[k]?.trim();

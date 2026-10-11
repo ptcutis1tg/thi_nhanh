@@ -83,6 +83,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
       final newBlock = MathBlockSegment(
         id: 'mb_${DateTime.now().microsecondsSinceEpoch}',
         type: type,
+        slots: type.defaultSlots,
       );
       _segments.add(newBlock);
       _segments.add(TextContentSegment(' '));
@@ -134,6 +135,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
         MathBlockSegment(
           id: 'mb_${DateTime.now().microsecondsSinceEpoch}',
           type: type,
+          slots: type.defaultSlots,
         ),
       );
       _segments.insert(

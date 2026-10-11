@@ -59,6 +59,65 @@ void main() {
         type: MathBlockType.fraction,
       );
       expect(emptyFraction.toLatex(), r'\frac{\square}{\square}');
+      expect(VisualMathCompiler.hasIncompleteMath(emptyFraction.toLatex()), isTrue);
+    });
+
+    test('summation defaults compile into a student-readable formula', () {
+      final summation = MathBlockSegment(
+        id: 'sum-1',
+        type: MathBlockType.summation,
+        slots: MathBlockType.summation.defaultSlots,
+      );
+
+      expect(summation.toLatex(), r'\sum_{i=1}^{n} {a_i}');
+      expect(VisualMathCompiler.hasIncompleteMath(summation.toLatex()), isFalse);
+    });
+
+    test('every visual block has complete student-readable defaults', () {
+      for (final type in MathBlockType.values) {
+        final block = MathBlockSegment(
+          id: type.name,
+          type: type,
+          slots: type.defaultSlots,
+        );
+
+        expect(
+          VisualMathCompiler.hasIncompleteMath(block.toLatex()),
+          isFalse,
+          reason: '${type.name} must not expose a square placeholder',
+        );
+        expect(
+          type.slotDefinitions.every(
+            (definition) => type.defaultSlots[definition.key]?.isNotEmpty ?? false,
+          ),
+          isTrue,
+          reason: '${type.name} must provide a value for every editable slot',
+        );
+      }
+    });
+
+    test('all supported visual blocks survive compile and parse round-trip', () {
+      for (final type in MathBlockType.values) {
+        final compiled = VisualMathCompiler.compile([
+          MathBlockSegment(id: type.name, type: type, slots: type.defaultSlots),
+        ]);
+        final parsed = VisualMathCompiler.parse(compiled);
+        final parsedBlocks = parsed.whereType<MathBlockSegment>().toList();
+
+        expect(parsedBlocks, hasLength(1), reason: '${type.name} was not parsed');
+        expect(parsedBlocks.single.type, type);
+        expect(VisualMathCompiler.compile(parsed), compiled);
+      }
+    });
+
+    test('parses a delimited summation back into an editable block', () {
+      const input = r'A=$\sum_{i=1}^{n} {a_i}$';
+      final segments = VisualMathCompiler.parse(input);
+      final summation = segments.whereType<MathBlockSegment>().single;
+
+      expect(summation.type, MathBlockType.summation);
+      expect(summation.slots, {'from': 'i=1', 'to': 'n', 'expr': 'a_i'});
+      expect(VisualMathCompiler.compile(segments), input);
     });
 
     test('parses LaTeX containing fraction and root back into segments', () {

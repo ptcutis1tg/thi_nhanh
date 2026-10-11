@@ -6,6 +6,7 @@ import '../../core/models/question_draft.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/teacher_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/visual_math_compiler.dart';
 import 'widgets/exam_left_sidebar.dart';
 import 'widgets/exam_right_sidebar.dart';
 import 'widgets/latex_math_view.dart';
@@ -284,6 +285,14 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         setState(() => _activeQuestionIndex = i);
         _showMessage(
           'Hãy nhập nội dung cho Câu ${i + 1} trước khi xuất bản.',
+          isError: true,
+        );
+        return;
+      }
+      if (VisualMathCompiler.hasIncompleteMath(q.body)) {
+        setState(() => _activeQuestionIndex = i);
+        _showMessage(
+          'Câu ${i + 1} còn công thức chưa hoàn tất. Hãy điền đủ các ô trước khi xuất bản.',
           isError: true,
         );
         return;
@@ -805,15 +814,34 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        LatexMathView(
-                          text: question.body.isEmpty
-                              ? 'Bản xem trước đề bài sẽ xuất hiện tại đây khi bạn gõ.'
-                              : question.body,
-                          textStyle: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                        if (VisualMathCompiler.hasIncompleteMath(question.body))
+                          const Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: AppTheme.warning, size: 19),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Công thức chưa hoàn tất. Hãy điền đủ các ô để xem đúng nội dung học sinh sẽ thấy.',
+                                  style: TextStyle(
+                                    color: AppTheme.textMain,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          LatexMathView(
+                            text: question.body.isEmpty
+                                ? 'Bản xem trước đề bài sẽ xuất hiện tại đây khi bạn gõ.'
+                                : question.body,
+                            textStyle: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
