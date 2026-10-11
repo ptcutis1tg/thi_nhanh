@@ -22,7 +22,8 @@ class TeacherWaitingRoomScreen extends StatefulWidget {
       _TeacherWaitingRoomScreenState();
 }
 
-class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
+class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen>
+    with WidgetsBindingObserver {
   TeacherRoomDashboard? _room;
   Object? _error;
   bool _loading = true;
@@ -34,14 +35,25 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
     _startPolling();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pollTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _pollTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _startPolling();
+    }
   }
 
   void _startPolling() {

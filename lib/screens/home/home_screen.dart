@@ -648,14 +648,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               if (hasActive)
-                ScaleTransition(
-                  scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF59E0B),
-                      shape: BoxShape.circle,
+                RepaintBoundary(
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF59E0B),
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
@@ -765,14 +767,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               if (hasActiveRoom)
-                ScaleTransition(
-                  scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
+                RepaintBoundary(
+                  child: ScaleTransition(
+                    scale: Tween(begin: 0.8, end: 1.15).animate(_pulseController),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
