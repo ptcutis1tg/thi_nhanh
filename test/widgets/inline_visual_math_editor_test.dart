@@ -61,6 +61,62 @@ void main() {
     expect(find.text('mẫu số'), findsOneWidget);
   });
 
+  testWidgets('summation block starts with readable defaults', (tester) async {
+    final controller = InlineVisualMathEditorController();
+    String currentLatex = 'A=';
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InlineVisualMathEditor(
+            initialLatex: currentLatex,
+            controller: controller,
+            onChanged: (value) => currentLatex = value,
+          ),
+        ),
+      ),
+    );
+
+    controller.insertMathBlock(MathBlockType.summation);
+    await tester.pump();
+
+    expect(currentLatex, r'A=$\sum_{i=1}^{n} {a_i}$ ');
+    expect(find.text('i=1'), findsWidgets);
+    expect(find.text('n'), findsWidgets);
+    expect(find.text('a_i'), findsWidgets);
+  });
+
+  testWidgets('deleting visual blocks merges adjacent text fields', (
+    tester,
+  ) async {
+    final controller = InlineVisualMathEditorController();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InlineVisualMathEditor(
+            initialLatex: '',
+            controller: controller,
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    controller.insertMathBlock(MathBlockType.fraction);
+    controller.insertMathBlock(MathBlockType.sqrt);
+    await tester.pump();
+
+    expect(find.byIcon(Icons.close), findsNWidgets(2));
+
+    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.pump();
+
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
   testWidgets('accepts a category shortcut with Tab', (tester) async {
     String currentLatex = '';
 

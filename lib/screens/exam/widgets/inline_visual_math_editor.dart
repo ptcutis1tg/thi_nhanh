@@ -39,6 +39,7 @@ class InlineVisualMathEditor extends StatefulWidget {
 
 class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
   bool _isVisualMode = true;
+  int _nextBlockId = 0;
   late List<QuestionContentSegment> _segments;
   late TextEditingController _rawLatexController;
 
@@ -78,11 +79,28 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
     widget.onChanged(latex);
   }
 
+  String _newBlockId() => 'mb_editor_${_nextBlockId++}';
+
+  void _mergeAdjacentTextSegments() {
+    final normalized = <QuestionContentSegment>[];
+    for (final segment in _segments) {
+      if (segment is TextContentSegment &&
+          normalized.isNotEmpty &&
+          normalized.last is TextContentSegment) {
+        (normalized.last as TextContentSegment).text += segment.text;
+      } else {
+        normalized.add(segment);
+      }
+    }
+    _segments = normalized.isEmpty ? [TextContentSegment('')] : normalized;
+  }
+
   void insertMathBlock(MathBlockType type) {
     setState(() {
       final newBlock = MathBlockSegment(
-        id: 'mb_${DateTime.now().microsecondsSinceEpoch}',
+        id: _newBlockId(),
         type: type,
+        slots: type.defaultSlots,
       );
       _segments.add(newBlock);
       _segments.add(TextContentSegment(' '));
@@ -132,8 +150,9 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
       _segments.insert(
         segmentIndex + 1,
         MathBlockSegment(
-          id: 'mb_${DateTime.now().microsecondsSinceEpoch}',
+          id: _newBlockId(),
           type: type,
+          slots: type.defaultSlots,
         ),
       );
       _segments.insert(
@@ -307,6 +326,9 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
                       onDelete: () {
                         setState(() {
                           _segments.removeAt(i);
+                          _mergeAdjacentTextSegments();
+                          _rawLatexController.text =
+                              VisualMathCompiler.compile(_segments);
                         });
                         _notifyChange();
                       },

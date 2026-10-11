@@ -1,6 +1,8 @@
 import '../models/visual_math_block.dart';
 
 class VisualMathCompiler {
+  static bool hasIncompleteMath(String value) => value.contains(r'\square');
+
   static String compile(List<QuestionContentSegment> segments) {
     final buffer = StringBuffer();
     for (final seg in segments) {
@@ -29,6 +31,14 @@ class VisualMathCompiler {
       r'\\int_\{([^}]+)\}\^\{([^}]+)\}\s*\{([^}]+)\}\s*\\,\s*dx',
     );
     final limitRegex = RegExp(r'\\lim_\{x\s*\\to\s*([^}]+)\}\s*\{([^}]+)\}');
+    final summationRegex = RegExp(
+      r'\\sum_\{([^}]+)\}\^\{([^}]+)\}\s*\{([^}]+)\}',
+    );
+    final powerRegex = RegExp(r'\{([^}]+)\}\^\{([^}]+)\}');
+    final subscriptRegex = RegExp(r'\{([^}]+)\}_\{([^}]+)\}');
+    final logarithmRegex = RegExp(r'\\log_\{([^}]+)\}\(\{([^}]+)\}\)');
+    final vectorRegex = RegExp(r'\\vec\{([^}]+)\}');
+    final angleRegex = RegExp(r'\\widehat\{([^}]+)\}');
 
     int index = 0;
     while (index < rawText.length) {
@@ -148,6 +158,103 @@ class VisualMathCompiler {
         continue;
       }
 
+      final summationMatch = summationRegex.matchAsPrefix(substring);
+      if (summationMatch != null) {
+        segments.add(
+          MathBlockSegment(
+            id: 'mb_${++idCounter}',
+            type: MathBlockType.summation,
+            slots: {
+              'from': summationMatch.group(1) == r'\square'
+                  ? ''
+                  : (summationMatch.group(1) ?? ''),
+              'to': summationMatch.group(2) == r'\square'
+                  ? ''
+                  : (summationMatch.group(2) ?? ''),
+              'expr': summationMatch.group(3) == r'\square'
+                  ? ''
+                  : (summationMatch.group(3) ?? ''),
+            },
+          ),
+        );
+        index += summationMatch.end;
+        continue;
+      }
+
+      final powerMatch = powerRegex.matchAsPrefix(substring);
+      if (powerMatch != null) {
+        segments.add(
+          MathBlockSegment(
+            id: 'mb_${++idCounter}',
+            type: MathBlockType.power,
+            slots: {
+              'base': _slotValue(powerMatch.group(1)),
+              'exp': _slotValue(powerMatch.group(2)),
+            },
+          ),
+        );
+        index += powerMatch.end;
+        continue;
+      }
+
+      final subscriptMatch = subscriptRegex.matchAsPrefix(substring);
+      if (subscriptMatch != null) {
+        segments.add(
+          MathBlockSegment(
+            id: 'mb_${++idCounter}',
+            type: MathBlockType.subscript,
+            slots: {
+              'base': _slotValue(subscriptMatch.group(1)),
+              'sub': _slotValue(subscriptMatch.group(2)),
+            },
+          ),
+        );
+        index += subscriptMatch.end;
+        continue;
+      }
+
+      final logarithmMatch = logarithmRegex.matchAsPrefix(substring);
+      if (logarithmMatch != null) {
+        segments.add(
+          MathBlockSegment(
+            id: 'mb_${++idCounter}',
+            type: MathBlockType.logarithm,
+            slots: {
+              'base': _slotValue(logarithmMatch.group(1)),
+              'arg': _slotValue(logarithmMatch.group(2)),
+            },
+          ),
+        );
+        index += logarithmMatch.end;
+        continue;
+      }
+
+      final vectorMatch = vectorRegex.matchAsPrefix(substring);
+      if (vectorMatch != null) {
+        segments.add(
+          MathBlockSegment(
+            id: 'mb_${++idCounter}',
+            type: MathBlockType.vector,
+            slots: {'name': _slotValue(vectorMatch.group(1))},
+          ),
+        );
+        index += vectorMatch.end;
+        continue;
+      }
+
+      final angleMatch = angleRegex.matchAsPrefix(substring);
+      if (angleMatch != null) {
+        segments.add(
+          MathBlockSegment(
+            id: 'mb_${++idCounter}',
+            type: MathBlockType.angle,
+            slots: {'name': _slotValue(angleMatch.group(1))},
+          ),
+        );
+        index += angleMatch.end;
+        continue;
+      }
+
       // Read plain character into trailing TextContentSegment
       if (segments.isNotEmpty && segments.last is TextContentSegment) {
         (segments.last as TextContentSegment).text += rawText[index];
@@ -162,4 +269,6 @@ class VisualMathCompiler {
     }
     return segments;
   }
+
+  static String _slotValue(String? value) => value == r'\square' ? '' : (value ?? '');
 }
