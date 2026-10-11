@@ -24,6 +24,8 @@ class InlineVisualMathEditor extends StatefulWidget {
     this.shortcutCategory = ScientificCategory.math,
     this.shortcuts = const [],
     this.onFocusTarget,
+    this.compact = false,
+    this.segmentKeyPrefix = 'inline-math',
   });
 
   final String initialLatex;
@@ -32,6 +34,8 @@ class InlineVisualMathEditor extends StatefulWidget {
   final ScientificCategory shortcutCategory;
   final List<ScientificShortcut> shortcuts;
   final ValueChanged<ScientificInputTarget>? onFocusTarget;
+  final bool compact;
+  final String segmentKeyPrefix;
 
   @override
   State<InlineVisualMathEditor> createState() => _InlineVisualMathEditorState();
@@ -183,100 +187,103 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Mode Switcher Header
-        Row(
-          children: [
-            InkWell(
-              onTap: () => _switchMode(true),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _isVisualMode
-                      ? AppTheme.primary.withValues(alpha: 0.1)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: _isVisualMode ? AppTheme.primary : AppTheme.border,
+        if (!widget.compact)
+          Row(
+            children: [
+              InkWell(
+                onTap: () => _switchMode(true),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.dashboard_customize_outlined,
-                      size: 14,
-                      color: _isVisualMode
-                          ? AppTheme.primary
-                          : AppTheme.textSecondary,
+                  decoration: BoxDecoration(
+                    color: _isVisualMode
+                        ? AppTheme.primary.withValues(alpha: 0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: _isVisualMode ? AppTheme.primary : AppTheme.border,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Khối trực quan [ ]',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: _isVisualMode
-                            ? FontWeight.bold
-                            : FontWeight.w500,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.dashboard_customize_outlined,
+                        size: 14,
                         color: _isVisualMode
                             ? AppTheme.primary
                             : AppTheme.textSecondary,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            InkWell(
-              onTap: () => _switchMode(false),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: !_isVisualMode
-                      ? AppTheme.primary.withValues(alpha: 0.1)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: !_isVisualMode ? AppTheme.primary : AppTheme.border,
+                      const SizedBox(width: 6),
+                      Text(
+                        'Khối trực quan [ ]',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: _isVisualMode
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: _isVisualMode
+                              ? AppTheme.primary
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.code_rounded,
-                      size: 14,
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => _switchMode(false),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: !_isVisualMode
+                        ? AppTheme.primary.withValues(alpha: 0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
                       color: !_isVisualMode
                           ? AppTheme.primary
-                          : AppTheme.textSecondary,
+                          : AppTheme.border,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Mã nguồn LaTeX',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: !_isVisualMode
-                            ? FontWeight.bold
-                            : FontWeight.w500,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.code_rounded,
+                        size: 14,
                         color: !_isVisualMode
                             ? AppTheme.primary
                             : AppTheme.textSecondary,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Text(
+                        'Mã nguồn LaTeX',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: !_isVisualMode
+                              ? FontWeight.bold
+                              : FontWeight.w500,
+                          color: !_isVisualMode
+                              ? AppTheme.primary
+                              : AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
+            ],
+          ),
+        if (!widget.compact) const SizedBox(height: 10),
 
         // Editor Body
         if (!_isVisualMode)
@@ -299,7 +306,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
         else
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(widget.compact ? 8 : 12),
             decoration: BoxDecoration(
               color: AppTheme.background,
               borderRadius: BorderRadius.circular(10),
@@ -342,12 +349,13 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
 
   Widget _buildTextSegmentWidget(int index, TextContentSegment seg) {
     return _TextSegmentField(
-      key: Key('inline-math-text-segment-$index'),
+      key: Key('${widget.segmentKeyPrefix}-text-segment-$index'),
       initialText: seg.text,
       hintText: _segments.length <= 1
           ? 'Nhập nội dung câu hỏi, công thức toán...'
           : '',
       autofocus: index > 0 && seg.text.isEmpty,
+      minWidth: _segments.length <= 1 ? (widget.compact ? 120 : 80) : 18,
       onChanged: (val) {
         seg.text = val;
         _notifyChange();
@@ -374,6 +382,7 @@ class _TextSegmentField extends StatefulWidget {
     required this.onAcceptShortcut,
     required this.onInsertBlock,
     this.autofocus = false,
+    this.minWidth = 18,
     this.onFocused,
   });
 
@@ -386,6 +395,7 @@ class _TextSegmentField extends StatefulWidget {
   onAcceptShortcut;
   final void Function(MathBlockType type, int start, int end) onInsertBlock;
   final bool autofocus;
+  final double minWidth;
   final ValueChanged<ScientificInputTarget>? onFocused;
 
   @override
@@ -527,7 +537,7 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 18),
+          constraints: BoxConstraints(minWidth: widget.minWidth),
           child: IntrinsicWidth(
             child: TextField(
               focusNode: _focusNode,
