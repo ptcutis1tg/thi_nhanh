@@ -20,13 +20,8 @@ class VisualMathBlockWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.border),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -89,10 +84,19 @@ class VisualMathBlockWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text('√', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w300, color: AppTheme.primary)),
+            const Text(
+              '√',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w300,
+                color: AppTheme.primary,
+              ),
+            ),
             Container(
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppTheme.primary, width: 2)),
+                border: Border(
+                  top: BorderSide(color: AppTheme.primary, width: 2),
+                ),
               ),
               padding: const EdgeInsets.only(top: 2),
               child: VisualSlotInput(
@@ -123,10 +127,19 @@ class VisualMathBlockWidget extends StatelessWidget {
                 onChanged: (val) => onSlotChanged('index', val),
               ),
             ),
-            const Text('√', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w300, color: AppTheme.primary)),
+            const Text(
+              '√',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w300,
+                color: AppTheme.primary,
+              ),
+            ),
             Container(
               decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppTheme.primary, width: 2)),
+                border: Border(
+                  top: BorderSide(color: AppTheme.primary, width: 2),
+                ),
               ),
               padding: const EdgeInsets.only(top: 2),
               child: VisualSlotInput(
@@ -207,7 +220,14 @@ class VisualMathBlockWidget extends StatelessWidget {
                   minWidth: 26,
                   onChanged: (val) => onSlotChanged('upper', val),
                 ),
-                const Text('∫', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w300, color: AppTheme.primary)),
+                const Text(
+                  '∫',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w300,
+                    color: AppTheme.primary,
+                  ),
+                ),
                 VisualSlotInput(
                   key: Key('slot-${block.type.name}-lower'),
                   initialValue: block.slots['lower'] ?? '',
@@ -227,7 +247,13 @@ class VisualMathBlockWidget extends StatelessWidget {
               onChanged: (val) => onSlotChanged('expr', val),
             ),
             const SizedBox(width: 4),
-            const Text('dx', style: TextStyle(fontStyle: FontStyle.italic, fontWeight: FontWeight.bold)),
+            const Text(
+              'dx',
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         );
 
@@ -239,7 +265,10 @@ class VisualMathBlockWidget extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('lim', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                const Text(
+                  'lim',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -312,7 +341,14 @@ class VisualMathBlockWidget extends StatelessWidget {
                   minWidth: 26,
                   onChanged: (val) => onSlotChanged('to', val),
                 ),
-                const Text('∑', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+                const Text(
+                  '∑',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primary,
+                  ),
+                ),
                 VisualSlotInput(
                   key: Key('slot-${block.type.name}-from'),
                   initialValue: block.slots['from'] ?? '',
@@ -338,7 +374,15 @@ class VisualMathBlockWidget extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('→', style: TextStyle(fontSize: 14, height: 0.8, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+            const Text(
+              '→',
+              style: TextStyle(
+                fontSize: 14,
+                height: 0.8,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primary,
+              ),
+            ),
             VisualSlotInput(
               key: Key('slot-${block.type.name}-name'),
               initialValue: block.slots['name'] ?? '',
@@ -353,7 +397,15 @@ class VisualMathBlockWidget extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('^', style: TextStyle(fontSize: 14, height: 0.8, fontWeight: FontWeight.bold, color: AppTheme.primary)),
+            const Text(
+              '^',
+              style: TextStyle(
+                fontSize: 14,
+                height: 0.8,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primary,
+              ),
+            ),
             VisualSlotInput(
               key: Key('slot-${block.type.name}-name'),
               initialValue: block.slots['name'] ?? '',

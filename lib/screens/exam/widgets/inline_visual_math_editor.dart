@@ -102,8 +102,9 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
         type: type,
         slots: type.defaultSlots,
       );
+      final trailingText = TextContentSegment('');
       _segments.add(newBlock);
-      _segments.add(TextContentSegment(' '));
+      _segments.add(trailingText);
       _rawLatexController.text = VisualMathCompiler.compile(_segments);
     });
     _notifyChange();
@@ -145,6 +146,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
     final safeEnd = selectionEnd.clamp(safeStart, segment.text.length);
     final before = segment.text.substring(0, safeStart);
     final after = segment.text.substring(safeEnd);
+    final trailingText = TextContentSegment(after);
     setState(() {
       segment.text = before;
       _segments.insert(
@@ -155,10 +157,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
           slots: type.defaultSlots,
         ),
       );
-      _segments.insert(
-        segmentIndex + 2,
-        TextContentSegment(after.isEmpty ? ' ' : after),
-      );
+      _segments.insert(segmentIndex + 2, trailingText);
       _rawLatexController.text = VisualMathCompiler.compile(_segments);
     });
     _notifyChange();
@@ -327,8 +326,9 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
                         setState(() {
                           _segments.removeAt(i);
                           _mergeAdjacentTextSegments();
-                          _rawLatexController.text =
-                              VisualMathCompiler.compile(_segments);
+                          _rawLatexController.text = VisualMathCompiler.compile(
+                            _segments,
+                          );
                         });
                         _notifyChange();
                       },
@@ -347,6 +347,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
       hintText: _segments.length <= 1
           ? 'Nhập nội dung câu hỏi, công thức toán...'
           : '',
+      autofocus: index > 0 && seg.text.isEmpty,
       onChanged: (val) {
         seg.text = val;
         _notifyChange();
@@ -372,6 +373,7 @@ class _TextSegmentField extends StatefulWidget {
     required this.category,
     required this.onAcceptShortcut,
     required this.onInsertBlock,
+    this.autofocus = false,
     this.onFocused,
   });
 
@@ -383,6 +385,7 @@ class _TextSegmentField extends StatefulWidget {
   final void Function(ScientificShortcut shortcut, int start, int end)
   onAcceptShortcut;
   final void Function(MathBlockType type, int start, int end) onInsertBlock;
+  final bool autofocus;
   final ValueChanged<ScientificInputTarget>? onFocused;
 
   @override
@@ -402,6 +405,16 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
     _controller = TextEditingController(text: widget.initialText);
     _focusNode = FocusNode(onKeyEvent: _handleKeyEvent)
       ..addListener(_handleFocus);
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _controller.selection = TextSelection.collapsed(
+            offset: _controller.text.length,
+          );
+          _focusNode.requestFocus();
+        }
+      });
+    }
   }
 
   @override
@@ -514,7 +527,7 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 80),
+          constraints: const BoxConstraints(minWidth: 18),
           child: IntrinsicWidth(
             child: TextField(
               focusNode: _focusNode,
@@ -524,10 +537,16 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 4,
+                  horizontal: 1,
                   vertical: 6,
                 ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                filled: false,
                 hintText: widget.hintText,
               ),
               onChanged: _handleChanged,

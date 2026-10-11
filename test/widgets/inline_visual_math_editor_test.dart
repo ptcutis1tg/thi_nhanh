@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onthi_community/core/models/visual_math_block.dart';
 import 'package:onthi_community/core/models/scientific_shortcut.dart';
 import 'package:onthi_community/screens/exam/widgets/inline_visual_math_editor.dart';
+import 'package:onthi_community/screens/exam/widgets/scientific_text_field.dart';
 
 void main() {
   testWidgets(
@@ -80,7 +81,7 @@ void main() {
     controller.insertMathBlock(MathBlockType.summation);
     await tester.pump();
 
-    expect(currentLatex, r'A=$\sum_{i=1}^{n} {a_i}$ ');
+    expect(currentLatex, r'A=$\sum_{i=1}^{n} {a_i}$');
     expect(find.text('i=1'), findsWidgets);
     expect(find.text('n'), findsWidgets);
     expect(find.text('a_i'), findsWidgets);
@@ -115,6 +116,40 @@ void main() {
     await tester.pump();
 
     expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets('typing continues immediately after an inserted math block', (
+    tester,
+  ) async {
+    String currentLatex = 'A=';
+    ScientificInputTarget? activeTarget;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: InlineVisualMathEditor(
+            initialLatex: currentLatex,
+            onChanged: (value) => currentLatex = value,
+            onFocusTarget: (target) => activeTarget = target,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(TextField).first);
+    await tester.pump();
+    activeTarget!.insertBlock(MathBlockType.summation);
+    await tester.pump();
+
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .toList();
+    expect(fields.last.focusNode!.hasFocus, isTrue);
+
+    await tester.enterText(find.byType(TextField).last, 'B');
+    await tester.pump();
+
+    expect(currentLatex, r'A=$\sum_{i=1}^{n} {a_i}$B');
   });
 
   testWidgets('accepts a category shortcut with Tab', (tester) async {
