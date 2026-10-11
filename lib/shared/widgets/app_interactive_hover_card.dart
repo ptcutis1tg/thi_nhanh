@@ -9,6 +9,7 @@ class AppInteractiveHoverCard extends StatefulWidget {
   final Gradient? gradient;
   final Border? customBorder;
   final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
   final bool enableHover;
   final double hoverTranslateY;
   final bool applyCardDecoration;
@@ -22,6 +23,7 @@ class AppInteractiveHoverCard extends StatefulWidget {
     this.gradient,
     this.customBorder,
     this.padding,
+    this.margin,
     this.enableHover = true,
     this.hoverTranslateY = -3.0,
     this.applyCardDecoration = true,
@@ -45,6 +47,7 @@ class _AppInteractiveHoverCardState extends State<AppInteractiveHoverCard> {
       content = AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
+        margin: widget.margin,
         padding: widget.padding,
         decoration: BoxDecoration(
           color: widget.gradient == null
@@ -69,7 +72,11 @@ class _AppInteractiveHoverCardState extends State<AppInteractiveHoverCard> {
                     ]
                   : AppTheme.luminescenceShadow),
         ),
-        child: widget.child,
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(effectiveRadius),
+          child: widget.child,
+        ),
       );
     }
 

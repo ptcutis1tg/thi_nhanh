@@ -8,6 +8,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/utils/avatar_helper.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -220,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: isMobile ? 16 : 32,
@@ -313,20 +314,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 1. PROFILE HEADER CARD
   // ---------------------------------------------------------------------------
   Widget _buildProfileHeaderCard(AuthProvider authProvider, bool isMobile) {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: isMobile
           ? Column(
               children: [
@@ -441,20 +431,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // --- 2-TAB BAR ---
   Widget _buildProfileTabBar() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      borderRadius: 20,
       child: Row(
         children: [
           Expanded(
@@ -635,20 +614,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : ['Phòng 1', 'Phòng 2', 'Phòng 3', 'Phòng 4', 'Phòng 5', 'Phòng 6'];
     }
 
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -821,20 +789,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ---------------------------------------------------------------------------
   Widget _buildOverviewOrAchievementsCard() {
     if (_isStudentRole) {
-      return Container(
+      return AppInteractiveHoverCard(
         padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppTheme.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: 24,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -874,20 +831,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     } else {
       // Teacher Exam Overview Card ("📌 Tổng quan đề thi")
-      return Container(
+      return AppInteractiveHoverCard(
         padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppTheme.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: 24,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1041,20 +987,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 4. STUDENT RECENT TEST CARD
   // ---------------------------------------------------------------------------
   Widget _buildStudentRecentTestCard() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1229,20 +1164,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 5. TEACHER RECENT ROOMS CARD ("🕘 Phòng thi gần đây")
   // ---------------------------------------------------------------------------
   Widget _buildTeacherRecentRoomsCard() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1420,20 +1344,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 6. TEACHER EXAM SETS CARD ("📝 Bộ đề của tôi")
   // ---------------------------------------------------------------------------
   Widget _buildTeacherExamSetsCard() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1566,20 +1479,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 7. TEACHING INSIGHTS CARD ("💡 Cần chú ý")
   // ---------------------------------------------------------------------------
   Widget _buildTeacherInsightsCard() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1677,20 +1579,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 8. PERSONAL INFORMATION CARD
   // ---------------------------------------------------------------------------
   Widget _buildPersonalInformationCard() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1793,20 +1684,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ---------------------------------------------------------------------------
   Widget _buildChangePasswordCard(AuthProvider authProvider) {
     if (authProvider.isGoogleUser) {
-      return Container(
+      return AppInteractiveHoverCard(
         padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppTheme.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: 24,
         child: Row(
           children: [
             Container(
@@ -1856,20 +1736,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2021,20 +1890,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 10. ACCOUNT ACTIONS CARD
   // ---------------------------------------------------------------------------
   Widget _buildAccountActionsCard(AuthProvider authProvider) {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      borderRadius: 24,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

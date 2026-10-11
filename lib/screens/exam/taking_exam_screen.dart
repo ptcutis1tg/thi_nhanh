@@ -10,6 +10,8 @@ import '../../core/models/assessment.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/exam_shuffle_helper.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class TakingExamScreen extends StatefulWidget {
   final String? examId;
@@ -868,8 +870,7 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
           context.pop();
         }
       },
-      child: Scaffold(
-        backgroundColor: AppTheme.background,
+      child: MilkyMintScaffold(
         appBar: _buildMinimalAppBar(),
         body: LayoutBuilder(
           builder: (context, constraints) {
@@ -1555,19 +1556,9 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     final isLastQuestion = _currentQuestionIndex >= _questions.length - 1;
 
     return SelectionContainer.disabled(
-      child: Container(
+      child: AppInteractiveHoverCard(
+        borderRadius: 16,
         padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1800,14 +1791,9 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
   }
 
   Widget _buildSidebarNavigator() {
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: AppTheme.cardRadius,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: AppTheme.cardShadow,
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

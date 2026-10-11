@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class GreetingScreen extends StatefulWidget {
   const GreetingScreen({super.key});
@@ -214,14 +215,9 @@ class _GreetingScreenState extends State<GreetingScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 440),
-                  child: Container(
+                  child: AppInteractiveHoverCard(
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 38),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(AppTheme.shellRadius),
-                      border: Border.all(color: AppTheme.border),
-                      boxShadow: AppTheme.luminescenceShadow,
-                    ),
+                    borderRadius: AppTheme.shellRadius,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,

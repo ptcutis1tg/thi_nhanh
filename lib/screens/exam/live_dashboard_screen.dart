@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/top_nav_bar.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class LiveDashboardScreen extends StatefulWidget {
   final String? roomCode;
@@ -116,15 +118,13 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: AppTheme.background,
+      return const MilkyMintScaffold(
         appBar: TopNavBar(),
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppTheme.background,
+    return MilkyMintScaffold(
       appBar: const TopNavBar(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
@@ -148,70 +148,74 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   }
 
   Widget _buildHeader() {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryDark,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        boxShadow: AppTheme.luminescenceShadow,
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 16,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Phòng Thi: $_roomCodeStr',
-                style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Môn: $_subjectName • $_roomTitle • Đang diễn ra',
-                style: const TextStyle(fontSize: 16, color: Colors.white70),
-              ),
-            ],
-          ),
-          OutlinedButton.icon(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Xác nhận đóng phòng'),
-                  content: const Text('Sau khi đóng, học sinh sẽ không thể tiếp tục làm bài hoặc nộp bài. Bạn có chắc chắn?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => context.pop(),
-                      child: const Text('Hủy'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.pop();
-                        context.go('/home');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.error,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
-                      ),
-                      child: const Text('Đóng phòng thi'),
-                    ),
-                  ],
+      borderRadius: AppTheme.cardRadius,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryDark,
+          borderRadius: BorderRadius.circular(AppTheme.cardRadius - 4),
+          boxShadow: AppTheme.luminescenceShadow,
+        ),
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Phòng Thi: $_roomCodeStr',
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
-              );
-            },
-            icon: const Icon(Icons.stop_circle_outlined, color: Colors.white),
-            label: const Text('Kết thúc Phòng thi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.white38),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                const SizedBox(height: 8),
+                Text(
+                  'Môn: $_subjectName • $_roomTitle • Đang diễn ra',
+                  style: const TextStyle(fontSize: 16, color: Colors.white70),
+                ),
+              ],
             ),
-          ),
-        ],
+            OutlinedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Xác nhận đóng phòng'),
+                    content: const Text('Sau khi đóng, học sinh sẽ không thể tiếp tục làm bài hoặc nộp bài. Bạn có chắc chắn?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => context.pop(),
+                        child: const Text('Hủy'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          context.pop();
+                          context.go('/home');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.error,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+                        ),
+                        child: const Text('Đóng phòng thi'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: const Icon(Icons.stop_circle_outlined, color: Colors.white),
+              label: const Text('Kết thúc Phòng thi', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.white38),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.pillRadius)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -288,14 +292,9 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
     required IconData icon,
     required Color color,
   }) {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: AppTheme.cardShadow,
-      ),
+      borderRadius: AppTheme.cardRadius,
       child: Row(
         children: [
           Container(
@@ -333,13 +332,8 @@ class _LiveDashboardScreenState extends State<LiveDashboardScreen> {
   }
 
   Widget _buildMonitoringTable() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: AppTheme.cardShadow,
-      ),
+    return AppInteractiveHoverCard(
+      borderRadius: AppTheme.cardRadius,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

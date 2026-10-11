@@ -256,13 +256,17 @@ graph TD
   - [x] Đăng ký tuyến đường `/join` và `/room/join` trong `GoRouter`.
   - [x] Nâng tổng số bài kiểm thử tự động lên **219 / 219 bài kiểm thử (100% PASS)**.
 
-- ✅ **Giai đoạn 11: Ngôn Ngữ Thiết Kế Hatsune Miku & Hệ Thống Container Sứ 3D (Miku Cyber-Aqua Palette & 3D Enamel Containers):**
+- ✅ **Giai đoạn 11: Ngôn Ngữ Thiết Kế Hatsune Miku, Nền Mây Dreamy Miku & Hệ Thống Tương Tác 3D Toàn Diện (Miku Cloud Texture, Cyber-Aqua Palette & Universal 3D Interactive Hover):**
   - [x] **Hệ Màu Hatsune Miku & Pale Mint:** Triển khai bảng màu Cyber-Aqua (`#39C5BB`), Deep Teal (`#00A896`), Cyan Glow (`#7FE3DB`), Pale Mint Pill (`#E6FAF8`), điểm xuyết Magenta Pink (`#E84188`) và nền Milky Mint Canvas (`#F4FAF9`).
-  - [x] **Hệ Thống Container Sứ 3D Đa Tầng:** 4 cấp độ bo góc (32px shell, 24px hero banner, 16px standard card, 100px capsule pills) kết hợp viền 1px hairline và đổ bóng ngọc bích phát quang dịu mắt (`luminescenceShadow` & `hoverGlowShadow`).
-  - [x] **Tương Tác PC Micro-Hover (`AppInteractiveHoverCard`):** Trên PC/Desktop, nút và thẻ khi có con trỏ chuột rê vào sẽ nhấc nhẹ 2.5px, tăng độ sáng và mở rộng bóng đổ phát quang; trên Mobile cảm ứng giữ tĩnh không kích hoạt để loại bỏ hoàn toàn độ trễ và tránh dính hover.
-  - [x] **Nền Đa Tầng Không Lag (`MilkyMintScaffold`):** Đốm sáng ngọc bích cố định trong `RepaintBoundary`, 0% phụ thuộc `BackdropFilter` thời gian thực (Zero GPU Blur Lag).
-  - [x] **Áp dụng toàn bộ App:** Cập nhật đồng bộ `AppTheme`, `HomeScreen`, `TopNavBar`, `MobileBottomNavBar`, `GreetingScreen`, `TeacherExamsScreen`, `CreateRoomScreen`, `JoinRoomScreen`, `ExamDetailScreen`, `ProfileScreen`.
-  - [x] **Nâng tổng số bài kiểm thử tự động lên 231 / 231 bài kiểm thử (100% PASS)** với các bài test mới: `app_theme_test.dart`, `app_interactive_hover_card_test.dart`, `milky_mint_scaffold_test.dart`.
+  - [x] **Nền Vân Mây Dreamy Miku Siêu Nhẹ (`miku_cloud_bg.png` & `MilkyMintScaffold`):** Lớp vân mây bồng bềnh Hatsune Miku mờ ảo 25% opacity được cố định trong `RepaintBoundary` kết hợp các quầng sáng Ambient ngọc bích phát quang êm dịu, không sử dụng `BackdropFilter` thời gian thực (Zero GPU Blur Lag, duy trì mượt mà 60/120 FPS trên mọi thiết bị).
+  - [x] **Tương Tác PC Micro-Hover 3D Toàn Diện (`AppInteractiveHoverCard`):** Trên PC/Desktop, các nút, thẻ và khung giao diện khi có con trỏ chuột rê vào sẽ nhấc nhẹ 2.5px - 3.0px và lan tỏa hào quang `hoverGlowShadow` ngọc bích phát quang; trên Mobile cảm ứng giữ tĩnh không kích hoạt để loại bỏ hoàn toàn độ trễ và tránh dính hover.
+  - [x] **Áp dụng 100% Đồng Bộ Toàn Bộ Màn Hình Ứng Dụng:**
+    - Vỏ bọc hệ thống: `MainLayoutScreen`, `MilkyMintScaffold`, `TopNavBar`, `MobileBottomNavBar`.
+    - Phân hệ xác thực: `GreetingScreen`, `ResetPasswordScreen`.
+    - Phân hệ trang chủ & khám phá: `HomeScreen`, `SearchScreen`.
+    - Phân hệ giáo viên & phòng thi: `TeacherExamsScreen`, `CreateExamScreen`, `CreateRoomScreen`, `JoinRoomScreen`, `RoomPasswordScreen`, `TeacherWaitingRoomScreen`, `StudentWaitingRoomScreen`, `LiveDashboardScreen`, `TeacherRoomsHistoryScreen`, `TeacherAnalyticsScreen`, `QuestionReportsScreen`, `TeacherStudentResultsScreen`.
+    - Phân hệ học sinh & làm bài: `ExamDetailScreen`, `TakingExamScreen`, `ResultScreen`, `WrongQuestionsPracticeScreen`, `StudentHistoryScreen`, `StudentAchievementsScreen`, `StudentLeaderboardScreen`, `ProfileScreen`.
+  - [x] **Đạt 231 / 231 bài kiểm thử tự động đạt 100% PASS** bao gồm toàn bộ unit, widget, migration và E2E tests.
 
 ### 6.2. Lộ Trình Đề Xuất Tiếp Theo (Actionable Roadmap)
 1. **Giai đoạn 12: Quản lý Lớp Học (Classroom Management) — Thiết kế Chuẩn hóa:**

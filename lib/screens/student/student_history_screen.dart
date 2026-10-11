@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/profile_service.dart';
 import '../../shared/widgets/google_pagination_bar.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class StudentHistoryScreen extends StatefulWidget {
   final StudentProfileData? testData;
@@ -267,7 +268,7 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
     final pageItems = filteredItems.skip(startIndex).take(_pageSize).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+      backgroundColor: Colors.transparent,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 900;
@@ -781,20 +782,11 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
     final modeColor = item.isLiveRoom ? const Color(0xFF1D4ED8) : const Color(0xFF6D28D9);
     final modeIcon = item.isLiveRoom ? Icons.meeting_room_outlined : Icons.fitness_center_rounded;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEBE6FC)),
-      ),
-      color: Colors.white,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => context.go('/result?attemptId=${Uri.encodeComponent(item.id)}'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LayoutBuilder(
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
+      onTap: () => context.go('/result?attemptId=${Uri.encodeComponent(item.id)}'),
+      padding: const EdgeInsets.all(16),
+      child: LayoutBuilder(
             builder: (context, cardConstraints) {
               final isNarrowCard = cardConstraints.maxWidth < 650;
 
@@ -1035,10 +1027,8 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
               );
             },
           ),
-        ),
-      ),
-    );
-  }
+        );
+      }
 
   Widget _buildEmptyState() {
     return Container(
@@ -1328,19 +1318,9 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
   }
 
   Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
@@ -1581,21 +1561,11 @@ class _StudentHistoryScreenState extends State<StudentHistoryScreen> {
   Widget _buildInProgressCard(StudentTestHistoryData item) {
     final isExpired = item.isExpired;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isExpired ? const Color(0xFFFCA5A5) : const Color(0xFFFDE68A),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
+      customBorder: Border.all(
+        color: isExpired ? const Color(0xFFFCA5A5) : const Color(0xFFFDE68A),
+        width: 1.5,
       ),
       padding: const EdgeInsets.all(18),
       child: Column(

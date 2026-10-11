@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/profile_service.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class StudentAchievementsScreen extends StatefulWidget {
   const StudentAchievementsScreen({super.key});
@@ -42,8 +44,7 @@ class _StudentAchievementsScreenState extends State<StudentAchievementsScreen> {
   Widget build(BuildContext context) {
     final unlockedCount = _data.achievements.where((a) => a.isUnlocked).length;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+    return MilkyMintScaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Center(
@@ -73,23 +74,14 @@ class _StudentAchievementsScreenState extends State<StudentAchievementsScreen> {
                 const SizedBox(height: 24),
 
                 // Streak Banner
-                Container(
+                AppInteractiveHoverCard(
                   padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF9333EA), Color(0xFF6D28D9)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF9333EA).withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9333EA), Color(0xFF6D28D9)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: 24,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -155,22 +147,12 @@ class _StudentAchievementsScreenState extends State<StudentAchievementsScreen> {
                     itemCount: _data.achievements.length,
                     itemBuilder: (context, index) {
                       final item = _data.achievements[index];
-                      return Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: item.isUnlocked ? const Color(0xFFD8B4FE) : const Color(0xFFE5E7EB),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.02),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+                      return AppInteractiveHoverCard(
+                        borderRadius: 20,
+                        customBorder: Border.all(
+                          color: item.isUnlocked ? const Color(0xFFD8B4FE) : const Color(0xFFE5E7EB),
                         ),
+                        padding: const EdgeInsets.all(20),
                         child: Row(
                           children: [
                             Container(

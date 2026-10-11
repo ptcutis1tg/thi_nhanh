@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/services/developer_mode_service.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class ExamDetailScreen extends StatefulWidget {
   final String? examId;
@@ -393,7 +394,7 @@ class _ExamDetailScreenState extends State<ExamDetailScreen> with SingleTickerPr
     final examCode = _examData?['code'] as String? ?? 'DT100001';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+      backgroundColor: Colors.transparent,
       floatingActionButton: MediaQuery.of(context).size.width < 900 && _questions.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () => _showQuestionGridBottomSheet(context),
@@ -655,14 +656,9 @@ class _ExamSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: AppTheme.cardRadius,
       padding: EdgeInsets.all(isMobile ? 16 : 26),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-        border: Border.all(color: AppTheme.border),
-        boxShadow: AppTheme.luminescenceShadow,
-      ),
       child: LayoutBuilder(builder: (context, constraints) {
         final narrow = constraints.maxWidth < 760;
         final cover = Container(
@@ -735,14 +731,9 @@ class _ActionPanel extends StatelessWidget {
   final VoidCallback onToggleSave;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => AppInteractiveHoverCard(
+        borderRadius: AppTheme.cardRadius,
         padding: const EdgeInsets.all(26),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-          border: Border.all(color: AppTheme.border),
-          boxShadow: AppTheme.cardShadow,
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -827,13 +818,9 @@ class _InfoBox extends StatelessWidget {
   final String title;
   final String body;
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => AppInteractiveHoverCard(
+        borderRadius: 18,
         padding: const EdgeInsets.all(25),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppTheme.border),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -876,20 +863,9 @@ class _QuestionCard extends StatelessWidget {
 
     const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 18,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEDE9FE)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1039,20 +1015,9 @@ class _QuickJumpSidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 18,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFEDE9FE)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x06000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

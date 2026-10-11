@@ -6,6 +6,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/utils/supabase_retry_helper.dart';
 import '../../shared/widgets/top_nav_bar.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class LeaderboardUser {
   final String id;
@@ -192,9 +194,8 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
     final currentUserEmail = authProvider.userEmail;
     final currentUserName = authProvider.userName;
 
-    return Scaffold(
+    return MilkyMintScaffold(
       appBar: const TopNavBar(),
-      backgroundColor: AppTheme.background,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Center(
@@ -239,15 +240,9 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
                   const SizedBox(height: 32),
 
                   // Leaderboard List
-                  Container(
+                  AppInteractiveHoverCard(
+                    borderRadius: 20,
                     padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 4)),
-                      ],
-                    ),
                     child: ListView.separated(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -317,33 +312,29 @@ class _StudentLeaderboardScreenState extends State<StudentLeaderboardScreen> {
   }
 
   Widget _buildPodiumCard(LeaderboardUser user, int rank, double height, Color crownColor, String badge) {
-    return Container(
-      width: 160,
-      height: height,
+    return AppInteractiveHoverCard(
+      borderRadius: 20,
+      customBorder: Border.all(color: crownColor, width: 2),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: crownColor, width: 2),
-        boxShadow: [
-          BoxShadow(color: crownColor.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(badge, style: const TextStyle(fontSize: 28)),
-          const SizedBox(height: 4),
-          Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-          Text(
-            '${user.avgScore.toStringAsFixed(1)} điểm',
-            style: AppTheme.firaCodeStyle.copyWith(
-              fontSize: 12,
-              color: crownColor,
-              fontWeight: FontWeight.bold,
+      child: SizedBox(
+        width: 160,
+        height: height,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(badge, style: const TextStyle(fontSize: 28)),
+            const SizedBox(height: 4),
+            Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              '${user.avgScore.toStringAsFixed(1)} điểm',
+              style: AppTheme.firaCodeStyle.copyWith(
+                fontSize: 12,
+                color: crownColor,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
