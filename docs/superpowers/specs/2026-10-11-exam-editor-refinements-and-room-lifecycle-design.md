@@ -115,6 +115,16 @@ Giải quyết trọn vẹn 6 yêu cầu người dùng đề ra nhằm nâng ca
 
 ---
 
+### 2.7. Nâng Cấp Hình Nền Nền Hệ Thống (`cloudv2` & `cloudv2_tall`)
+- **Tài nguyên ảnh nền:**
+  - `assets/images/cloudv2.jpg`: Phiên bản ngang (16:9) sóng mây cyber-mint nguyên bản.
+  - `assets/images/cloudv2_tall.jpg`: Phiên bản mở rộng chiều dọc (9:16) liền mạch mượt mà, tối ưu tuyệt đối cho màn hình dọc, mobile và các trang cuộn dài.
+- **Tích hợp trong `MilkyMintScaffold`:**
+  - Thay thế tài nguyên cũ `miku_cloud_bg.png` bằng `cloudv2.jpg` / `cloudv2_tall.jpg`.
+  - Sử dụng cơ chế adaptive hoặc hiển thị lớp nền `cloudv2_tall.jpg` với `fit: BoxFit.cover`, opacity dịu mắt (0.35 - 0.45), đảm bảo tôn lên các khối card và nội dung văn bản mà vẫn mang lại hiệu ứng thị giác bồng bềnh, cao cấp.
+
+---
+
 ## 3. Kế Hoạch Kiểm Thử (Testing Strategy)
 1. **Unit & Widget Tests:**
    - Test `CreateExamScreen`: Cho phép tạo đề với môn học `none` hoặc trống; mở modal sửa thông tin đề và cập nhật state thành công; chặn xuất bản nếu tổng điểm khác 10 và kiểm tra nút chia đều điểm.
