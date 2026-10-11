@@ -16,6 +16,7 @@ import 'widgets/scientific_bottom_toolbar.dart';
 import 'widgets/scientific_text_field.dart';
 import 'widgets/student_exam_preview_dialog.dart';
 import 'widgets/inline_visual_math_editor.dart';
+import 'widgets/edit_exam_info_dialog.dart';
 import '../../core/models/scientific_shortcut.dart';
 
 class CreateExamScreen extends StatefulWidget {
@@ -156,6 +157,26 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         _addQuestion();
       }
     });
+  }
+
+  void _openEditExamInfoDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => EditExamInfoDialog(
+        initialTitle: _examNameController.text,
+        initialSubject: _selectedSubject ?? 'none',
+        initialDurationMinutes: int.tryParse(_durationController.text) ?? 45,
+        onSave: (newTitle, newSubject, newDuration) {
+          setState(() {
+            _examNameController.text = newTitle;
+            _selectedSubject = newSubject;
+            _durationController.text = newDuration.toString();
+            _scientificCategory = _categoryForSubject(_selectedSubject);
+          });
+          _saveDraft();
+        },
+      ),
+    );
   }
 
   void _addQuestion() {
@@ -485,6 +506,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                   questionCount: _questions.length,
                   totalPoints: _totalPoints,
                   onDistributePointsEvenly: _distributePointsEvenly,
+                  onEditInfo: _openEditExamInfoDialog,
                   perQuestionTimerEnabled: _perQuestionTimerEnabled,
                   onTogglePerQuestionTimer: (enabled) {
                     setState(() {
@@ -538,6 +560,12 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
+                ),
+                IconButton(
+                  key: const Key('header-edit-info'),
+                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textSecondary),
+                  tooltip: 'Chỉnh sửa thông tin đề',
+                  onPressed: _openEditExamInfoDialog,
                 ),
                 const SizedBox(width: 8),
                 Container(
