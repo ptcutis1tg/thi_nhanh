@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onthi_community/screens/exam/widgets/latex_math_view.dart';
 import 'package:onthi_community/core/models/visual_math_block.dart';
@@ -54,5 +55,29 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('rightleftharpoons'), findsNothing);
+  });
+
+  testWidgets('renders raw LaTeX environments without dollar delimiters', (
+    tester,
+  ) async {
+    const source = r'''A=\begin{pmatrix}
+1 & 2 & 3\\
+4 & 5 & 6
+\end{pmatrix}
+
+\begin{cases}
+2x+3y=7\\
+x-y=1
+\end{cases}''';
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: LatexMathView(text: source)),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(Math), findsOneWidget);
+    expect(find.textContaining(r'\begin{pmatrix}'), findsNothing);
   });
 }

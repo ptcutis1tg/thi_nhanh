@@ -15,7 +15,7 @@ import 'widgets/quick_bulk_import_dialog.dart';
 import 'widgets/scientific_bottom_toolbar.dart';
 import 'widgets/scientific_text_field.dart';
 import 'widgets/student_exam_preview_dialog.dart';
-import 'widgets/inline_visual_math_editor.dart';
+import 'widgets/multi_line_question_editor.dart';
 import 'widgets/edit_exam_info_dialog.dart';
 import '../../core/models/scientific_shortcut.dart';
 
@@ -29,7 +29,7 @@ class CreateExamScreen extends StatefulWidget {
 }
 
 class _CreateExamScreenState extends State<CreateExamScreen> {
-  final _editorController = InlineVisualMathEditorController();
+  final _editorController = MultiLineQuestionEditorController();
   final _examNameController = TextEditingController();
   final _durationController = TextEditingController(text: '45');
   String? _selectedSubject;
@@ -356,14 +356,14 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       final shouldDistribute = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 26),
               SizedBox(width: 8),
-              Expanded(
-                child: Text('Tổng điểm bài thi chưa đạt 10 điểm'),
-              ),
+              Expanded(child: Text('Tổng điểm bài thi chưa đạt 10 điểm')),
             ],
           ),
           content: Text(
@@ -388,7 +388,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
       if (shouldDistribute == true) {
         _distributePointsEvenly();
-        _showMessage('Đã chia đều 10 điểm cho ${_questions.length} câu hỏi thành công.');
+        _showMessage(
+          'Đã chia đều 10 điểm cho ${_questions.length} câu hỏi thành công.',
+        );
       }
       return;
     }
@@ -604,7 +606,11 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                 ),
                 IconButton(
                   key: const Key('header-edit-info'),
-                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textSecondary),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                    color: AppTheme.textSecondary,
+                  ),
                   tooltip: 'Chỉnh sửa thông tin đề',
                   onPressed: _openEditExamInfoDialog,
                 ),
@@ -835,9 +841,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                   const SizedBox(height: 10),
-                  InlineVisualMathEditor(
+                  MultiLineQuestionEditor(
                     key: ValueKey('visual-editor-${question.id}'),
-                    initialLatex: question.body,
+                    initialValue: question.body,
                     controller: _editorController,
                     shortcutCategory: _scientificCategory,
                     shortcuts:
@@ -890,7 +896,11 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                           const Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.warning_amber_rounded, color: AppTheme.warning, size: 19),
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                color: AppTheme.warning,
+                                size: 19,
+                              ),
                               SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -1077,21 +1087,45 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     ),
                   ),
                   items: const [
-                    DropdownMenuItem(value: 'none', child: Text('Không phân loại (none)')),
+                    DropdownMenuItem(
+                      value: 'none',
+                      child: Text('Không phân loại (none)'),
+                    ),
                     DropdownMenuItem(value: 'Toán', child: Text('Toán')),
                     DropdownMenuItem(value: 'Ngữ văn', child: Text('Ngữ văn')),
-                    DropdownMenuItem(value: 'Tiếng Anh', child: Text('Tiếng Anh')),
+                    DropdownMenuItem(
+                      value: 'Tiếng Anh',
+                      child: Text('Tiếng Anh'),
+                    ),
                     DropdownMenuItem(value: 'Vật lý', child: Text('Vật lý')),
                     DropdownMenuItem(value: 'Hóa học', child: Text('Hóa học')),
-                    DropdownMenuItem(value: 'Sinh học', child: Text('Sinh học')),
+                    DropdownMenuItem(
+                      value: 'Sinh học',
+                      child: Text('Sinh học'),
+                    ),
                     DropdownMenuItem(value: 'Lịch sử', child: Text('Lịch sử')),
                     DropdownMenuItem(value: 'Địa lý', child: Text('Địa lý')),
-                    DropdownMenuItem(value: 'Giáo dục công dân', child: Text('Giáo dục công dân')),
+                    DropdownMenuItem(
+                      value: 'Giáo dục công dân',
+                      child: Text('Giáo dục công dân'),
+                    ),
                     DropdownMenuItem(value: 'Tin học', child: Text('Tin học')),
-                    DropdownMenuItem(value: 'Công nghệ', child: Text('Công nghệ')),
-                    DropdownMenuItem(value: 'Khoa học tự nhiên', child: Text('Khoa học tự nhiên')),
-                    DropdownMenuItem(value: 'Lịch sử & Địa lý', child: Text('Lịch sử & Địa lý')),
-                    DropdownMenuItem(value: 'Ngoại ngữ khác', child: Text('Ngoại ngữ khác')),
+                    DropdownMenuItem(
+                      value: 'Công nghệ',
+                      child: Text('Công nghệ'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Khoa học tự nhiên',
+                      child: Text('Khoa học tự nhiên'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Lịch sử & Địa lý',
+                      child: Text('Lịch sử & Địa lý'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Ngoại ngữ khác',
+                      child: Text('Ngoại ngữ khác'),
+                    ),
                   ],
                   onChanged: (value) =>
                       setState(() => _selectedSubject = value),
