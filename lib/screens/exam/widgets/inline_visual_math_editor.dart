@@ -27,6 +27,7 @@ class InlineVisualMathEditor extends StatefulWidget {
     this.compact = false,
     this.showEditorFrame = true,
     this.segmentKeyPrefix = 'inline-math',
+    this.textMaxLines,
   });
 
   final String initialLatex;
@@ -38,6 +39,7 @@ class InlineVisualMathEditor extends StatefulWidget {
   final bool compact;
   final bool showEditorFrame;
   final String segmentKeyPrefix;
+  final int? textMaxLines;
 
   @override
   State<InlineVisualMathEditor> createState() => _InlineVisualMathEditorState();
@@ -362,6 +364,7 @@ class _InlineVisualMathEditorState extends State<InlineVisualMathEditor> {
           : '',
       autofocus: index > 0 && seg.text.isEmpty,
       minWidth: _segments.length <= 1 ? (widget.compact ? 120 : 80) : 18,
+      maxLines: widget.textMaxLines,
       onChanged: (val) {
         seg.text = val;
         _notifyChange();
@@ -389,6 +392,7 @@ class _TextSegmentField extends StatefulWidget {
     required this.onInsertBlock,
     this.autofocus = false,
     this.minWidth = 18,
+    this.maxLines,
     this.onFocused,
   });
 
@@ -402,6 +406,7 @@ class _TextSegmentField extends StatefulWidget {
   final void Function(MathBlockType type, int start, int end) onInsertBlock;
   final bool autofocus;
   final double minWidth;
+  final int? maxLines;
   final ValueChanged<ScientificInputTarget>? onFocused;
 
   @override
@@ -548,7 +553,7 @@ class _TextSegmentFieldState extends State<_TextSegmentField> {
             child: TextField(
               focusNode: _focusNode,
               controller: _controller,
-              maxLines: null,
+              maxLines: widget.maxLines,
               style: const TextStyle(fontSize: 15, height: 1.5),
               decoration: InputDecoration(
                 isDense: true,

@@ -86,7 +86,7 @@ class _ScientificTextFieldState extends State<ScientificTextField> {
         label: widget.fieldLabel,
         insertText: _insertText,
         insertBlock: (type) => _insertText(
-          '\$${MathBlockSegment(id: 'inline', type: type).toLatex()}\$',
+          '\$${MathBlockSegment(id: 'inline', type: type, slots: type.defaultSlots).toLatex()}\$',
           0,
           0,
         ),
@@ -121,7 +121,7 @@ class _ScientificTextFieldState extends State<ScientificTextField> {
       final shortcut = _suggestion!;
       final replacement = shortcut.blockType == null
           ? shortcut.template ?? ''
-          : '\$${MathBlockSegment(id: 'shortcut', type: shortcut.blockType!).toLatex()}\$';
+          : '\$${MathBlockSegment(id: 'shortcut', type: shortcut.blockType!, slots: shortcut.blockType!.defaultSlots).toLatex()}\$';
       final updated = _controller.text.replaceRange(
         _commandStart,
         _commandEnd,

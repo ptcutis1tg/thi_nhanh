@@ -47,6 +47,8 @@ class _QuestionLine {
 
 class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
   late List<_QuestionLine> _lines;
+  late TextEditingController _rawLatexController;
+  var _isRawLatexMode = false;
   var _nextId = 0;
   int? _activeLineId;
 
@@ -55,23 +57,26 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
     super.initState();
     widget.controller?._state = this;
     _lines = _createLines(widget.initialValue);
+    _rawLatexController = TextEditingController(text: widget.initialValue);
   }
 
   @override
   void didUpdateWidget(covariant MultiLineQuestionEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
     widget.controller?._state = this;
-    final current = QuestionContentLines.compile(
-      _lines.map((line) => line.value),
-    );
+    final current = _isRawLatexMode
+        ? _rawLatexController.text
+        : QuestionContentLines.compile(_lines.map((line) => line.value));
     if (widget.initialValue != current) {
       _lines = _createLines(widget.initialValue);
+      _rawLatexController.text = widget.initialValue;
     }
   }
 
   @override
   void dispose() {
     if (widget.controller?._state == this) widget.controller?._state = null;
+    _rawLatexController.dispose();
     super.dispose();
   }
 
@@ -92,6 +97,20 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
       _activeLineId = line.id;
     });
     _notifyChanged();
+  }
+
+  void _switchMode(bool rawLatex) {
+    if (_isRawLatexMode == rawLatex) return;
+    setState(() {
+      if (rawLatex) {
+        _rawLatexController.text = QuestionContentLines.compile(
+          _lines.map((line) => line.value),
+        );
+      } else {
+        _lines = _createLines(_rawLatexController.text);
+      }
+      _isRawLatexMode = rawLatex;
+    });
   }
 
   void _removeLine(int index) {
@@ -124,20 +143,61 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (var index = 0; index < _lines.length; index++) ...[
-          _buildLine(index),
-          if (index < _lines.length - 1) const SizedBox(height: 8),
-        ],
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton.icon(
+        _buildModeSwitcher(),
+        const SizedBox(height: 10),
+        if (_isRawLatexMode)
+          ScientificTextField(
+            key: const Key('question-raw-latex-field'),
+            initialValue: _rawLatexController.text,
+            maxLines: 12,
+            category: widget.shortcutCategory,
+            shortcuts: widget.shortcuts,
+            fieldLabel: 'Mã nguồn LaTeX câu hỏi',
+            onFocused: widget.onFocusTarget,
+            decoration: const InputDecoration(
+              hintText:
+                  r'Ví dụ: $\frac{a}{b}$ hoặc \begin{pmatrix} ... \end{pmatrix}',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              _rawLatexController.text = value;
+              widget.onChanged(value);
+            },
+          )
+        else ...[
+          for (var index = 0; index < _lines.length; index++) ...[
+            _buildLine(index),
+            if (index < _lines.length - 1) const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
             key: const Key('add-question-content-line'),
             onPressed: _addLine,
             icon: const Icon(Icons.add_rounded, size: 18),
             label: const Text('Thêm dòng'),
           ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildModeSwitcher() {
+    return Row(
+      children: [
+        _ModeButton(
+          icon: Icons.dashboard_customize_outlined,
+          label: 'Khối trực quan [ ]',
+          selected: !_isRawLatexMode,
+          onTap: () => _switchMode(false),
+        ),
+        const SizedBox(width: 8),
+        _ModeButton(
+          icon: Icons.code_rounded,
+          label: 'Mã nguồn LaTeX',
+          selected: _isRawLatexMode,
+          onTap: () => _switchMode(true),
         ),
       ],
     );
@@ -158,7 +218,7 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
         ),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 7, right: 8),
@@ -178,6 +238,7 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
               controller: line.controller,
               compact: true,
               showEditorFrame: false,
+              textMaxLines: 1,
               shortcutCategory: widget.shortcutCategory,
               shortcuts: widget.shortcuts,
               onFocusTarget: (target) {
@@ -193,35 +254,70 @@ class _MultiLineQuestionEditorState extends State<MultiLineQuestionEditor> {
               },
             ),
           ),
-          Column(
-            children: [
-              IconButton(
-                tooltip: 'Đưa dòng lên',
-                visualDensity: VisualDensity.compact,
-                onPressed: index == 0 ? null : () => _moveLine(index, -1),
-                icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 19),
-              ),
-              IconButton(
-                tooltip: 'Đưa dòng xuống',
-                visualDensity: VisualDensity.compact,
-                onPressed: index == _lines.length - 1
-                    ? null
-                    : () => _moveLine(index, 1),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 19),
-              ),
-              IconButton(
-                tooltip: 'Xóa dòng',
-                visualDensity: VisualDensity.compact,
-                onPressed: () => _removeLine(index),
-                icon: const Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: AppTheme.error,
-                ),
-              ),
-            ],
+          IconButton(
+            tooltip: 'Xóa dòng',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _removeLine(index),
+            icon: const Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: AppTheme.error,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ModeButton extends StatelessWidget {
+  const _ModeButton({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: selected ? AppTheme.primary : AppTheme.border,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: selected ? AppTheme.primary : AppTheme.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.bold : FontWeight.w500,
+                color: selected ? AppTheme.primary : AppTheme.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
