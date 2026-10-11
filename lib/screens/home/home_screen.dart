@@ -1066,7 +1066,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Tìm Đề Luyện Tập',
               'desc': 'Khám phá hàng ngàn đề trắc nghiệm chuẩn cấu trúc',
               'icon': Icons.search_rounded,
-              'gradient': const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+              'accentColor': AppTheme.primary,
+              'containerColor': AppTheme.primaryContainer,
               'route': '/search',
               'isLive': false,
             },
@@ -1074,7 +1075,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Lịch Sử & Kết Quả',
               'desc': 'Xem lại điểm số, lời giải chi tiết và đáp án',
               'icon': Icons.analytics_outlined,
-              'gradient': const [Color(0xFFD97706), Color(0xFFB45309)],
+              'accentColor': const Color(0xFFD97706),
+              'containerColor': const Color(0xFFFEF3C7),
               'route': '/student/history',
               'isLive': false,
             },
@@ -1082,7 +1084,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Thành Tích Cá Nhân',
               'desc': 'Bộ sưu tập huy hiệu và chuỗi ngày học tập',
               'icon': Icons.emoji_events_outlined,
-              'gradient': const [Color(0xFF9333EA), Color(0xFF7E22CE)],
+              'accentColor': const Color(0xFF8B5CF6),
+              'containerColor': const Color(0xFFF3E8FF),
               'route': '/student/achievements',
               'isLive': false,
             },
@@ -1090,7 +1093,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Bảng Xếp Hạng',
               'desc': 'Thi đua điểm số cùng bạn học trên toàn hệ thống',
               'icon': Icons.leaderboard_outlined,
-              'gradient': const [Color(0xFFDB2777), Color(0xFFBE185D)],
+              'accentColor': AppTheme.accentMagenta,
+              'containerColor': const Color(0xFFFCE7F3),
               'route': '/student/leaderboard',
               'isLive': false,
             },
@@ -1100,7 +1104,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Tạo Đề Thi Mới',
               'desc': 'Soạn câu hỏi trắc nghiệm & ma trận đề thi',
               'icon': Icons.add_circle_outline_rounded,
-              'gradient': const [Color(0xFF7C3AED), Color(0xFF6D28D9)],
+              'accentColor': const Color(0xFF8B5CF6),
+              'containerColor': const Color(0xFFF3E8FF),
               'route': '/create_exam',
               'isLive': false,
             },
@@ -1108,7 +1113,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Quản Lý Đề Thi',
               'desc': 'Kho lưu trữ bài thi đã tạo và chỉnh sửa',
               'icon': Icons.folder_open_rounded,
-              'gradient': const [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+              'accentColor': AppTheme.primary,
+              'containerColor': AppTheme.primaryContainer,
               'route': '/teacher/exams',
               'isLive': false,
             },
@@ -1116,7 +1122,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Tạo Phòng Thi',
               'desc': 'Thiết lập thời gian & sinh mã phòng cho Học sinh',
               'icon': Icons.meeting_room_outlined,
-              'gradient': const [Color(0xFF059669), Color(0xFF047857)],
+              'accentColor': const Color(0xFF10B981),
+              'containerColor': const Color(0xFFD1FAE5),
               'route': '/create_room',
               'isLive': false,
             },
@@ -1126,7 +1133,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ? 'Phòng $_activeLiveRoomCode đang mở - Bấm để giám sát'
                   : 'Theo dõi tiến độ làm bài trực tiếp của Học sinh',
               'icon': Icons.sensors_rounded,
-              'gradient': const [Color(0xFFDC2626), Color(0xFFB91C1C)],
+              'accentColor': const Color(0xFFEF4444),
+              'containerColor': const Color(0xFFFEE2E2),
               'route': '/teacher_waiting_room',
               'isLive': _activeLiveRoomCode != null,
             },
@@ -1134,7 +1142,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Kết Quả Học Sinh',
               'desc': 'Xem danh sách bài nộp và thống kê điểm số',
               'icon': Icons.assessment_outlined,
-              'gradient': const [Color(0xFFD97706), Color(0xFFB45309)],
+              'accentColor': const Color(0xFFD97706),
+              'containerColor': const Color(0xFFFEF3C7),
               'route': '/teacher/student_results',
               'isLive': false,
             },
@@ -1142,7 +1151,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               'title': 'Thống Kê Giảng Dạy',
               'desc': 'Phân tích phổ điểm và độ khó của từng câu hỏi',
               'icon': Icons.pie_chart_outline_rounded,
-              'gradient': const [Color(0xFF9333EA), Color(0xFF7E22CE)],
+              'accentColor': AppTheme.accentMagenta,
+              'containerColor': const Color(0xFFFCE7F3),
               'route': '/teacher/analytics',
               'isLive': false,
             },
@@ -1155,7 +1165,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
         if (isMobile) {
           crossAxisCount = 1;
-          childAspectRatio = 1.85;
+          childAspectRatio = 1.95;
         } else if (items.length == 4) {
           if (constraints.maxWidth >= 950) {
             crossAxisCount = 4;
@@ -1186,7 +1196,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               title: item['title'],
               desc: item['desc'],
               icon: item['icon'],
-              gradient: item['gradient'],
+              accentColor: item['accentColor'],
+              containerColor: item['containerColor'],
               route: item['route'],
               isLive: item['isLive'],
               isMobile: isMobile,
@@ -1243,44 +1254,49 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     required String title,
     required String desc,
     required IconData icon,
-    required List<Color> gradient,
+    required Color accentColor,
+    required Color containerColor,
     required String route,
     required bool isLive,
     bool isMobile = false,
   }) {
     return AppInteractiveHoverCard(
       borderRadius: 20,
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: gradient,
+      backgroundColor: const Color(0xF8FFFFFF),
+      customBorder: Border.all(
+        color: isLive ? const Color(0xFFFECACA) : AppTheme.border,
+        width: isLive ? 1.5 : 1.2,
       ),
+      customBoxShadow: AppTheme.softGlowShadow,
       onTap: () => _onCardTap(title, route),
-      padding: EdgeInsets.all(isMobile ? 16 : 22),
+      padding: EdgeInsets.all(isMobile ? 18 : 22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: isMobile ? 40 : 48,
-                height: isMobile ? 40 : 48,
+                width: isMobile ? 42 : 48,
+                height: isMobile ? 42 : 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  color: containerColor,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: Colors.white, size: isMobile ? 22 : 26),
+                child: Icon(icon, color: accentColor, size: isMobile ? 22 : 26),
               ),
               if (isLive)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(100),
+                    border: Border.all(color: const Color(0xFFFCA5A5)),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       ScaleTransition(
                         scale: Tween(begin: 0.7, end: 1.2).animate(_pulseController),
@@ -1288,7 +1304,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF34D399),
+                            color: Color(0xFFEF4444),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1297,33 +1313,51 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const Text(
                         'ĐANG MỞ',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFFDC2626),
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
+                )
+              else
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceMuted,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.border.withValues(alpha: 0.6)),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: AppTheme.textSecondary,
+                  ),
                 ),
             ],
           ),
+          const SizedBox(height: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: isMobile ? 16 : 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  fontSize: isMobile ? 16 : 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textMain,
+                  letterSpacing: -0.2,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 desc,
-                style: TextStyle(
-                  fontSize: isMobile ? 11.5 : 12,
-                  color: Colors.white.withValues(alpha: 0.85),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                  height: 1.4,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
