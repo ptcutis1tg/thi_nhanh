@@ -264,12 +264,15 @@ class _GreetingScreenState extends State<GreetingScreen> {
                             children: [
                               _buildGoogleIcon(),
                               const SizedBox(width: 12),
-                              const Text(
-                                'Continue with Google',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF1E293B),
+                              const Flexible(
+                                child: Text(
+                                  'Continue with Google',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -284,17 +287,22 @@ class _GreetingScreenState extends State<GreetingScreen> {
                             const Expanded(
                               child: Divider(color: Color(0xFFE2E8F0), thickness: 1),
                             ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Text(
-                                _isRegisterMode
-                                    ? 'HOẶC ĐĂNG KÝ BẰNG EMAIL'
-                                    : 'HOẶC ĐĂNG NHẬP BẰNG EMAIL',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF94A3B8),
-                                  letterSpacing: 0.6,
+                            Flexible(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  _isRegisterMode
+                                      ? 'HOẶC ĐĂNG KÝ BẰNG EMAIL'
+                                      : 'HOẶC ĐĂNG NHẬP BẰNG EMAIL',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF94A3B8),
+                                    letterSpacing: 0.6,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
                             ),
@@ -492,6 +500,8 @@ class _GreetingScreenState extends State<GreetingScreen> {
                               fontWeight: FontWeight.w600,
                               color: AppTheme.primary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppTheme.primaryLight, width: 1.2),
@@ -507,8 +517,9 @@ class _GreetingScreenState extends State<GreetingScreen> {
 
                         // Register / Login Toggle Link
                         Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
                               Text(
                                 _isRegisterMode
@@ -667,7 +678,7 @@ class _SignUpOtpDialogState extends State<_SignUpOtpDialog> {
     if (_countdown > 0) return;
     setState(() => _errorMessage = null);
     try {
-      await context.read<AuthProvider>().sendPasswordResetOTP(widget.email);
+      await context.read<AuthProvider>().resendSignUpOTP(widget.email);
       _startTimer();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
