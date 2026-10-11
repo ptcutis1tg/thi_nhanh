@@ -60,6 +60,9 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
       {}; // questionIndex -> selectedOptionId / label
   final Map<int, bool> _flaggedQuestions = {};
 
+  RealtimeChannel? _roomChannel;
+  Timer? _roomPollingTimer;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +79,64 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
     } else {
       _loadExamAndQuestions();
     }
+    _listenToRoomClosure();
+  }
+
+  void _listenToRoomClosure() {
+    final roomId = widget.roomId;
+    if (roomId == null || roomId.isEmpty) return;
+
+    try {
+      _roomChannel = Supabase.instance.client
+          .channel('room_status_$roomId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.update,
+            schema: 'public',
+            table: 'rooms',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'id',
+              value: roomId,
+            ),
+            callback: (payload) {
+              final status = payload.newRecord['status'];
+              if (status == 'closed') {
+                handleHostClosedRoom();
+              }
+            },
+          )
+          .subscribe();
+    } catch (_) {}
+
+    _roomPollingTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
+      if (!mounted || _hasSubmitted) return;
+      try {
+        final res = await Supabase.instance.client
+            .from('rooms')
+            .select('status')
+            .eq('id', roomId)
+            .maybeSingle();
+        if (res != null && res['status'] == 'closed') {
+          handleHostClosedRoom();
+        }
+      } catch (_) {}
+    });
+  }
+
+  void handleHostClosedRoom() {
+    if (!mounted || _hasSubmitted || _isSubmitting) return;
+    _roomChannel?.unsubscribe();
+    _roomPollingTimer?.cancel();
+    _timer?.cancel();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Phòng thi đã kết thúc bởi giáo viên. Đang tự động nộp bài...'),
+        duration: Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppTheme.warning,
+      ),
+    );
+    _submitExam();
   }
 
   void _maybeShuffleQuestions() {
@@ -91,6 +152,8 @@ class _TakingExamScreenState extends State<TakingExamScreen> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _roomChannel?.unsubscribe();
+    _roomPollingTimer?.cancel();
     _timer?.cancel();
     super.dispose();
   }
