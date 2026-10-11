@@ -627,7 +627,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(AppTheme.cardRadius),
               border: Border.all(color: AppTheme.border),
-              boxShadow: AppTheme.cardShadow,
+              boxShadow: AppTheme.softGlowShadow,
             ),
             child: Padding(
               padding: const EdgeInsets.all(28),

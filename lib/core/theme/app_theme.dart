@@ -68,6 +68,20 @@ class AppTheme {
     ),
   ];
 
+  static const List<BoxShadow> softGlowShadow = [
+    BoxShadow(
+      color: Color(0x0D000000),
+      blurRadius: 18,
+      spreadRadius: 1,
+      offset: Offset(0, 8),
+    ),
+    BoxShadow(
+      color: Color(0x05000000),
+      blurRadius: 6,
+      offset: Offset(0, 2),
+    ),
+  ];
+
   // Monospace Text Style for Code / PIN / Timer
   static TextStyle get firaCodeStyle => GoogleFonts.firaCode(
     color: textMain,

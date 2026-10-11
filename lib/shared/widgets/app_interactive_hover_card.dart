@@ -13,6 +13,7 @@ class AppInteractiveHoverCard extends StatefulWidget {
   final bool enableHover;
   final double hoverTranslateY;
   final bool applyCardDecoration;
+  final List<BoxShadow>? customBoxShadow;
 
   const AppInteractiveHoverCard({
     super.key,
@@ -27,6 +28,7 @@ class AppInteractiveHoverCard extends StatefulWidget {
     this.enableHover = true,
     this.hoverTranslateY = -3.0,
     this.applyCardDecoration = true,
+    this.customBoxShadow,
   });
 
   @override
@@ -62,15 +64,16 @@ class _AppInteractiveHoverCardState extends State<AppInteractiveHoverCard> {
               ),
           boxShadow: _isHovered
               ? AppTheme.hoverGlowShadow
-              : (widget.gradient != null
-                  ? [
-                      BoxShadow(
-                        color: AppTheme.primaryDark.withValues(alpha: 0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : AppTheme.luminescenceShadow),
+              : (widget.customBoxShadow ??
+                  (widget.gradient != null
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.primaryDark.withValues(alpha: 0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : AppTheme.luminescenceShadow)),
         ),
         child: Material(
           type: MaterialType.transparency,
