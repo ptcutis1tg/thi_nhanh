@@ -19,11 +19,27 @@ class LatexMathView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (text.isEmpty) return const SizedBox.shrink();
 
-    // Check if string contains any LaTeX markers ($)
+    final defaultStyle =
+        textStyle ?? TextStyle(fontSize: 16, color: color ?? Colors.black87);
+
+    // Raw LaTeX mode intentionally accepts commands without $ delimiters.
+    // Route command-like input through the math renderer instead of exposing
+    // the source as plain text.
     if (!text.contains(r'$')) {
+      if (_looksLikeRawLatex(text)) {
+        return Math.tex(
+          text,
+          mathStyle: MathStyle.display,
+          textStyle: defaultStyle,
+          onErrorFallback: (error) => Text(
+            text,
+            style: defaultStyle.copyWith(color: Colors.redAccent),
+          ),
+        );
+      }
       return Text(
         text,
-        style: textStyle ?? TextStyle(fontSize: 16, color: color ?? Colors.black87),
+        style: defaultStyle,
       );
     }
 
@@ -35,9 +51,15 @@ class LatexMathView extends StatelessWidget {
     );
   }
 
+  bool _looksLikeRawLatex(String value) {
+    return RegExp(r'\\(?:begin|end|frac|sqrt|sum|int|lim|vec|widehat|log|overset|mathrm)\b')
+        .hasMatch(value);
+  }
+
   List<Widget> _parseMixedContent(String raw, BuildContext context) {
     final widgets = <Widget>[];
-    final defaultStyle = textStyle ?? TextStyle(fontSize: 16, color: color ?? Colors.black87);
+    final defaultStyle =
+        textStyle ?? TextStyle(fontSize: 16, color: color ?? Colors.black87);
 
     // Regex to capture $$...$$ (block) or $...$ (inline)
     final pattern = RegExp(r'(\$\$(.*?)\$\$|\$(.*?)\$)');

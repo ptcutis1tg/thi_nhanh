@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/question_draft.dart';
 import '../../../core/models/scientific_shortcut.dart';
 import '../../../core/theme/app_theme.dart';
+import 'inline_visual_math_editor.dart';
 import 'scientific_text_field.dart';
 
 class QuestionAnswersEditor extends StatelessWidget {
@@ -19,6 +20,68 @@ class QuestionAnswersEditor extends StatelessWidget {
   final ScientificCategory shortcutCategory;
   final List<ScientificShortcut> shortcuts;
   final ValueChanged<ScientificInputTarget>? onFocusTarget;
+
+  Widget _buildVisualAnswerEditor({
+    required String editorKey,
+    required String value,
+    required String label,
+    required ValueChanged<String> onValueChanged,
+    bool selected = false,
+    String? hintText,
+  }) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 7, 8, 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (selected)
+                const Icon(
+                  Icons.check_circle,
+                  color: AppTheme.success,
+                  size: 20,
+                ),
+            ],
+          ),
+          if (hintText != null && value.isEmpty)
+            Text(
+              hintText,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          const SizedBox(height: 2),
+          InlineVisualMathEditor(
+            key: ValueKey(editorKey),
+            initialLatex: value,
+            compact: true,
+            segmentKeyPrefix: editorKey,
+            shortcutCategory: shortcutCategory,
+            shortcuts: shortcuts,
+            onFocusTarget: onFocusTarget,
+            onChanged: onValueChanged,
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,87 +125,66 @@ class QuestionAnswersEditor extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
-                    Radio<int>(
-                      value: index,
-                    ),
-                Expanded(
-                  child: ScientificTextField(
-                    key: ValueKey('answer-${question.id}-$index'),
-                    initialValue: question.answers[index],
-                    category: shortcutCategory,
-                    shortcuts: shortcuts,
-                    fieldLabel: 'Đáp án $letter',
-                    onFocused: onFocusTarget,
-                    onChanged: (val) {
-                      question.answers[index] = val;
-                      onChanged();
-                    },
-                    decoration: InputDecoration(
-                      labelText: '$letter. Đáp án *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      suffixIcon: isSelected
-                          ? const Icon(
-                              Icons.check_circle,
-                              color: AppTheme.success,
-                              size: 20,
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Xóa lựa chọn này',
-                  onPressed: question.answers.length <= 2
-                      ? null
-                      : () {
-                          question.answers.removeAt(index);
-                          question.correctAnswers.remove(index);
-                          for (
-                            int i = 0;
-                            i < question.correctAnswers.length;
-                            i++
-                          ) {
-                            if (question.correctAnswers[i] > index) {
-                              question.correctAnswers[i]--;
-                            }
-                          }
-                          if (question.correctAnswers.isEmpty &&
-                              question.answers.isNotEmpty) {
-                            question.correctAnswers = [0];
-                          }
+                    Radio<int>(value: index),
+                    Expanded(
+                      child: _buildVisualAnswerEditor(
+                        editorKey: 'answer-${question.id}-$index',
+                        value: question.answers[index],
+                        label: '$letter. Đáp án *',
+                        selected: isSelected,
+                        onValueChanged: (val) {
+                          question.answers[index] = val;
                           onChanged();
                         },
-                  icon: Icon(
-                    Icons.close,
-                    color: question.answers.length <= 2
-                        ? Colors.grey.shade300
-                        : AppTheme.error,
-                  ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Xóa lựa chọn này',
+                      onPressed: question.answers.length <= 2
+                          ? null
+                          : () {
+                              question.answers.removeAt(index);
+                              question.correctAnswers.remove(index);
+                              for (
+                                int i = 0;
+                                i < question.correctAnswers.length;
+                                i++
+                              ) {
+                                if (question.correctAnswers[i] > index) {
+                                  question.correctAnswers[i]--;
+                                }
+                              }
+                              if (question.correctAnswers.isEmpty &&
+                                  question.answers.isNotEmpty) {
+                                question.correctAnswers = [0];
+                              }
+                              onChanged();
+                            },
+                      icon: Icon(
+                        Icons.close,
+                        color: question.answers.length <= 2
+                            ? Colors.grey.shade300
+                            : AppTheme.error,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }),
-      ),
-    ),
-    if (question.answers.length < 8)
-      TextButton.icon(
-        onPressed: () {
-          question.answers.add('');
-          onChanged();
-        },
-        icon: const Icon(Icons.add_circle_outline, size: 18),
-        label: const Text('Thêm phương án lựa chọn'),
-      ),
-  ],
-);
+              );
+            }),
+          ),
+        ),
+        if (question.answers.length < 8)
+          TextButton.icon(
+            onPressed: () {
+              question.answers.add('');
+              onChanged();
+            },
+            icon: const Icon(Icons.add_circle_outline, size: 18),
+            label: const Text('Thêm phương án lựa chọn'),
+          ),
+      ],
+    );
   }
 
   Widget _buildMultipleChoice(BuildContext context) {
@@ -178,34 +220,15 @@ class QuestionAnswersEditor extends StatelessWidget {
                   },
                 ),
                 Expanded(
-                  child: ScientificTextField(
-                    key: ValueKey('answer-multi-${question.id}-$index'),
-                    initialValue: question.answers[index],
-                    category: shortcutCategory,
-                    shortcuts: shortcuts,
-                    fieldLabel: 'Đáp án $letter',
-                    onFocused: onFocusTarget,
-                    onChanged: (val) {
+                  child: _buildVisualAnswerEditor(
+                    editorKey: 'answer-multi-${question.id}-$index',
+                    value: question.answers[index],
+                    label: '$letter. Đáp án *',
+                    selected: isChecked,
+                    onValueChanged: (val) {
                       question.answers[index] = val;
                       onChanged();
                     },
-                    decoration: InputDecoration(
-                      labelText: '$letter. Đáp án *',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      suffixIcon: isChecked
-                          ? const Icon(
-                              Icons.check_circle,
-                              color: AppTheme.success,
-                              size: 20,
-                            )
-                          : null,
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -355,32 +378,17 @@ class QuestionAnswersEditor extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: ScientificTextField(
-                    key: ValueKey('short-ans-${question.id}-$idx'),
-                    initialValue: question.answers[idx],
-                    category: shortcutCategory,
-                    shortcuts: shortcuts,
-                    fieldLabel: idx == 0
-                        ? 'Đáp án chính'
-                        : 'Đáp án tương đương ${idx + 1}',
-                    onFocused: onFocusTarget,
-                    onChanged: (val) {
+                  child: _buildVisualAnswerEditor(
+                    editorKey: 'short-ans-${question.id}-$idx',
+                    value: question.answers[idx],
+                    label: idx == 0
+                        ? 'Đáp án chính *'
+                        : 'Đáp án tương đương chấp nhận',
+                    hintText: 'Ví dụ: 42 hoặc H2O',
+                    onValueChanged: (val) {
                       question.answers[idx] = val;
                       onChanged();
                     },
-                    decoration: InputDecoration(
-                      labelText: idx == 0
-                          ? 'Đáp án chính *'
-                          : 'Đáp án tương đương chấp nhận',
-                      hintText: 'Ví dụ: 42 hoặc H2O',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                    ),
                   ),
                 ),
                 if (idx > 0) ...[
