@@ -352,6 +352,47 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       }
     }
 
+    if ((_totalPoints - 10.0).abs() > 0.01) {
+      final shouldDistribute = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 26),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Tổng điểm bài thi chưa đạt 10 điểm'),
+              ),
+            ],
+          ),
+          content: Text(
+            'Hiện tại đề thi có tổng điểm là ${_totalPoints.toStringAsFixed(1)}/10 điểm. Đề thi bắt buộc phải có tổng điểm tròn 10 điểm mới có thể xuất bản.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Sửa tiếp'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Tự động chia đều điểm thành 10'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldDistribute == true) {
+        _distributePointsEvenly();
+        _showMessage('Đã chia đều 10 điểm cho ${_questions.length} câu hỏi thành công.');
+      }
+      return;
+    }
+
     final success = await _saveDraft();
     if (!success || !mounted) return;
 
@@ -950,6 +991,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
+            key: const Key('publish-exam-btn'),
             onPressed: _isLoading ? null : _publishExam,
             icon: const Icon(Icons.rocket_launch_rounded, size: 18),
             label: const Text('Lưu & Xuất bản ngay'),
