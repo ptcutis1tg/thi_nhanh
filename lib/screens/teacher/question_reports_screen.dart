@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../core/repositories/question_report_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class QuestionReportsScreen extends StatefulWidget {
   const QuestionReportsScreen({super.key});
@@ -86,8 +88,7 @@ class _QuestionReportsScreenState extends State<QuestionReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
+    return MilkyMintScaffold(
       appBar: AppBar(
         title: const Text('Báo cáo câu hỏi'),
         actions: [
@@ -135,75 +136,74 @@ class _QuestionReportsScreenState extends State<QuestionReportsScreen> {
     onSelected: (_) => setState(() => _filter = value),
   );
 
-  Widget _reportCard(QuestionReport report) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${report.examTitle} · Câu ${report.questionPosition}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
+  Widget _reportCard(QuestionReport report) => AppInteractiveHoverCard(
+    borderRadius: 16,
+    padding: const EdgeInsets.all(18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${report.examTitle} · Câu ${report.questionPosition}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
-              _statusBadge(report.status),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            report.questionBody,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            report.categoryInfo?.label ?? 'Vấn đề khác',
-            style: const TextStyle(
-              color: AppTheme.primary,
-              fontWeight: FontWeight.w600,
             ),
-          ),
-          if (report.detail.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(report.detail),
+            _statusBadge(report.status),
           ],
-          if (report.teacherNote.isNotEmpty) ...[
-            const Divider(height: 24),
-            Text('Ghi chú: ${report.teacherNote}'),
-          ],
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () =>
-                    context.go('/create_exam?examId=${report.examId}'),
-                icon: const Icon(Icons.edit_outlined),
-                label: const Text('Mở đề để sửa'),
-              ),
-              if (report.status == 'pending') ...[
-                FilledButton.icon(
-                  key: Key('resolve-report-${report.id}'),
-                  onPressed: () => _resolve(report, true),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Đã xử lý'),
-                ),
-                TextButton(
-                  onPressed: () => _resolve(report, false),
-                  child: const Text('Bỏ qua'),
-                ),
-              ],
-            ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          report.questionBody,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 10),
+        Text(
+          report.categoryInfo?.label ?? 'Vấn đề khác',
+          style: const TextStyle(
+            color: AppTheme.primary,
+            fontWeight: FontWeight.w600,
           ),
+        ),
+        if (report.detail.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(report.detail),
         ],
-      ),
+        if (report.teacherNote.isNotEmpty) ...[
+          const Divider(height: 24),
+          Text('Ghi chú: ${report.teacherNote}'),
+        ],
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () =>
+                  context.go('/create_exam?examId=${report.examId}'),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Mở đề để sửa'),
+            ),
+            if (report.status == 'pending') ...[
+              FilledButton.icon(
+                key: Key('resolve-report-${report.id}'),
+                onPressed: () => _resolve(report, true),
+                icon: const Icon(Icons.check),
+                label: const Text('Đã xử lý'),
+              ),
+              TextButton(
+                onPressed: () => _resolve(report, false),
+                child: const Text('Bỏ qua'),
+              ),
+            ],
+          ],
+        ),
+      ],
     ),
   );
 

@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/google_pagination_bar.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 enum SearchItemType { exam, room }
 
@@ -798,44 +799,42 @@ class _FilterPanel extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Bộ Lọc Tìm Kiếm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const SizedBox(height: 16),
-              Text('Môn học (${availableSubjects.length} môn)', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-              const SizedBox(height: 8),
-              ...availableSubjects.map(
-                (sub) => CheckboxListTile(
-                  title: Text(sub, style: const TextStyle(fontSize: 13)),
-                  value: subjects.any((s) {
-                    final sLow = s.trim().toLowerCase();
-                    final subLow = sub.trim().toLowerCase();
-                    return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
-                  }),
-                  onChanged: (val) => onSubjectChanged(sub, val ?? false),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
+  Widget build(BuildContext context) => AppInteractiveHoverCard(
+        borderRadius: 16,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Bộ Lọc Tìm Kiếm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 16),
+            Text('Môn học (${availableSubjects.length} môn)', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 8),
+            ...availableSubjects.map(
+              (sub) => CheckboxListTile(
+                title: Text(sub, style: const TextStyle(fontSize: 13)),
+                value: subjects.any((s) {
+                  final sLow = s.trim().toLowerCase();
+                  final subLow = sub.trim().toLowerCase();
+                  return sLow == subLow || subLow.contains(sLow) || sLow.contains(subLow);
+                }),
+                onChanged: (val) => onSubjectChanged(sub, val ?? false),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
               ),
-              if (subjects.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                TextButton.icon(
-                  onPressed: () {
-                    for (final s in availableSubjects) {
-                      onSubjectChanged(s, false);
-                    }
-                  },
-                  icon: const Icon(Icons.clear_all, size: 16),
-                  label: const Text('Bỏ chọn tất cả', style: TextStyle(fontSize: 12)),
-                ),
-              ],
+            ),
+            if (subjects.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () {
+                  for (final s in availableSubjects) {
+                    onSubjectChanged(s, false);
+                  }
+                },
+                icon: const Icon(Icons.clear_all, size: 16),
+                label: const Text('Bỏ chọn tất cả', style: TextStyle(fontSize: 12)),
+              ),
             ],
-          ),
+          ],
         ),
       );
 }
@@ -876,11 +875,9 @@ class _ResultsGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = items[index];
         final isSaved = savedExamIds.contains(item.id);
-        return Card(
+        return AppInteractiveHoverCard(
           margin: const EdgeInsets.only(bottom: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
-          color: Colors.white,
+          borderRadius: 16,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: LayoutBuilder(

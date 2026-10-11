@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_error_reporter.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class RoomPasswordScreen extends StatefulWidget {
   const RoomPasswordScreen({super.key, this.roomCode});
@@ -73,7 +75,7 @@ class _RoomPasswordScreenState extends State<RoomPasswordScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => MilkyMintScaffold(
     appBar: AppBar(
       title: Text(
         'Thi Nhanh',
@@ -89,21 +91,12 @@ class _RoomPasswordScreenState extends State<RoomPasswordScreen> {
     body: Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Container(
+        child: SizedBox(
           width: 560,
-          padding: const EdgeInsets.all(48),
-          decoration: BoxDecoration(
-            color: AppTheme.surface,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Column(
+          child: AppInteractiveHoverCard(
+            borderRadius: 22,
+            padding: const EdgeInsets.all(48),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
@@ -174,5 +167,6 @@ class _RoomPasswordScreenState extends State<RoomPasswordScreen> {
         ),
       ),
     ),
-  );
+  ),
+);
 }

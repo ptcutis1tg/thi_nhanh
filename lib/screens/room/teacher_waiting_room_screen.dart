@@ -8,6 +8,8 @@ import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/room_url_helper.dart';
 import '../../shared/widgets/top_nav_bar.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 import 'widgets/live_leaderboard_view.dart';
 import 'widgets/room_qr_dialog.dart';
 
@@ -157,9 +159,8 @@ class _TeacherWaitingRoomScreenState extends State<TeacherWaitingRoomScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => MilkyMintScaffold(
     appBar: const TopNavBar(),
-    backgroundColor: AppTheme.background,
     body: _loading
         ? const Center(child: CircularProgressIndicator())
         : _error != null
@@ -293,36 +294,37 @@ class _RoomView extends StatelessWidget {
             const SizedBox(height: 16),
 
             if (selectedTab == 0) ...[
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.groups_outlined,
-                        color: AppTheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Danh sách thí sinh (${room.participants.length}/${room.maxParticipants})',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+              AppInteractiveHoverCard(
+                borderRadius: 16,
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.groups_outlined,
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Danh sách thí sinh (${room.participants.length}/${room.maxParticipants})',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      IconButton(
-                        onPressed: onRefresh,
-                        icon: const Icon(Icons.refresh),
-                        tooltip: 'Làm mới danh sách',
-                      ),
-                    ],
-                  ),
+                    ),
+                    IconButton(
+                      onPressed: onRefresh,
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Làm mới danh sách',
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
-              Card(
+              AppInteractiveHoverCard(
+                borderRadius: 16,
+                padding: EdgeInsets.zero,
                 child: room.participants.isEmpty
                     ? const Padding(
                         padding: EdgeInsets.all(32),
@@ -443,93 +445,87 @@ class _RoomCodeCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: AppTheme.border),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'MÃ PHÒNG THI',
-                    style: TextStyle(
-                      color: AppTheme.textSecondary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      letterSpacing: 1.1,
-                    ),
+  Widget build(BuildContext context) => AppInteractiveHoverCard(
+    borderRadius: 16,
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'MÃ PHÒNG THI',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    letterSpacing: 1.1,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    code,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      color: AppTheme.primary,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  code,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    color: AppTheme.primary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
                   ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              InkWell(
-                onTap: () => _openPresentation(context),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.border),
-                  ),
-                  child: QrImageView(
-                    data: _joinUrl,
-                    version: QrVersions.auto,
-                    size: 52,
-                    gapless: false,
-                    eyeStyle: const QrEyeStyle(
-                      eyeShape: QrEyeShape.square,
-                      color: AppTheme.primary,
-                    ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            InkWell(
+              onTap: () => _openPresentation(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: QrImageView(
+                  data: _joinUrl,
+                  version: QrVersions.auto,
+                  size: 52,
+                  gapless: false,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: AppTheme.primary,
                   ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => _openPresentation(context),
-                icon: const Icon(Icons.fullscreen, size: 16),
-                label: const Text('Chiếu QR', style: TextStyle(fontSize: 12)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton.outlined(
-                onPressed: () => _copyLink(context),
-                icon: const Icon(Icons.link, size: 16),
-                tooltip: 'Sao chép liên kết vào phòng',
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => _openPresentation(context),
+              icon: const Icon(Icons.fullscreen, size: 16),
+              label: const Text('Chiếu QR', style: TextStyle(fontSize: 12)),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 visualDensity: VisualDensity.compact,
               ),
-            ],
-          ),
-        ],
-      ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.outlined(
+              onPressed: () => _copyLink(context),
+              icon: const Icon(Icons.link, size: 16),
+              tooltip: 'Sao chép liên kết vào phòng',
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ],
     ),
   );
 }

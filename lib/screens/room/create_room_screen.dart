@@ -6,6 +6,7 @@ import '../../core/repositories/teacher_exam_repository.dart';
 import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key});
@@ -222,7 +223,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppTheme.background,
+        backgroundColor: Colors.transparent,
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
           child: Center(
@@ -241,23 +242,11 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                     style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
                   ),
                   const SizedBox(height: 32),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                      boxShadow: AppTheme.luminescenceShadow,
-                    ),
-                    child: Card(
-                      elevation: 0,
-                      margin: EdgeInsets.zero,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-                        side: const BorderSide(color: AppTheme.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  AppInteractiveHoverCard(
+                    padding: const EdgeInsets.all(32),
+                    borderRadius: AppTheme.cardRadius,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // 1. Thông tin cơ bản
                             const Row(
@@ -301,6 +290,18 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                                 return ChoiceChip(
                                   label: Text('$cap thí sinh'),
                                   selected: isSelected,
+                                  selectedColor: AppTheme.primary,
+                                  backgroundColor: Colors.white,
+                                  labelStyle: TextStyle(
+                                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppTheme.pillRadius),
+                                    side: BorderSide(
+                                      color: isSelected ? AppTheme.primary : AppTheme.border,
+                                    ),
+                                  ),
                                   onSelected: (val) {
                                     if (val) {
                                       setState(() {
@@ -629,14 +630,12 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
                         ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                ],
               ),
             ),
           ),
-        ),
-      );
+        );
 }
 
 class _EmptyExamState extends StatelessWidget {

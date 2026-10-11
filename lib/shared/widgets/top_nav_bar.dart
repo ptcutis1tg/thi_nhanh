@@ -125,7 +125,7 @@ class _TopNavBarState extends State<TopNavBar> {
                           borderRadius: BorderRadius.circular(isMobile ? 8 : 10),
                           boxShadow: const [
                             BoxShadow(
-                              color: Color(0x336557E8),
+                              color: Color(0x3339C5BB),
                               blurRadius: 8,
                               offset: Offset(0, 3),
                             ),

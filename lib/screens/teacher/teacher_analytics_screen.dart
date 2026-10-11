@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/profile_service.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class TeacherAnalyticsScreen extends StatefulWidget {
   const TeacherAnalyticsScreen({super.key});
@@ -40,8 +42,7 @@ class _TeacherAnalyticsScreenState extends State<TeacherAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+    return MilkyMintScaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Center(
@@ -87,15 +88,9 @@ class _TeacherAnalyticsScreenState extends State<TeacherAnalyticsScreen> {
                   const SizedBox(height: 32),
 
                   // Analytics Details Card
-                  Container(
+                  AppInteractiveHoverCard(
                     padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 15, offset: const Offset(0, 4)),
-                      ],
-                    ),
+                    borderRadius: 20,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -121,13 +116,9 @@ class _TeacherAnalyticsScreenState extends State<TeacherAnalyticsScreen> {
   }
 
   Widget _buildMetricBox(String title, String value, IconData icon, Color color) {
-    return Container(
+    return AppInteractiveHoverCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF0ECFF)),
-      ),
+      borderRadius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,

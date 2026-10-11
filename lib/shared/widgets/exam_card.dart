@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+import 'app_interactive_hover_card.dart';
 
 enum ExamCardType {
   exam, // Đề thi
@@ -26,24 +27,14 @@ class ExamCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isExam = type == ExamCardType.exam;
     
-    return InkWell(
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
+      backgroundColor: const Color(0xF2FFFFFF),
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
+      padding: const EdgeInsets.all(24),
+      child: SizedBox(
         width: 280,
         height: 160,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -55,8 +46,8 @@ class ExamCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isExam ? AppTheme.primary.withOpacity(0.1) : const Color(0xFFAD5500).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    color: isExam ? AppTheme.primaryContainer : const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     isExam ? 'Đề thi' : 'Phòng thi',
@@ -64,7 +55,7 @@ class ExamCard extends StatelessWidget {
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.5,
-                      color: isExam ? AppTheme.primary : const Color(0xFFAD5500),
+                      color: isExam ? AppTheme.primaryDark : const Color(0xFFB45309),
                     ),
                   ),
                 ),

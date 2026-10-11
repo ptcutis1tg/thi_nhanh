@@ -6,6 +6,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/teacher_exam_repository.dart';
 import '../../core/repositories/saved_exam_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 import 'widgets/publish_confirm_dialog.dart';
 import 'widgets/delete_draft_confirm_dialog.dart';
 
@@ -226,7 +227,7 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         padding: EdgeInsets.all(
           MediaQuery.of(context).size.width < 600 ? 14 : 32,
@@ -843,12 +844,12 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
           ],
         );
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-            border: Border.all(
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: AppInteractiveHoverCard(
+            borderRadius: AppTheme.cardRadius,
+            backgroundColor: const Color(0xF2FFFFFF),
+            customBorder: Border.all(
               color: isDraft
                   ? const Color(0xFFFDE68A)
                   : (isSaved
@@ -856,48 +857,39 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
                         : AppTheme.border),
               width: isDraft ? 1.5 : 1.0,
             ),
-            boxShadow: AppTheme.cardShadow,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppTheme.cardRadius),
-              onTap: () {
-                if (isDraft) {
-                  context.go('/create_exam?examId=${exam.id}');
-                } else {
-                  context.go('/exam_detail?examId=${exam.id}');
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: isNarrow
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              avatar,
-                              const SizedBox(width: 14),
-                              Expanded(child: mainInfo),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          actions,
-                        ],
-                      )
-                    : Row(
+            onTap: () {
+              if (isDraft) {
+                context.go('/create_exam?examId=${exam.id}');
+              } else {
+                context.go('/exam_detail?examId=${exam.id}');
+              }
+            },
+            padding: const EdgeInsets.all(16),
+            child: isNarrow
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           avatar,
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 14),
                           Expanded(child: mainInfo),
-                          const SizedBox(width: 16),
-                          actions,
                         ],
                       ),
-              ),
-            ),
+                      const SizedBox(height: 12),
+                      actions,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      avatar,
+                      const SizedBox(width: 16),
+                      Expanded(child: mainInfo),
+                      const SizedBox(width: 16),
+                      actions,
+                    ],
+                  ),
           ),
         );
       },

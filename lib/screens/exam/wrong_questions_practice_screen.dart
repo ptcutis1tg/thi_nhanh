@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/assessment.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class WrongQuestionsPracticeScreen extends StatefulWidget {
   final String? attemptId;
@@ -89,7 +90,7 @@ class _WrongQuestionsPracticeScreenState extends State<WrongQuestionsPracticeScr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+      backgroundColor: Colors.transparent,
       body: _buildBody(),
     );
   }
@@ -226,19 +227,9 @@ class _WrongQuestionsPracticeScreenState extends State<WrongQuestionsPracticeScr
     final solved = _solvedCorrectCount;
     final progress = total > 0 ? (solved / total) : 1.0;
 
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -282,13 +273,9 @@ class _WrongQuestionsPracticeScreenState extends State<WrongQuestionsPracticeScr
   }
 
   Widget _buildAllCorrectState() {
-    return Container(
-      width: double.infinity,
+    return AppInteractiveHoverCard(
+      borderRadius: 20,
       padding: const EdgeInsets.all(36),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
       child: Column(
         children: [
           const Icon(Icons.workspace_premium_rounded, size: 60, color: Color(0xFFD97706)),
@@ -322,25 +309,9 @@ class _WrongQuestionsPracticeScreenState extends State<WrongQuestionsPracticeScr
     final isAnswered = selectedOptionId != null;
     final isNowCorrect = isAnswered && selectedOptionId == question.correctOptionId;
 
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isAnswered
-              ? (isNowCorrect ? const Color(0xFFBBF7D0) : const Color(0xFFFECACA))
-              : const Color(0xFFEBE6FC),
-          width: isAnswered ? 1.5 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

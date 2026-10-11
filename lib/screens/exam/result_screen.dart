@@ -9,6 +9,8 @@ import '../../core/repositories/assessment_repository.dart';
 import '../../core/theme/app_theme.dart';
 import 'widgets/report_question_dialog.dart';
 import '../../shared/widgets/top_nav_bar.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class ResultScreen extends StatefulWidget {
   const ResultScreen({
@@ -99,13 +101,13 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
+      return const MilkyMintScaffold(
         appBar: TopNavBar(),
         body: Center(child: CircularProgressIndicator()),
       );
     }
     if (_error != null && _review == null) {
-      return Scaffold(
+      return MilkyMintScaffold(
         appBar: const TopNavBar(),
         body: Center(
           child: Column(
@@ -129,9 +131,8 @@ class _ResultScreenState extends State<ResultScreen> {
       return _buildWaitingResult();
     }
 
-    return Scaffold(
+    return MilkyMintScaffold(
       appBar: const TopNavBar(),
-      backgroundColor: AppTheme.background,
       body: RefreshIndicator(
         onRefresh: widget.attemptId == null ? () async {} : _loadReview,
         child: ListView(
@@ -167,65 +168,63 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Widget _buildWaitingResult() {
     final review = _review!;
-    return Scaffold(
+    return MilkyMintScaffold(
       appBar: const TopNavBar(),
-      backgroundColor: AppTheme.background,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 620),
-          child: Card(
+          child: AppInteractiveHoverCard(
             margin: const EdgeInsets.all(24),
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.hourglass_top_rounded,
-                    color: AppTheme.primary,
-                    size: 64,
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Đã nộp bài thành công',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    review.title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Giáo viên chưa công bố kết quả. Điểm và lời giải sẽ tự động xuất hiện khi phòng thi kết thúc.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Đã trả lời ${review.answeredCount}/${review.totalQuestions} câu • ${review.durationFormatted}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _loadReview(),
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Kiểm tra kết quả'),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () => context.go('/home'),
-                        icon: const Icon(Icons.home),
-                        label: const Text('Về trang chủ'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            borderRadius: AppTheme.cardRadius,
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.hourglass_top_rounded,
+                  color: AppTheme.primary,
+                  size: 64,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Đã nộp bài thành công',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  review.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Giáo viên chưa công bố kết quả. Điểm và lời giải sẽ tự động xuất hiện khi phòng thi kết thúc.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Đã trả lời ${review.answeredCount}/${review.totalQuestions} câu • ${review.durationFormatted}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 24),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _loadReview(),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Kiểm tra kết quả'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => context.go('/home'),
+                      icon: const Icon(Icons.home),
+                      label: const Text('Về trang chủ'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
@@ -233,72 +232,71 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  Widget _buildScoreCard() => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.workspace_premium,
-            color: AppTheme.success,
-            size: 56,
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Chúc mừng bạn đã hoàn thành bài thi!',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 22),
-          Semantics(
-            label: 'Điểm số ${_score.toStringAsFixed(2)} trên 10',
+  Widget _buildScoreCard() => AppInteractiveHoverCard(
+    borderRadius: AppTheme.cardRadius,
+    padding: const EdgeInsets.all(32),
+    child: Column(
+      children: [
+        const Icon(
+          Icons.workspace_premium,
+          color: AppTheme.success,
+          size: 56,
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Chúc mừng bạn đã hoàn thành bài thi!',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 22),
+        Semantics(
+          label: 'Điểm số ${_score.toStringAsFixed(2)} trên 10',
+          child: CircleAvatar(
+            radius: 72,
+            backgroundColor: AppTheme.primary,
             child: CircleAvatar(
-              radius: 72,
-              backgroundColor: AppTheme.primary,
-              child: CircleAvatar(
-                radius: 64,
-                backgroundColor: Colors.white,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Điểm số',
-                        style: TextStyle(color: AppTheme.textSecondary),
+              radius: 64,
+              backgroundColor: Colors.white,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Điểm số',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
+                    Text(
+                      _score.toStringAsFixed(2),
+                      style: AppTheme.firaCodeStyle.copyWith(
+                        fontSize: 34,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primary,
                       ),
-                      Text(
-                        _score.toStringAsFixed(2),
-                        style: AppTheme.firaCodeStyle.copyWith(
-                          fontSize: 34,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                      const Text(
-                        '/10',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Text(
+                      '/10',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          if (_review != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              '${_review!.earnedPoints.toStringAsFixed(2)}/${_review!.totalPoints.toStringAsFixed(2)} điểm trọng số',
-            ),
-          ],
+        ),
+        if (_review != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            '${_review!.earnedPoints.toStringAsFixed(2)}/${_review!.totalPoints.toStringAsFixed(2)} điểm trọng số',
+          ),
         ],
-      ),
+      ],
     ),
   );
 
@@ -327,50 +325,48 @@ class _ResultScreenState extends State<ResultScreen> {
     String value,
   ) => SizedBox(
     width: 210,
-    child: Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 30),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(color: AppTheme.textSecondary)),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+    child: AppInteractiveHoverCard(
+      borderRadius: AppTheme.cardRadius,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 30),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(color: AppTheme.textSecondary)),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+        ],
       ),
     ),
   );
 
-  Widget _buildAttemptDetails() => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Wrap(
-        spacing: 32,
-        runSpacing: 16,
-        alignment: WrapAlignment.spaceAround,
-        children: [
-          _detail(
-            Icons.quiz_outlined,
-            'Đã trả lời',
-            '${_review!.answeredCount}/$_total câu',
-          ),
-          _detail(
-            Icons.timer_outlined,
-            'Thời gian làm bài',
-            _review!.durationFormatted,
-          ),
-          _detail(
-            Icons.check_circle_outline,
-            'Trạng thái',
-            _review!.status == 'expired' ? 'Hết giờ tự nộp' : 'Đã nộp',
-          ),
-        ],
-      ),
+  Widget _buildAttemptDetails() => AppInteractiveHoverCard(
+    borderRadius: AppTheme.cardRadius,
+    padding: const EdgeInsets.all(20),
+    child: Wrap(
+      spacing: 32,
+      runSpacing: 16,
+      alignment: WrapAlignment.spaceAround,
+      children: [
+        _detail(
+          Icons.quiz_outlined,
+          'Đã trả lời',
+          '${_review!.answeredCount}/$_total câu',
+        ),
+        _detail(
+          Icons.timer_outlined,
+          'Thời gian làm bài',
+          _review!.durationFormatted,
+        ),
+        _detail(
+          Icons.check_circle_outline,
+          'Trạng thái',
+          _review!.status == 'expired' ? 'Hết giờ tự nộp' : 'Đã nộp',
+        ),
+      ],
     ),
   );
 
@@ -392,25 +388,24 @@ class _ResultScreenState extends State<ResultScreen> {
     ],
   );
 
-  Widget _buildQuestionReview() => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Xem lại bài làm',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Mở từng câu để xem đáp án và lời giải.',
-            style: TextStyle(color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 12),
-          ..._review!.questions.map(_questionTile),
-        ],
-      ),
+  Widget _buildQuestionReview() => AppInteractiveHoverCard(
+    borderRadius: AppTheme.cardRadius,
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Xem lại bài làm',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Mở từng câu để xem đáp án và lời giải.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        ..._review!.questions.map(_questionTile),
+      ],
     ),
   );
 

@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class TeacherStudentResultsScreen extends StatefulWidget {
   final List<Map<String, dynamic>>? testSubmissions;
@@ -70,8 +72,7 @@ class _TeacherStudentResultsScreenState extends State<TeacherStudentResultsScree
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+    return MilkyMintScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 650;
@@ -243,20 +244,9 @@ class _TeacherStudentResultsScreenState extends State<TeacherStudentResultsScree
                         ),
                       )
                     else
-                      Container(
+                      AppInteractiveHoverCard(
                         padding: EdgeInsets.all(compact ? 16 : 24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFEBE6FC)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 15,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
+                        borderRadius: 20,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

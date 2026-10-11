@@ -6,6 +6,8 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/app_error_reporter.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class JoinRoomScreen extends StatefulWidget {
   const JoinRoomScreen({
@@ -105,8 +107,7 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
+    return MilkyMintScaffold(
       appBar: AppBar(
         title: const Text('Tham gia phòng thi', style: TextStyle(fontWeight: FontWeight.bold)),
         leading: IconButton(
@@ -128,13 +129,8 @@ class _JoinRoomScreenState extends State<JoinRoomScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: AppTheme.luminescenceShadow,
-                  border: Border.all(color: AppTheme.primaryLight.withValues(alpha: 0.5)),
-                ),
+              child: AppInteractiveHoverCard(
+                borderRadius: AppTheme.shellRadius,
                 padding: const EdgeInsets.all(28),
                 child: Form(
                   key: _formKey,

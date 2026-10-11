@@ -7,6 +7,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/repositories/assessment_repository.dart';
 import '../../core/repositories/room_repository.dart';
 import '../../shared/widgets/top_nav_bar.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 import 'widgets/countdown_overlay_widget.dart';
 
 class StudentWaitingRoomScreen extends StatefulWidget {
@@ -132,9 +134,8 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MilkyMintScaffold(
       appBar: const TopNavBar(),
-      backgroundColor: AppTheme.background,
       body: Stack(
         children: [
           _isLoading
@@ -252,19 +253,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 600;
 
-        final codeCard = Container(
+        final codeCard = AppInteractiveHoverCard(
+          borderRadius: 16,
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
           child: Column(
             children: [
               const Text(
@@ -319,19 +310,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
           ),
         );
 
-        final detailsCard = Container(
+        final detailsCard = AppInteractiveHoverCard(
+          borderRadius: 16,
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -460,19 +441,9 @@ class _StudentWaitingRoomScreenState extends State<StudentWaitingRoomScreen> {
         _roomState?.participantCount ??
         (participants.isNotEmpty ? participants.length : 1);
 
-    return Container(
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
       child: Column(
         children: [
           Wrap(

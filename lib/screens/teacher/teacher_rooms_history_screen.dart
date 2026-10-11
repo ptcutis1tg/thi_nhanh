@@ -7,6 +7,8 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/services/profile_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/google_pagination_bar.dart';
+import '../../shared/widgets/milky_mint_scaffold.dart';
+import '../../shared/widgets/app_interactive_hover_card.dart';
 
 class TeacherRoomsHistoryScreen extends StatefulWidget {
   final List<TeacherRoomData>? testRooms;
@@ -99,8 +101,7 @@ class _TeacherRoomsHistoryScreenState extends State<TeacherRoomsHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F5FE),
+    return MilkyMintScaffold(
       body: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 650;
@@ -467,21 +468,12 @@ class _TeacherRoomsHistoryScreenState extends State<TeacherRoomsHistoryScreen> {
       badgeLabel = 'Đã kết thúc';
     }
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFEBE6FC)),
-      ),
-      color: Colors.white,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => _navigateToRoom(room),
-        child: Padding(
-          padding: EdgeInsets.all(compact ? 14 : 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return AppInteractiveHoverCard(
+      borderRadius: 16,
+      onTap: () => _navigateToRoom(room),
+      padding: EdgeInsets.all(compact ? 14 : 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Top Row: Status Badge + Room Code (with 1-click copy)
               Row(
@@ -625,9 +617,7 @@ class _TeacherRoomsHistoryScreenState extends State<TeacherRoomsHistoryScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildActionButton(
